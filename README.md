@@ -9,8 +9,9 @@ EvoProgrammer is a small Bash CLI around coding-agent commands such as `codex` a
 - `EvoProgrammer "your prompt"`: run the selected agent in the current directory and keep iterating.
 - `EvoProgrammer once "your prompt"`: run a single agent pass.
 - `--agent`: switch between built-in agent presets such as `codex` and `claude`.
-- `--language`: add language-specific implementation guidance for `python`, `cpp`, `go`, `rust`, or `typescript`, or let EvoProgrammer auto-detect it.
-- `--project-type`: add scenario-specific guidance for `single-player-game`, `paper`, `scientific-experiment`, `mobile-game`, `online-game`, `ppt`, or `office`, or let EvoProgrammer auto-detect it.
+- `--language`: add language-specific implementation guidance for built-in profiles such as `python`, `rust`, `go`, `typescript`, `gdscript`, or `swift`, or let EvoProgrammer auto-detect it.
+- `--framework`: add framework-specific implementation guidance for built-in profiles such as `fastapi`, `django`, `react`, `nextjs`, `godot`, `bevy`, or `axum`, or let EvoProgrammer auto-detect it.
+- `--project-type`: add scenario-specific guidance for built-in profiles such as `single-player-game`, `online-game`, `paper`, `scientific-experiment`, `ppt`, `office`, `web-app`, or `backend-service`, or let EvoProgrammer auto-detect it.
 - `EvoProgrammer doctor`: validate the local setup before a long autonomous run.
 - `--target-dir`: point the CLI at another directory when needed.
 - Default run artifacts under `TARGET_DIR/.evoprogrammer/runs` for later inspection.
@@ -19,6 +20,7 @@ EvoProgrammer is a small Bash CLI around coding-agent commands such as `codex` a
 - `--prompt-file`: load large prompts from a file instead of the command line.
 - `--dry-run`: inspect the exact command and target directory without running the agent.
 - `--max-iterations`, `--delay-seconds`, `--continue-on-error`: control long-running autonomous loops.
+- Wrapper-level options can appear before `once` or `doctor`.
 
 Internally:
 
@@ -70,6 +72,12 @@ Run a single pass only:
 EvoProgrammer once "Initialize a Vite + React + TypeScript project."
 ```
 
+You can also place wrapper options before the subcommand:
+
+```bash
+EvoProgrammer --agent claude once "Scaffold a typed FastAPI service."
+```
+
 Point the CLI at another directory:
 
 ```bash
@@ -82,10 +90,16 @@ Run Claude Code instead of Codex:
 EvoProgrammer --agent claude "Implement the first playable card-battle loop."
 ```
 
-Adapt the run for a Rust online game:
+Adapt the run for a Rust Bevy online game:
 
 ```bash
-EvoProgrammer --language rust --project-type online-game "Build the dedicated server, client sync, and test scaffolding."
+EvoProgrammer --language rust --framework bevy --project-type online-game "Build the dedicated server, client sync, and test scaffolding."
+```
+
+Adapt the run for a Godot GDScript project:
+
+```bash
+EvoProgrammer --language gdscript --framework godot --project-type single-player-game "Build the first playable loop, scene transitions, and save checkpoints."
 ```
 
 Let EvoProgrammer auto-detect both from the repository and prompt:
@@ -182,7 +196,7 @@ Repeat iterations while forwarding extra agent flags:
 
 ## Configuration
 
-By default, both scripts target the current working directory, use the `codex` agent, and auto-detect language/project-type guidance when possible. You can override that with `EVOPROGRAMMER_TARGET_DIR`, `EVOPROGRAMMER_AGENT`, `--target-dir`, or `--agent`.
+By default, both scripts target the current working directory, use the `codex` agent, and auto-detect language/framework/project-type guidance when possible. You can override that with `EVOPROGRAMMER_TARGET_DIR`, `EVOPROGRAMMER_AGENT`, `--target-dir`, or `--agent`.
 
 Built-in language profiles:
 
@@ -191,6 +205,41 @@ Built-in language profiles:
 - `go`
 - `rust`
 - `typescript`
+- `javascript`
+- `java`
+- `csharp`
+- `kotlin`
+- `swift`
+- `php`
+- `ruby`
+- `gdscript`
+
+Built-in framework profiles:
+
+- `django`
+- `flask`
+- `fastapi`
+- `streamlit`
+- `pygame`
+- `qt`
+- `react`
+- `nextjs`
+- `vue`
+- `svelte`
+- `express`
+- `nestjs`
+- `electron`
+- `tauri`
+- `godot`
+- `unity`
+- `unreal`
+- `bevy`
+- `rails`
+- `laravel`
+- `spring`
+- `gin`
+- `actix-web`
+- `axum`
 
 Built-in project types:
 
@@ -201,6 +250,16 @@ Built-in project types:
 - `online-game`
 - `ppt`
 - `office`
+- `web-app`
+- `backend-service`
+- `cli-tool`
+- `library`
+- `desktop-app`
+- `browser-game`
+- `ai-agent`
+- `data-pipeline`
+- `plugin`
+- `embedded-system`
 
 `LOOP.sh` supports:
 
@@ -209,11 +268,13 @@ Built-in project types:
 - `EVOPROGRAMMER_AGENT` to choose which built-in agent preset to run.
 - `EVOPROGRAMMER_AGENT_ARGS` to provide extra agent arguments as a JSON-like string list.
 - `EVOPROGRAMMER_LANGUAGE_PROFILE` to inject language-specific guidance into the prompt.
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE` to inject framework-specific guidance into the prompt.
 - `EVOPROGRAMMER_PROJECT_TYPE` to inject project-type guidance into the prompt.
 - `EVOPROGRAMMER_TARGET_DIR` to choose the working directory for the agent command.
 - `EVOPROGRAMMER_ARTIFACTS_DIR` to override where run artifacts are stored. Default: `TARGET_DIR/.evoprogrammer/runs`.
 - `--prompt`, `--prompt-file`, and `--target-dir` flags for one-off runs without exporting environment variables.
 - `--language` to apply a built-in language adaptation profile.
+- `--framework` to apply a built-in framework adaptation profile.
 - `--project-type` to apply a built-in project-type adaptation profile.
 - `--artifacts-dir` to store artifacts somewhere other than the target repository.
 - If the target directory is a Git repository and artifacts stay inside it, EvoProgrammer registers a local `.git/info/exclude` rule to keep `.evoprogrammer/` out of later iterations.
@@ -236,6 +297,7 @@ Each `LOOP.sh` run creates a timestamped directory containing:
 - `EVOPROGRAMMER_AGENT` to choose which built-in agent preset to run.
 - `EVOPROGRAMMER_AGENT_ARGS` to provide extra agent arguments as a JSON-like string list.
 - `EVOPROGRAMMER_LANGUAGE_PROFILE` to inject language-specific guidance into every iteration.
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE` to inject framework-specific guidance into every iteration.
 - `EVOPROGRAMMER_PROJECT_TYPE` to inject project-type guidance into every iteration.
 - `EVOPROGRAMMER_TARGET_DIR` to choose the working directory for each loop iteration.
 - `EVOPROGRAMMER_ARTIFACTS_DIR` to override where session and iteration artifacts are stored.
@@ -245,6 +307,7 @@ Each `LOOP.sh` run creates a timestamped directory containing:
 - `--max-iterations`, `--delay-seconds`, and `--continue-on-error` flags as CLI equivalents.
 - `--prompt-file` to reload the prompt from disk on every iteration.
 - `--language` to apply a built-in language adaptation profile on every iteration.
+- `--framework` to apply a built-in framework adaptation profile on every iteration.
 - `--project-type` to apply a built-in project-type adaptation profile on every iteration.
 - `--artifacts-dir` to store session artifacts outside the target repository.
 - `--agent-args` to forward extra agent arguments on every iteration as a JSON-like string list.
@@ -258,6 +321,7 @@ Each `MAIN.sh` run creates a timestamped session directory with `session.env` pl
 `DOCTOR.sh` supports:
 
 - `EVOPROGRAMMER_LANGUAGE_PROFILE` and `--language` to validate a selected language profile.
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE` and `--framework` to validate a selected framework profile.
 - `EVOPROGRAMMER_PROJECT_TYPE` and `--project-type` to validate a selected project-type profile.
 - `EVOPROGRAMMER_TARGET_DIR` and `--target-dir` to validate a specific repository directory.
 - `EVOPROGRAMMER_ARTIFACTS_DIR` and `--artifacts-dir` to validate the artifact storage location.

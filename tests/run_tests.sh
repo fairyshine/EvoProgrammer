@@ -120,6 +120,39 @@ EOF
     printf '%s' "$bin_dir"
 }
 
+profile_catalog_output="$(
+    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+count_lines() {
+    awk 'NF { count++ } END { print count + 0 }'
+}
+
+for category in languages frameworks project-types; do
+    catalog_count="$(evop_supported_profiles_for_category "$category" | count_lines)"
+    definition_count="$(find "$ROOT_DIR/lib/profiles/definitions/$category" -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/profile.sh' ';' -print | count_lines)"
+
+    if [[ "$catalog_count" != "$definition_count" ]]; then
+        printf 'mismatch:%s:%s:%s\n' "$category" "$catalog_count" "$definition_count" >&2
+        exit 1
+    fi
+done
+
+printf 'languages=%s\n' "$(evop_supported_profiles_as_string languages)"
+printf 'frameworks=%s\n' "$(evop_supported_profiles_as_string frameworks)"
+printf 'project-types=%s\n' "$(evop_supported_profiles_as_string project-types)"
+EOF
+)"
+assert_contains "$profile_catalog_output" "languages=cpp" "Profile catalog should expose discovered language profiles"
+assert_contains "$profile_catalog_output" "typescript" "Profile catalog should include TypeScript"
+assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose discovered framework profiles"
+assert_contains "$profile_catalog_output" "nextjs" "Profile catalog should include Next.js"
+assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose discovered project types"
+assert_contains "$profile_catalog_output" "web-app" "Profile catalog should include web-app"
+pass "Profile catalog matches on-disk definitions"
+
 help_output="$(run_expect_success "LOOP help should succeed" "$LOOP_SCRIPT" --help)"
 assert_contains "$help_output" "Usage: ./LOOP.sh [options] [prompt]" "LOOP help output should mention options usage"
 pass "LOOP help"
@@ -132,13 +165,22 @@ bad_target_output="$(run_expect_failure "LOOP should fail for missing target dir
 assert_contains "$bad_target_output" "Target directory does not exist" "LOOP should validate target directory"
 pass "LOOP target-dir validation"
 
-bad_language_output="$(run_expect_failure "LOOP should reject unsupported language profiles" env PATH="$PATH" "$LOOP_SCRIPT" --language java --prompt "test")"
-assert_contains "$bad_language_output" "Unsupported language profile: java" "LOOP should validate language profiles"
+bad_language_output="$(run_expect_failure "LOOP should reject unsupported language profiles" env PATH="$PATH" "$LOOP_SCRIPT" --language elixir --prompt "test")"
+assert_contains "$bad_language_output" "Unsupported language profile: elixir" "LOOP should validate language profiles"
 pass "LOOP language profile validation"
 
-bad_project_type_output="$(run_expect_failure "LOOP should reject unsupported project types" env PATH="$PATH" "$LOOP_SCRIPT" --project-type backend-service --prompt "test")"
-assert_contains "$bad_project_type_output" "Unsupported project type: backend-service" "LOOP should validate project types"
+bad_framework_output="$(run_expect_failure "LOOP should reject unsupported framework profiles" env PATH="$PATH" "$LOOP_SCRIPT" --framework hibernate --prompt "test")"
+assert_contains "$bad_framework_output" "Unsupported framework profile: hibernate" "LOOP should validate framework profiles"
+pass "LOOP framework profile validation"
+
+bad_project_type_output="$(run_expect_failure "LOOP should reject unsupported project types" env PATH="$PATH" "$LOOP_SCRIPT" --project-type unknown-project --prompt "test")"
+assert_contains "$bad_project_type_output" "Unsupported project type: unknown-project" "LOOP should validate project types"
 pass "LOOP project-type validation"
+
+gdscript_profile_output="$(run_expect_success "LOOP should accept gdscript and godot profiles" env PATH="/usr/bin:/bin" "$LOOP_SCRIPT" --language gdscript --framework godot --dry-run --prompt "test")"
+assert_contains "$gdscript_profile_output" "Target language: gdscript" "LOOP should accept the gdscript language profile"
+assert_contains "$gdscript_profile_output" "Target framework: godot" "LOOP should accept the godot framework profile"
+pass "LOOP gdscript/godot profile support"
 
 FAKE_CODEX_LOG="$TEST_TMPDIR/loop.log"
 export FAKE_CODEX_LOG
@@ -163,10 +205,12 @@ pass "LOOP execution wiring"
 
 FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-profiles.log"
 export FAKE_CLAUDE_LOG
-run_expect_success "LOOP should inject language and project-type guidance into the prompt" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$target_dir" --language python --project-type mobile-game --prompt "ship it" >/dev/null
+run_expect_success "LOOP should inject language, framework, and project-type guidance into the prompt" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$target_dir" --language python --framework fastapi --project-type mobile-game --prompt "ship it" >/dev/null
 loop_profiles_log="$(cat "$FAKE_CLAUDE_LOG")"
 assert_contains "$loop_profiles_log" "[Language Adaptation]" "LOOP should prepend language adaptation guidance"
 assert_contains "$loop_profiles_log" "Target language: python" "LOOP should name the selected language profile"
+assert_contains "$loop_profiles_log" "[Framework Adaptation]" "LOOP should prepend framework adaptation guidance"
+assert_contains "$loop_profiles_log" "Target framework: fastapi" "LOOP should name the selected framework profile"
 assert_contains "$loop_profiles_log" "[Project-Type Adaptation]" "LOOP should prepend project-type guidance"
 assert_contains "$loop_profiles_log" "Target project type: mobile-game" "LOOP should name the selected project type"
 assert_contains "$loop_profiles_log" "[User Request]" "LOOP should keep the user request section"
@@ -175,16 +219,32 @@ pass "LOOP prompt adaptation"
 
 auto_detect_dir="$TEST_TMPDIR/auto-detect-rust"
 mkdir -p "$auto_detect_dir"
-printf '[package]\nname = "arena"\nversion = "0.1.0"\n' >"$auto_detect_dir/Cargo.toml"
+printf '[package]\nname = "arena"\nversion = "0.1.0"\n[dependencies]\nbevy = "0.1"\n' >"$auto_detect_dir/Cargo.toml"
 FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-auto-detect.log"
 export FAKE_CLAUDE_LOG
 loop_auto_detect_output="$(run_expect_success "LOOP should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$auto_detect_dir" --prompt "build a multiplayer arena prototype")"
 loop_auto_detect_log="$(cat "$FAKE_CLAUDE_LOG")"
 assert_contains "$loop_auto_detect_output" "Language profile: rust (auto-detected)" "LOOP should report an auto-detected language profile"
+assert_contains "$loop_auto_detect_output" "Framework profile: bevy (auto-detected)" "LOOP should report an auto-detected framework profile"
 assert_contains "$loop_auto_detect_output" "Project type: online-game (auto-detected)" "LOOP should report an auto-detected project type"
 assert_contains "$loop_auto_detect_log" "Target language: rust" "LOOP should auto-detect Rust from the repository"
+assert_contains "$loop_auto_detect_log" "Target framework: bevy" "LOOP should auto-detect Bevy from the repository"
 assert_contains "$loop_auto_detect_log" "Target project type: online-game" "LOOP should auto-detect an online game from the prompt"
 pass "LOOP auto detection"
+
+auto_godot_dir="$TEST_TMPDIR/auto-detect-godot"
+mkdir -p "$auto_godot_dir"
+printf '; Engine configuration file.\n[application]\nconfig/name="Arena"\n' >"$auto_godot_dir/project.godot"
+printf 'extends Node2D\n\nfunc _ready() -> void:\n    print("ready")\n' >"$auto_godot_dir/main.gd"
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-auto-godot.log"
+export FAKE_CLAUDE_LOG
+loop_auto_godot_output="$(run_expect_success "LOOP should auto-detect GDScript and Godot" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$auto_godot_dir" --prompt "build the first playable godot arena loop")"
+loop_auto_godot_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$loop_auto_godot_output" "Language profile: gdscript (auto-detected)" "LOOP should auto-detect GDScript from a Godot project"
+assert_contains "$loop_auto_godot_output" "Framework profile: godot (auto-detected)" "LOOP should auto-detect Godot from the repository"
+assert_contains "$loop_auto_godot_log" "Target language: gdscript" "LOOP should inject GDScript guidance when auto-detected"
+assert_contains "$loop_auto_godot_log" "Target framework: godot" "LOOP should inject Godot guidance when auto-detected"
+pass "LOOP godot auto detection"
 
 default_artifacts_root="$target_dir/.evoprogrammer/runs"
 loop_artifact_dir="$(find "$default_artifacts_root" -maxdepth 2 -type f -name 'codex.log' | sort | head -n 1 | xargs dirname)"
@@ -203,6 +263,7 @@ pass "LOOP artifacts"
 loop_profiles_artifact_dir="$(find "$default_artifacts_root" -maxdepth 2 -type f -name 'claude.log' | sort | head -n 1 | xargs dirname)"
 loop_profiles_prompt="$(cat "$loop_profiles_artifact_dir/prompt.txt")"
 assert_contains "$loop_profiles_prompt" "Target language: python" "LOOP prompt artifacts should record the language guidance"
+assert_contains "$loop_profiles_prompt" "Target framework: fastapi" "LOOP prompt artifacts should record the framework guidance"
 assert_contains "$loop_profiles_prompt" "Target project type: mobile-game" "LOOP prompt artifacts should record the project-type guidance"
 pass "LOOP prompt artifacts"
 
@@ -321,9 +382,10 @@ pass "MAIN artifacts"
 
 FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-profiles.log"
 export FAKE_CLAUDE_LOG
-run_expect_success "MAIN should forward language and project-type profiles" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$target_dir" --max-iterations 1 --language rust --project-type online-game --prompt "repeatable" >/dev/null
+run_expect_success "MAIN should forward language, framework, and project-type profiles" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$target_dir" --max-iterations 1 --language rust --framework axum --project-type online-game --prompt "repeatable" >/dev/null
 main_profiles_log="$(cat "$FAKE_CLAUDE_LOG")"
 assert_contains "$main_profiles_log" "Target language: rust" "MAIN should inject the selected language profile"
+assert_contains "$main_profiles_log" "Target framework: axum" "MAIN should inject the selected framework profile"
 assert_contains "$main_profiles_log" "Target project type: online-game" "MAIN should inject the selected project type"
 assert_contains "$main_profiles_log" "[User Request]" "MAIN should preserve the prompt section after adaptation"
 pass "MAIN prompt adaptation"
@@ -331,13 +393,16 @@ pass "MAIN prompt adaptation"
 auto_main_dir="$TEST_TMPDIR/auto-detect-python"
 mkdir -p "$auto_main_dir"
 printf '[project]\nname = "lab"\nversion = "0.1.0"\n' >"$auto_main_dir/pyproject.toml"
+printf 'fastapi==0.100.0\n' >"$auto_main_dir/requirements.txt"
 FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-auto-detect.log"
 export FAKE_CLAUDE_LOG
 main_auto_detect_output="$(run_expect_success "MAIN should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$auto_main_dir" --max-iterations 1 --prompt "build a reproducible experiment pipeline")"
 main_auto_detect_log="$(cat "$FAKE_CLAUDE_LOG")"
 assert_contains "$main_auto_detect_output" "Language profile: python (auto-detected)" "MAIN should report an auto-detected language profile"
+assert_contains "$main_auto_detect_output" "Framework profile: fastapi (auto-detected)" "MAIN should report an auto-detected framework profile"
 assert_contains "$main_auto_detect_output" "Project type: scientific-experiment (auto-detected)" "MAIN should report an auto-detected project type"
 assert_contains "$main_auto_detect_log" "Target language: python" "MAIN should auto-detect Python from the repository"
+assert_contains "$main_auto_detect_log" "Target framework: fastapi" "MAIN should auto-detect FastAPI from the repository"
 assert_contains "$main_auto_detect_log" "Target project type: scientific-experiment" "MAIN should auto-detect a scientific experiment from the prompt"
 pass "MAIN auto detection"
 
@@ -436,6 +501,17 @@ assert_equals "$cli_once_exec_count" "1" "CLI once should run only one iteration
 assert_contains "$cli_once_log" "arg=cli once" "CLI once should forward the prompt to LOOP"
 pass "CLI once behavior"
 
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/cli-once-with-global-options.log"
+export FAKE_CLAUDE_LOG
+(
+    cd "$target_dir"
+    run_expect_success "CLI once should allow wrapper options before the subcommand" env PATH="$fake_bin:$PATH" "$CLI_SCRIPT" --agent claude once --prompt "cli once global" >/dev/null
+)
+cli_once_global_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$cli_once_global_log" "arg=--print" "CLI once should still dispatch to LOOP when wrapper options precede the subcommand"
+assert_contains "$cli_once_global_log" "arg=cli once global" "CLI once should preserve the prompt when wrapper options precede the subcommand"
+pass "CLI once with global options"
+
 doctor_help_output="$(run_expect_success "DOCTOR help should succeed" "$DOCTOR_SCRIPT" --help)"
 assert_contains "$doctor_help_output" "Usage: ./DOCTOR.sh [options]" "DOCTOR help should mention usage"
 pass "DOCTOR help"
@@ -455,17 +531,25 @@ assert_contains "$doctor_output" "OK artifacts-dir $target_dir/.evoprogrammer/ru
 assert_contains "$doctor_output" "OK command $fake_bin/codex" "DOCTOR should print the discovered codex path"
 pass "DOCTOR success"
 
-doctor_profiles_output="$(run_expect_success "DOCTOR should validate language and project-type profiles" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --language typescript --project-type ppt --target-dir "$target_dir")"
+doctor_profiles_output="$(run_expect_success "DOCTOR should validate language, framework, and project-type profiles" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --language typescript --framework react --project-type ppt --target-dir "$target_dir")"
 assert_contains "$doctor_profiles_output" "OK language-profile typescript" "DOCTOR should print the selected language profile"
+assert_contains "$doctor_profiles_output" "OK framework-profile react" "DOCTOR should print the selected framework profile"
 assert_contains "$doctor_profiles_output" "OK project-type ppt" "DOCTOR should print the selected project type"
 pass "DOCTOR profile success"
+
+doctor_godot_profiles_output="$(run_expect_success "DOCTOR should validate gdscript and godot profiles" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --language gdscript --framework godot --target-dir "$target_dir")"
+assert_contains "$doctor_godot_profiles_output" "OK language-profile gdscript" "DOCTOR should print the selected gdscript language profile"
+assert_contains "$doctor_godot_profiles_output" "OK framework-profile godot" "DOCTOR should print the selected godot framework profile"
+pass "DOCTOR gdscript/godot profiles"
 
 doctor_auto_detect_dir="$TEST_TMPDIR/doctor-auto-detect"
 mkdir -p "$doctor_auto_detect_dir"
 printf '{ "compilerOptions": { "strict": true } }\n' >"$doctor_auto_detect_dir/tsconfig.json"
+printf '{ "dependencies": { "next": "14.0.0" } }\n' >"$doctor_auto_detect_dir/package.json"
 : >"$doctor_auto_detect_dir/slides.pptx"
 doctor_auto_detect_output="$(run_expect_success "DOCTOR should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --target-dir "$doctor_auto_detect_dir")"
 assert_contains "$doctor_auto_detect_output" "OK language-profile typescript (auto-detected)" "DOCTOR should auto-detect TypeScript from the repository"
+assert_contains "$doctor_auto_detect_output" "OK framework-profile nextjs (auto-detected)" "DOCTOR should auto-detect Next.js from the repository"
 assert_contains "$doctor_auto_detect_output" "OK project-type ppt (auto-detected)" "DOCTOR should auto-detect PPT projects from the repository"
 pass "DOCTOR auto detection"
 
@@ -477,6 +561,11 @@ pass "DOCTOR claude success"
 cli_doctor_output="$(run_expect_success "CLI doctor should dispatch to DOCTOR" env PATH="$fake_bin:$PATH" "$CLI_SCRIPT" doctor --target-dir "$target_dir")"
 assert_contains "$cli_doctor_output" "OK command $fake_bin/codex" "CLI doctor should run the doctor command"
 pass "CLI doctor behavior"
+
+cli_doctor_global_output="$(run_expect_success "CLI doctor should allow wrapper options before the subcommand" env PATH="$fake_bin:$PATH" "$CLI_SCRIPT" --agent claude doctor --target-dir "$target_dir")"
+assert_contains "$cli_doctor_global_output" "OK agent claude" "CLI doctor should preserve wrapper options before the subcommand"
+assert_contains "$cli_doctor_global_output" "OK command $fake_bin/claude" "CLI doctor should dispatch to DOCTOR with the selected agent"
+pass "CLI doctor with global options"
 
 install_dir="$TEST_TMPDIR/install-bin"
 install_output="$(run_expect_success "install.sh should create a symlinked CLI" "$INSTALL_SCRIPT" "$install_dir")"

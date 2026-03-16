@@ -22,6 +22,17 @@ evop_resolve_artifacts_root() {
     printf '%s/%s' "$target_dir" "$EVOPROGRAMMER_ARTIFACTS_SUBDIR"
 }
 
+evop_prompt_source_label() {
+    local prompt_file="${1:-}"
+
+    if [[ -n "$prompt_file" ]]; then
+        printf 'file:%s' "$prompt_file"
+        return 0
+    fi
+
+    printf 'inline'
+}
+
 evop_resolve_physical_dir() {
     local path="$1"
     (
@@ -160,6 +171,70 @@ evop_write_command_file() {
     done
 
     printf '\n' >>"$path"
+}
+
+evop_write_env_file() {
+    local path="$1"
+    shift
+    local key
+    local value
+
+    if (( $# % 2 != 0 )); then
+        evop_fail "Metadata entries must be key/value pairs."
+    fi
+
+    mkdir -p "$(dirname "$path")"
+    : >"$path"
+
+    while (($# > 0)); do
+        key="$1"
+        value="$2"
+        shift 2
+        printf '%s=%q\n' "$key" "$value" >>"$path"
+    done
+}
+
+evop_build_loop_command() {
+    local loop_script="$1"
+    local agent="$2"
+    local prompt="$3"
+    local prompt_file="$4"
+    local language_profile="$5"
+    local framework_profile="$6"
+    local project_type="$7"
+    local artifacts_dir="$8"
+    local agent_args_list="$9"
+    shift 9
+
+    EVOP_LOOP_COMMAND=("$loop_script" --agent "$agent")
+
+    if [[ -n "$language_profile" ]]; then
+        EVOP_LOOP_COMMAND+=(--language "$language_profile")
+    fi
+
+    if [[ -n "$framework_profile" ]]; then
+        EVOP_LOOP_COMMAND+=(--framework "$framework_profile")
+    fi
+
+    if [[ -n "$project_type" ]]; then
+        EVOP_LOOP_COMMAND+=(--project-type "$project_type")
+    fi
+
+    if [[ -n "$prompt_file" ]]; then
+        EVOP_LOOP_COMMAND+=(--prompt-file "$prompt_file")
+    else
+        EVOP_LOOP_COMMAND+=(--prompt "$prompt")
+    fi
+
+    EVOP_LOOP_COMMAND+=(--artifacts-dir "$artifacts_dir")
+
+    if [[ -n "$agent_args_list" ]]; then
+        EVOP_LOOP_COMMAND+=(--agent-args "$agent_args_list")
+    fi
+
+    if (($# > 0)); then
+        EVOP_LOOP_COMMAND+=("$@")
+    fi
 }
 
 evop_run_and_capture() {

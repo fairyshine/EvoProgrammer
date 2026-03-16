@@ -9,8 +9,9 @@ EvoProgrammer 是一个围绕 `codex`、`claude` 等代码 Agent 命令封装的
 - `EvoProgrammer "你的指令"`：在当前目录运行所选 Agent，并持续迭代。
 - `EvoProgrammer once "你的指令"`：只运行一次 Agent。
 - `--agent`：在内置 Agent 预设之间切换，例如 `codex` 或 `claude`。
-- `--language`：为 `python`、`cpp`、`go`、`rust`、`typescript` 注入语言适配指导，也可以交给 EvoProgrammer 自动检测。
-- `--project-type`：为 `single-player-game`、`paper`、`scientific-experiment`、`mobile-game`、`online-game`、`ppt`、`office` 注入场景适配指导，也可以交给 EvoProgrammer 自动检测。
+- `--language`：为内置语言 profile 注入适配指导，例如 `python`、`rust`、`go`、`typescript`、`gdscript`、`swift`，也可以交给 EvoProgrammer 自动检测。
+- `--framework`：为内置框架 profile 注入适配指导，例如 `fastapi`、`django`、`react`、`nextjs`、`godot`、`bevy`、`axum`，也可以交给 EvoProgrammer 自动检测。
+- `--project-type`：为内置项目场景 profile 注入适配指导，例如 `single-player-game`、`online-game`、`paper`、`scientific-experiment`、`ppt`、`office`、`web-app`、`backend-service`，也可以交给 EvoProgrammer 自动检测。
 - `EvoProgrammer doctor`：在长时间自治运行前检查本地环境是否可用。
 - `--target-dir`：将 CLI 指向其他目录。
 - 默认会把运行产物写入 `TARGET_DIR/.evoprogrammer/runs`，方便回看每次执行。
@@ -19,6 +20,7 @@ EvoProgrammer 是一个围绕 `codex`、`claude` 等代码 Agent 命令封装的
 - `--prompt-file`：从文件读取长提示词，而不是直接写在命令行里。
 - `--dry-run`：只查看实际执行的命令和目标目录，不真正运行 Agent。
 - `--max-iterations`、`--delay-seconds`、`--continue-on-error`：控制长时间循环任务。
+- wrapper 级别的选项也可以写在 `once` 或 `doctor` 前面。
 
 内部结构：
 
@@ -70,6 +72,12 @@ EvoProgrammer --max-iterations 3 "构建一个带测试的全栈待办应用"
 EvoProgrammer once "初始化一个 Vite + React + TypeScript 项目"
 ```
 
+也可以把 wrapper 选项写在子命令前面：
+
+```bash
+EvoProgrammer --agent claude once "初始化一个带类型约束的 FastAPI 服务"
+```
+
 指定其他目录作为目标：
 
 ```bash
@@ -82,10 +90,16 @@ EvoProgrammer --target-dir /path/to/project "完善 README、测试和 CI"
 EvoProgrammer --agent claude "实现第一版可玩的卡牌对战主循环"
 ```
 
-按 Rust 联网游戏项目来适配：
+按 Rust + Bevy 联网游戏项目来适配：
 
 ```bash
-EvoProgrammer --language rust --project-type online-game "先搭建专用服务器、同步逻辑和测试脚手架"
+EvoProgrammer --language rust --framework bevy --project-type online-game "先搭建专用服务器、同步逻辑和测试脚手架"
+```
+
+按 Godot + GDScript 项目来适配：
+
+```bash
+EvoProgrammer --language gdscript --framework godot --project-type single-player-game "先做出第一版可玩循环、场景切换和存档点"
 ```
 
 也可以完全不填，让 EvoProgrammer 从仓库和提示词自动检测：
@@ -182,7 +196,7 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 
 ## 配置
 
-默认情况下，这两个脚本都以当前工作目录作为目标目录，使用 `codex` 作为默认 Agent，并在可能时自动检测语言和项目场景。你可以通过 `EVOPROGRAMMER_TARGET_DIR`、`EVOPROGRAMMER_AGENT`、`--target-dir` 或 `--agent` 覆盖它。
+默认情况下，这两个脚本都以当前工作目录作为目标目录，使用 `codex` 作为默认 Agent，并在可能时自动检测语言、框架和项目场景。你可以通过 `EVOPROGRAMMER_TARGET_DIR`、`EVOPROGRAMMER_AGENT`、`--target-dir` 或 `--agent` 覆盖它。
 
 内置语言 profile：
 
@@ -191,6 +205,41 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `go`
 - `rust`
 - `typescript`
+- `javascript`
+- `java`
+- `csharp`
+- `kotlin`
+- `swift`
+- `php`
+- `ruby`
+- `gdscript`
+
+内置 framework profile：
+
+- `django`
+- `flask`
+- `fastapi`
+- `streamlit`
+- `pygame`
+- `qt`
+- `react`
+- `nextjs`
+- `vue`
+- `svelte`
+- `express`
+- `nestjs`
+- `electron`
+- `tauri`
+- `godot`
+- `unity`
+- `unreal`
+- `bevy`
+- `rails`
+- `laravel`
+- `spring`
+- `gin`
+- `actix-web`
+- `axum`
 
 内置项目类型：
 
@@ -201,6 +250,16 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `online-game`
 - `ppt`
 - `office`
+- `web-app`
+- `backend-service`
+- `cli-tool`
+- `library`
+- `desktop-app`
+- `browser-game`
+- `ai-agent`
+- `data-pipeline`
+- `plugin`
+- `embedded-system`
 
 `LOOP.sh` 支持：
 
@@ -209,11 +268,13 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `EVOPROGRAMMER_AGENT`：指定使用哪个内置 Agent 预设。
 - `EVOPROGRAMMER_AGENT_ARGS`：以 JSON 风格字符串列表传入额外 Agent 参数。
 - `EVOPROGRAMMER_LANGUAGE_PROFILE`：向提示词中注入语言适配指导。
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE`：向提示词中注入框架适配指导。
 - `EVOPROGRAMMER_PROJECT_TYPE`：向提示词中注入项目场景适配指导。
 - `EVOPROGRAMMER_TARGET_DIR`：指定 Agent 命令的工作目录。
 - `EVOPROGRAMMER_ARTIFACTS_DIR`：覆盖运行产物目录。默认：`TARGET_DIR/.evoprogrammer/runs`。
 - `--prompt`、`--prompt-file`、`--target-dir`：用于一次性运行，不需要先导出环境变量。
 - `--language`：应用内置语言适配 profile。
+- `--framework`：应用内置框架适配 profile。
 - `--project-type`：应用内置项目场景适配 profile。
 - `--artifacts-dir`：将运行产物写入目标仓库之外的目录。
 - 如果目标目录本身是 Git 仓库且产物仍写在仓库内，EvoProgrammer 会登记本地 `.git/info/exclude` 规则，避免 `.evoprogrammer/` 进入后续迭代。
@@ -236,6 +297,7 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `EVOPROGRAMMER_AGENT`：指定使用哪个内置 Agent 预设。
 - `EVOPROGRAMMER_AGENT_ARGS`：以 JSON 风格字符串列表传入额外 Agent 参数。
 - `EVOPROGRAMMER_LANGUAGE_PROFILE`：在每轮迭代时注入语言适配指导。
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE`：在每轮迭代时注入框架适配指导。
 - `EVOPROGRAMMER_PROJECT_TYPE`：在每轮迭代时注入项目场景适配指导。
 - `EVOPROGRAMMER_TARGET_DIR`：指定每次循环迭代的目标目录。
 - `EVOPROGRAMMER_ARTIFACTS_DIR`：覆盖 session 和 iteration 产物目录。
@@ -245,6 +307,7 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `--max-iterations`、`--delay-seconds`、`--continue-on-error`：上述配置的命令行形式。
 - `--prompt-file`：在每轮迭代时都从磁盘重新加载提示词。
 - `--language`：在每轮迭代时应用内置语言适配 profile。
+- `--framework`：在每轮迭代时应用内置框架适配 profile。
 - `--project-type`：在每轮迭代时应用内置项目场景适配 profile。
 - `--artifacts-dir`：将 session 产物写入目标仓库之外的目录。
 - `--agent-args`：以 JSON 风格字符串列表在每轮迭代时透传额外的 Agent 参数。
@@ -258,6 +321,7 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 `DOCTOR.sh` 支持：
 
 - `EVOPROGRAMMER_LANGUAGE_PROFILE` 和 `--language`：用于检查指定语言 profile。
+- `EVOPROGRAMMER_FRAMEWORK_PROFILE` 和 `--framework`：用于检查指定框架 profile。
 - `EVOPROGRAMMER_PROJECT_TYPE` 和 `--project-type`：用于检查指定项目场景 profile。
 - `EVOPROGRAMMER_TARGET_DIR` 和 `--target-dir`：用于检查指定仓库目录。
 - `EVOPROGRAMMER_ARTIFACTS_DIR` 和 `--artifacts-dir`：用于检查运行产物目录是否可用。

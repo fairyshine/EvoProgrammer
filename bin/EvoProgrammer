@@ -14,9 +14,9 @@ source "$COMMON_LIB"
 usage() {
     cat <<'EOF'
 Usage:
-  EvoProgrammer [options] [prompt]
-  EvoProgrammer once [options] [prompt]
-  EvoProgrammer doctor [options]
+  EvoProgrammer [global-options] [prompt]
+  EvoProgrammer [global-options] once [options] [prompt]
+  EvoProgrammer [global-options] doctor [options]
   EvoProgrammer help
 
 Default behavior:
@@ -30,10 +30,11 @@ Subcommands:
 Examples:
   EvoProgrammer "生成一个带登录和支付的 SaaS 项目"
   EvoProgrammer --max-iterations 3 "build a Next.js app with Stripe"
-  EvoProgrammer --language rust --project-type online-game "build the dedicated server first"
+  EvoProgrammer --language rust --framework bevy --project-type online-game "build the dedicated server first"
+  EvoProgrammer --language gdscript --framework godot --project-type single-player-game "build the first playable loop"
   EvoProgrammer --artifacts-dir /tmp/evop-runs "improve the repo architecture"
   EvoProgrammer --agent claude once --agent-args '["--model","sonnet"]' "scaffold tests"
-  EvoProgrammer once --codex-arg "--model" --codex-arg "gpt-5" "scaffold tests"
+  EvoProgrammer once --agent-args '["--model","gpt-5"]' "scaffold tests"
   EvoProgrammer doctor --target-dir /path/to/project
 
 Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
@@ -42,22 +43,84 @@ for environment checks.
 EOF
 }
 
+find_subcommand() {
+    local expecting_value=0
+    local index=0
+    local arg
+
+    EVOP_CLI_SUBCOMMAND=""
+    EVOP_CLI_SUBCOMMAND_INDEX=0
+
+    for arg in "$@"; do
+        index=$((index + 1))
+
+        if (( expecting_value == 1 )); then
+            expecting_value=0
+            continue
+        fi
+
+        case "$arg" in
+            --)
+                break
+                ;;
+            -g|--agent|--language|--framework|--project-type|-p|--prompt|-f|--prompt-file|-t|--target-dir|-o|--artifacts-dir|-n|--max-iterations|-d|--delay-seconds|--agent-args|-a|--agent-arg|--codex-arg)
+                expecting_value=1
+                ;;
+            help|-h|--help)
+                EVOP_CLI_SUBCOMMAND="help"
+                EVOP_CLI_SUBCOMMAND_INDEX="$index"
+                return 0
+                ;;
+            once|doctor)
+                EVOP_CLI_SUBCOMMAND="$arg"
+                EVOP_CLI_SUBCOMMAND_INDEX="$index"
+                return 0
+                ;;
+            -*)
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    return 1
+}
+
+build_forwarded_args() {
+    local skip_index="$1"
+    shift
+    local index=0
+    local arg
+
+    EVOP_FORWARDED_ARGS=()
+
+    for arg in "$@"; do
+        index=$((index + 1))
+        if (( index == skip_index )); then
+            continue
+        fi
+        EVOP_FORWARDED_ARGS+=("$arg")
+    done
+}
+
 evop_require_executable_file "$MAIN_SCRIPT" "Main script"
 evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
 evop_require_executable_file "$DOCTOR_SCRIPT" "Doctor script"
 
-subcommand="${1:-}"
-case "$subcommand" in
-    help|-h|--help)
+find_subcommand "$@" || true
+
+case "${EVOP_CLI_SUBCOMMAND:-}" in
+    help)
         usage
         ;;
     once)
-        shift
-        exec "$LOOP_SCRIPT" "$@"
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$LOOP_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     doctor)
-        shift
-        exec "$DOCTOR_SCRIPT" "$@"
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$DOCTOR_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     *)
         exec "$MAIN_SCRIPT" "$@"
