@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
+LOOP_SCRIPT="$ROOT_DIR/LOOP.sh"
+DOCTOR_SCRIPT="$ROOT_DIR/DOCTOR.sh"
+COMMON_LIB="$ROOT_DIR/lib/common.sh"
+
+source "$COMMON_LIB"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  EvoProgrammer [options] [prompt]
+  EvoProgrammer once [options] [prompt]
+  EvoProgrammer doctor [options]
+  EvoProgrammer help
+
+Default behavior:
+  Run Codex in the current directory and keep iterating until stopped.
+
+Subcommands:
+  once    Run a single Codex iteration in the current directory.
+  doctor  Validate local prerequisites and target directory wiring.
+  help    Show this help text.
+
+Examples:
+  EvoProgrammer "生成一个带登录和支付的 SaaS 项目"
+  EvoProgrammer --max-iterations 3 "build a Next.js app with Stripe"
+  EvoProgrammer once --codex-arg "--model" --codex-arg "gpt-5" "scaffold tests"
+  EvoProgrammer doctor --target-dir /path/to/project
+
+Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
+ './LOOP.sh --help' for single-run options, and './DOCTOR.sh --help'
+for environment checks.
+EOF
+}
+
+evop_require_executable_file "$MAIN_SCRIPT" "Main script"
+evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
+evop_require_executable_file "$DOCTOR_SCRIPT" "Doctor script"
+
+subcommand="${1:-}"
+case "$subcommand" in
+    help|-h|--help)
+        usage
+        ;;
+    once)
+        shift
+        exec "$LOOP_SCRIPT" "$@"
+        ;;
+    doctor)
+        shift
+        exec "$DOCTOR_SCRIPT" "$@"
+        ;;
+    *)
+        exec "$MAIN_SCRIPT" "$@"
+        ;;
+esac
