@@ -12,6 +12,8 @@ EvoProgrammer 是一个围绕 `codex`、`claude` 等代码 Agent 命令封装的
 - `--language`：为内置语言 profile 注入适配指导，例如 `python`、`rust`、`go`、`typescript`、`gdscript`、`swift`，也可以交给 EvoProgrammer 自动检测。
 - `--framework`：为内置框架 profile 注入适配指导，例如 `fastapi`、`django`、`react`、`nextjs`、`godot`、`bevy`、`axum`，也可以交给 EvoProgrammer 自动检测。
 - `--project-type`：为内置项目场景 profile 注入适配指导，例如 `single-player-game`、`online-game`、`paper`、`scientific-experiment`、`ppt`、`office`、`web-app`、`backend-service`，也可以交给 EvoProgrammer 自动检测。
+- 在 profile 检测之后，EvoProgrammer 还会继续分析仓库上下文，例如包管理器、workspace 模式、常见 dev/build/test/lint 命令、结构热点、验证建议，以及按任务类型推导的工作流。
+- 现在这层工作流还会结合检测出的语言和项目类别，进一步推导搜索顺序、编辑策略、验证策略和风险关注点。
 - `EvoProgrammer doctor`：在长时间自治运行前检查本地环境是否可用。
 - `--target-dir`：将 CLI 指向其他目录。
 - 默认会把运行产物写入 `TARGET_DIR/.evoprogrammer/runs`，方便回看每次执行。
@@ -107,6 +109,12 @@ EvoProgrammer --language gdscript --framework godot --project-type single-player
 ```bash
 EvoProgrammer "构建一个支持专用服务器的多人竞技原型"
 ```
+
+这些分析结果会同时出现在三个地方：
+
+- `LOOP.sh`、`MAIN.sh`、`doctor` 的终端输出
+- 发给 coding agent 的最终 prompt
+- 运行产物中的 `metadata.env`
 
 向所选 Agent CLI 透传额外参数：
 
@@ -289,6 +297,8 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 - `command.txt`
 - `metadata.env`
 - `<agent>.log`
+
+`metadata.env` 不仅会记录所选 profile，还会记录推导出的仓库事实，例如包管理器、workspace 模式、建议的验证命令、相似实现搜索入口和任务类型。
 
 `MAIN.sh` 支持：
 

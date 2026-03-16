@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-EVOP_PROFILE_PROMPT=$'- Use clear request/response schemas, dependency injection, and async boundaries where they actually help.\n- Keep routers, models, and service logic separated for maintainability.'
+EVOP_PROFILE_PROMPT=$'- Use clear request and response schemas, dependency injection, and async boundaries only where they actually help.\n- Keep routers thin and separate domain logic, persistence, and background work for maintainability.\n- Preserve predictable validation, error handling, and test coverage around API contracts.'
 
 evop_profile_detect() {
     local target_dir="$1"

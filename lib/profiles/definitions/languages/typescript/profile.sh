@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-EVOP_PROFILE_PROMPT=$'- Use clear TypeScript configuration and keep strict typing where practical.\n- Prefer maintainable module boundaries and consistent package scripts.\n- Make browser/server distinctions explicit and avoid implicit any-like behavior.\n- Include developer-friendly setup, build, lint, and test workflows when relevant.'
+EVOP_PROFILE_PROMPT=$'- Use clear TypeScript configuration and keep strict typing where practical.\n- Prefer maintainable module boundaries, explicit public types, and consistent package scripts.\n- Make browser/server distinctions explicit and avoid implicit any-like behavior.\n- Update type checks and tests alongside changed interfaces so contracts stay trustworthy.'
 
 evop_profile_detect() {
     local target_dir="$1"

@@ -12,6 +12,8 @@ EvoProgrammer is a small Bash CLI around coding-agent commands such as `codex` a
 - `--language`: add language-specific implementation guidance for built-in profiles such as `python`, `rust`, `go`, `typescript`, `gdscript`, or `swift`, or let EvoProgrammer auto-detect it.
 - `--framework`: add framework-specific implementation guidance for built-in profiles such as `fastapi`, `django`, `react`, `nextjs`, `godot`, `bevy`, or `axum`, or let EvoProgrammer auto-detect it.
 - `--project-type`: add scenario-specific guidance for built-in profiles such as `single-player-game`, `online-game`, `paper`, `scientific-experiment`, `ppt`, `office`, `web-app`, or `backend-service`, or let EvoProgrammer auto-detect it.
+- After profile detection, EvoProgrammer also derives repository context such as package manager, workspace mode, likely dev/build/test/lint commands, architecture hotspots, validation hints, and a task-specific workflow.
+- The workflow layer now adapts search order, edit strategy, verification strategy, and risk focus using the detected language plus project type.
 - `EvoProgrammer doctor`: validate the local setup before a long autonomous run.
 - `--target-dir`: point the CLI at another directory when needed.
 - Default run artifacts under `TARGET_DIR/.evoprogrammer/runs` for later inspection.
@@ -107,6 +109,12 @@ Let EvoProgrammer auto-detect both from the repository and prompt:
 ```bash
 EvoProgrammer "Build a multiplayer arena prototype with dedicated-server support."
 ```
+
+The analyzed context is surfaced in three places:
+
+- terminal output from `LOOP.sh`, `MAIN.sh`, and `doctor`
+- the prompt sent to the coding agent
+- `metadata.env` artifacts for later inspection or reuse
 
 Pass extra flags through to the selected agent CLI:
 
@@ -289,6 +297,8 @@ Each `LOOP.sh` run creates a timestamped directory containing:
 - `command.txt`
 - `metadata.env`
 - `<agent>.log`
+
+`metadata.env` includes the selected profiles plus derived repository facts such as package manager, workspace mode, suggested verification commands, search roots, and task kind.
 
 `MAIN.sh` supports:
 

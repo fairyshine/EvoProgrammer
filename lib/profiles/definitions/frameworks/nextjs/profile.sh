@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-EVOP_PROFILE_PROMPT=$'- Make routing, server/client boundaries, and data fetching choices explicit.\n- Keep app structure aligned with Next.js conventions and deployment assumptions.'
+EVOP_PROFILE_PROMPT=$'- Make routing, App Router or Pages Router choices, and server/client boundaries explicit.\n- Keep data fetching, mutations, and cache or revalidation behavior aligned with Next.js conventions.\n- Avoid leaking server-only logic into client bundles, and keep route structure predictable for deployment.'
 
 evop_profile_detect() {
     local target_dir="$1"

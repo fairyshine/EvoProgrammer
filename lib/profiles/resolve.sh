@@ -44,6 +44,8 @@ evop_resolve_profiles() {
     else
         EVOP_RESOLVED_PROJECT_TYPE=""
     fi
+
+    evop_analyze_project_context "$target_dir" "$prompt" "$EVOP_RESOLVED_LANGUAGE_PROFILE" "$EVOP_RESOLVED_FRAMEWORK_PROFILE" "$EVOP_RESOLVED_PROJECT_TYPE"
 }
 
 evop_apply_resolved_profiles() {
@@ -91,6 +93,7 @@ evop_print_current_profiles() {
     evop_print_resolved_profile "$language_label" "$LANGUAGE_PROFILE" "$LANGUAGE_PROFILE_SOURCE"
     evop_print_resolved_profile "$framework_label" "$FRAMEWORK_PROFILE" "$FRAMEWORK_PROFILE_SOURCE"
     evop_print_resolved_profile "$project_label" "$PROJECT_TYPE" "$PROJECT_TYPE_SOURCE"
+    evop_print_project_context "$output_style"
 }
 
 evop_compose_prompt() {
@@ -117,6 +120,8 @@ evop_compose_prompt() {
         guidance+="Target project type: $project_type\n"
         guidance+="$(evop_project_type_guidance "$project_type")\n\n"
     fi
+
+    guidance+="$(evop_render_project_context_prompt)"
 
     if [[ -z "$guidance" ]]; then
         printf '%s' "$prompt"
