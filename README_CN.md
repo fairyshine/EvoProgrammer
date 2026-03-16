@@ -2,29 +2,35 @@
 
 [English README](./README.md)
 
-EvoProgrammer 是一个围绕 `codex` 命令封装的小型 Bash CLI。它可以进入任意项目目录，对该目录执行自然语言指令，并持续迭代直到你手动停止。
+EvoProgrammer 是一个围绕 `codex`、`claude` 等代码 Agent 命令封装的小型 Bash CLI。它可以进入任意项目目录，对该目录执行自然语言指令，并持续迭代直到你手动停止。
 
 ## 功能概览
 
-- `EvoProgrammer "你的指令"`：在当前目录运行 Codex，并持续迭代。
-- `EvoProgrammer once "你的指令"`：只运行一次 Codex。
+- `EvoProgrammer "你的指令"`：在当前目录运行所选 Agent，并持续迭代。
+- `EvoProgrammer once "你的指令"`：只运行一次 Agent。
+- `--agent`：在内置 Agent 预设之间切换，例如 `codex` 或 `claude`。
+- `--language`：为 `python`、`cpp`、`go`、`rust`、`typescript` 注入语言适配指导，也可以交给 EvoProgrammer 自动检测。
+- `--project-type`：为 `single-player-game`、`paper`、`scientific-experiment`、`mobile-game`、`online-game`、`ppt`、`office` 注入场景适配指导，也可以交给 EvoProgrammer 自动检测。
 - `EvoProgrammer doctor`：在长时间自治运行前检查本地环境是否可用。
 - `--target-dir`：将 CLI 指向其他目录。
+- 默认会把运行产物写入 `TARGET_DIR/.evoprogrammer/runs`，方便回看每次执行。
+- 当 `TARGET_DIR` 是 Git 仓库时，EvoProgrammer 会把 `.evoprogrammer/` 写入本地 `.git/info/exclude`，避免后续迭代把这些产物再次读回上下文。
+- `--artifacts-dir`：将运行产物写入自定义目录。
 - `--prompt-file`：从文件读取长提示词，而不是直接写在命令行里。
-- `--dry-run`：只查看实际执行的命令和目标目录，不真正运行 Codex。
+- `--dry-run`：只查看实际执行的命令和目标目录，不真正运行 Agent。
 - `--max-iterations`、`--delay-seconds`、`--continue-on-error`：控制长时间循环任务。
 
 内部结构：
 
 - `bin/EvoProgrammer`：面向用户的 CLI 入口。
-- `LOOP.sh`：执行一次 Codex 迭代。
+- `LOOP.sh`：执行一次 Agent 迭代。
 - `MAIN.sh`：持续重复执行迭代。
 - `install.sh`：将 `EvoProgrammer` 命令安装到本地 `bin` 目录。
 
 ## 环境要求
 
 - Bash
-- `PATH` 中可用的 `codex` CLI
+- `PATH` 中至少有一个受支持的 Agent CLI，例如 `codex` 或 `claude`
 
 ## 安装
 
@@ -70,16 +76,33 @@ EvoProgrammer once "初始化一个 Vite + React + TypeScript 项目"
 EvoProgrammer --target-dir /path/to/project "完善 README、测试和 CI"
 ```
 
-向 `codex exec` 透传额外参数：
+使用 Claude Code 而不是 Codex：
+
+```bash
+EvoProgrammer --agent claude "实现第一版可玩的卡牌对战主循环"
+```
+
+按 Rust 联网游戏项目来适配：
+
+```bash
+EvoProgrammer --language rust --project-type online-game "先搭建专用服务器、同步逻辑和测试脚手架"
+```
+
+也可以完全不填，让 EvoProgrammer 从仓库和提示词自动检测：
+
+```bash
+EvoProgrammer "构建一个支持专用服务器的多人竞技原型"
+```
+
+向所选 Agent CLI 透传额外参数：
 
 ```bash
 EvoProgrammer \
-  --codex-arg "--model" \
-  --codex-arg "gpt-5" \
-  --codex-arg "--profile" \
-  --codex-arg "danger-full-access" \
+  --agent-args '["--model","gpt-5"]' \
   "生成完整项目并持续修复问题"
 ```
+
+`--codex-arg` 仍然保留，作为面向旧脚本的兼容别名。
 
 从文件加载长提示词：
 
@@ -87,10 +110,16 @@ EvoProgrammer \
 EvoProgrammer --prompt-file ./prompt.txt
 ```
 
-只预览下一条命令而不执行：
+只预览下一条命令而不执行 Agent：
 
 ```bash
 EvoProgrammer --max-iterations 3 --dry-run "完善项目结构并补测试"
+```
+
+将运行产物写入独立目录：
+
+```bash
+EvoProgrammer --artifacts-dir /tmp/evop-runs "完善项目结构并补测试"
 ```
 
 检查运行环境是否已就绪：
@@ -119,10 +148,10 @@ EvoProgrammer -- --write a changelog
 ./LOOP.sh --target-dir /path/to/repo --prompt "improve test coverage"
 ```
 
-向 `codex exec` 透传额外参数：
+向所选 Agent CLI 透传额外参数：
 
 ```bash
-./LOOP.sh --codex-arg "--model" --codex-arg "gpt-5" --prompt "improve this repo"
+./LOOP.sh --agent-args '["--model","gpt-5"]' --prompt "improve this repo"
 ```
 
 运行以 `-` 开头的提示词：
@@ -145,41 +174,93 @@ EVOPROGRAMMER_DELAY_SECONDS=5 \
 ./MAIN.sh "improve this repo"
 ```
 
-重复迭代时继续透传 `codex exec` 参数：
+重复迭代时继续透传 Agent 参数：
 
 ```bash
-./MAIN.sh --max-iterations 3 --codex-arg "--profile" --codex-arg "danger-full-access" "improve this repo"
+./MAIN.sh --max-iterations 3 --agent claude --agent-args '["--model","sonnet"]' "improve this repo"
 ```
 
 ## 配置
 
-默认情况下，这两个脚本都以当前工作目录作为目标目录。你可以通过 `EVOPROGRAMMER_TARGET_DIR` 或 `--target-dir` 覆盖它。
+默认情况下，这两个脚本都以当前工作目录作为目标目录，使用 `codex` 作为默认 Agent，并在可能时自动检测语言和项目场景。你可以通过 `EVOPROGRAMMER_TARGET_DIR`、`EVOPROGRAMMER_AGENT`、`--target-dir` 或 `--agent` 覆盖它。
+
+内置语言 profile：
+
+- `python`
+- `cpp`
+- `go`
+- `rust`
+- `typescript`
+
+内置项目类型：
+
+- `single-player-game`
+- `paper`
+- `scientific-experiment`
+- `mobile-game`
+- `online-game`
+- `ppt`
+- `office`
 
 `LOOP.sh` 支持：
 
 - `EVOPROGRAMMER_PROMPT`：设置提示词。
 - `EVOPROGRAMMER_PROMPT_FILE`：从文件读取提示词。
-- `EVOPROGRAMMER_TARGET_DIR`：指定 `codex exec` 的工作目录。
+- `EVOPROGRAMMER_AGENT`：指定使用哪个内置 Agent 预设。
+- `EVOPROGRAMMER_AGENT_ARGS`：以 JSON 风格字符串列表传入额外 Agent 参数。
+- `EVOPROGRAMMER_LANGUAGE_PROFILE`：向提示词中注入语言适配指导。
+- `EVOPROGRAMMER_PROJECT_TYPE`：向提示词中注入项目场景适配指导。
+- `EVOPROGRAMMER_TARGET_DIR`：指定 Agent 命令的工作目录。
+- `EVOPROGRAMMER_ARTIFACTS_DIR`：覆盖运行产物目录。默认：`TARGET_DIR/.evoprogrammer/runs`。
 - `--prompt`、`--prompt-file`、`--target-dir`：用于一次性运行，不需要先导出环境变量。
-- `--codex-arg`：可重复使用，用于直接向 `codex exec` 传递额外参数。
-- `--dry-run`：打印 `codex exec` 命令但不真正执行。
+- `--language`：应用内置语言适配 profile。
+- `--project-type`：应用内置项目场景适配 profile。
+- `--artifacts-dir`：将运行产物写入目标仓库之外的目录。
+- 如果目标目录本身是 Git 仓库且产物仍写在仓库内，EvoProgrammer 会登记本地 `.git/info/exclude` 规则，避免 `.evoprogrammer/` 进入后续迭代。
+- `--agent-args`：以 JSON 风格字符串列表向所选 Agent CLI 传递额外参数。
+- `--agent-arg`：如果你更习惯重复参数写法，也仍然可以使用。
+- `--codex-arg`：`--agent-arg` 的兼容别名。
+- `--dry-run`：打印 Agent 命令但不真正执行。
+
+每次 `LOOP.sh` 运行都会创建一个带时间戳的目录，包含：
+
+- `prompt.txt`
+- `command.txt`
+- `metadata.env`
+- `<agent>.log`
 
 `MAIN.sh` 支持：
 
 - `EVOPROGRAMMER_PROMPT`：设置提示词。
 - `EVOPROGRAMMER_PROMPT_FILE`：每次迭代前从文件重新读取提示词。
+- `EVOPROGRAMMER_AGENT`：指定使用哪个内置 Agent 预设。
+- `EVOPROGRAMMER_AGENT_ARGS`：以 JSON 风格字符串列表传入额外 Agent 参数。
+- `EVOPROGRAMMER_LANGUAGE_PROFILE`：在每轮迭代时注入语言适配指导。
+- `EVOPROGRAMMER_PROJECT_TYPE`：在每轮迭代时注入项目场景适配指导。
 - `EVOPROGRAMMER_TARGET_DIR`：指定每次循环迭代的目标目录。
+- `EVOPROGRAMMER_ARTIFACTS_DIR`：覆盖 session 和 iteration 产物目录。
 - `EVOPROGRAMMER_MAX_ITERATIONS`：达到固定次数后停止。`0` 表示不限制。
 - `EVOPROGRAMMER_DELAY_SECONDS`：设置迭代之间的等待时间。
 - `EVOPROGRAMMER_CONTINUE_ON_ERROR=1`：单次迭代失败后继续循环。
 - `--max-iterations`、`--delay-seconds`、`--continue-on-error`：上述配置的命令行形式。
 - `--prompt-file`：在每轮迭代时都从磁盘重新加载提示词。
-- `--codex-arg`：可重复使用，在每轮迭代时透传额外的 `codex exec` 参数。
+- `--language`：在每轮迭代时应用内置语言适配 profile。
+- `--project-type`：在每轮迭代时应用内置项目场景适配 profile。
+- `--artifacts-dir`：将 session 产物写入目标仓库之外的目录。
+- `--agent-args`：以 JSON 风格字符串列表在每轮迭代时透传额外的 Agent 参数。
+- `--agent-arg`：如果你更习惯重复参数写法，也仍然可以使用。
+- `--codex-arg`：`--agent-arg` 的兼容别名。
 - `--dry-run`：预览下一轮循环命令，而不真正执行。
+- 如果产物仍保存在 Git 目标目录内部，EvoProgrammer 会写入本地排除规则，避免 `.evoprogrammer/` 在后续轮次中再次被读取。
+
+每次 `MAIN.sh` 运行都会创建一个带时间戳的 session 目录，里面包含 `session.env`，以及保存每轮产物的 `iterations/` 子目录。
 
 `DOCTOR.sh` 支持：
 
+- `EVOPROGRAMMER_LANGUAGE_PROFILE` 和 `--language`：用于检查指定语言 profile。
+- `EVOPROGRAMMER_PROJECT_TYPE` 和 `--project-type`：用于检查指定项目场景 profile。
 - `EVOPROGRAMMER_TARGET_DIR` 和 `--target-dir`：用于检查指定仓库目录。
+- `EVOPROGRAMMER_ARTIFACTS_DIR` 和 `--artifacts-dir`：用于检查运行产物目录是否可用。
 
 简要帮助可使用 `./LOOP.sh --help` 或 `./MAIN.sh --help`。
 

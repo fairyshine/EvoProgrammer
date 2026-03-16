@@ -20,16 +20,19 @@ Usage:
   EvoProgrammer help
 
 Default behavior:
-  Run Codex in the current directory and keep iterating until stopped.
+  Run the selected coding agent in the current directory and keep iterating until stopped.
 
 Subcommands:
-  once    Run a single Codex iteration in the current directory.
+  once    Run a single agent iteration in the current directory.
   doctor  Validate local prerequisites and target directory wiring.
   help    Show this help text.
 
 Examples:
   EvoProgrammer "生成一个带登录和支付的 SaaS 项目"
   EvoProgrammer --max-iterations 3 "build a Next.js app with Stripe"
+  EvoProgrammer --language rust --project-type online-game "build the dedicated server first"
+  EvoProgrammer --artifacts-dir /tmp/evop-runs "improve the repo architecture"
+  EvoProgrammer --agent claude once --agent-args '["--model","sonnet"]' "scaffold tests"
   EvoProgrammer once --codex-arg "--model" --codex-arg "gpt-5" "scaffold tests"
   EvoProgrammer doctor --target-dir /path/to/project
 

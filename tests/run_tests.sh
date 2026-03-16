@@ -42,6 +42,22 @@ assert_equals() {
     fi
 }
 
+assert_file_exists() {
+    local path="$1"
+    local context="$2"
+    if [[ ! -f "$path" ]]; then
+        fail "$context"
+    fi
+}
+
+assert_directory_exists() {
+    local path="$1"
+    local context="$2"
+    if [[ ! -d "$path" ]]; then
+        fail "$context"
+    fi
+}
+
 run_expect_success() {
     local name="$1"
     shift
@@ -70,6 +86,7 @@ setup_fake_codex() {
     cat >"$bin_dir/codex" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
+printf 'fake codex output for %s\n' "$*"
 printf 'cwd=%s\n' "$PWD" >>"${FAKE_CODEX_LOG:?}"
 printf 'argc=%s\n' "$#" >>"${FAKE_CODEX_LOG:?}"
 for arg in "$@"; do
@@ -80,6 +97,26 @@ if [[ "${FAKE_CODEX_FAIL:-0}" == "1" ]]; then
 fi
 EOF
     chmod +x "$bin_dir/codex"
+    printf '%s' "$bin_dir"
+}
+
+setup_fake_claude() {
+    local bin_dir="$TEST_TMPDIR/bin"
+    mkdir -p "$bin_dir"
+    cat >"$bin_dir/claude" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf 'fake claude output for %s\n' "$*"
+printf 'cwd=%s\n' "$PWD" >>"${FAKE_CLAUDE_LOG:?}"
+printf 'argc=%s\n' "$#" >>"${FAKE_CLAUDE_LOG:?}"
+for arg in "$@"; do
+    printf 'arg=%s\n' "$arg" >>"${FAKE_CLAUDE_LOG:?}"
+done
+if [[ "${FAKE_CLAUDE_FAIL:-0}" == "1" ]]; then
+    exit 29
+fi
+EOF
+    chmod +x "$bin_dir/claude"
     printf '%s' "$bin_dir"
 }
 
@@ -95,19 +132,85 @@ bad_target_output="$(run_expect_failure "LOOP should fail for missing target dir
 assert_contains "$bad_target_output" "Target directory does not exist" "LOOP should validate target directory"
 pass "LOOP target-dir validation"
 
+bad_language_output="$(run_expect_failure "LOOP should reject unsupported language profiles" env PATH="$PATH" "$LOOP_SCRIPT" --language java --prompt "test")"
+assert_contains "$bad_language_output" "Unsupported language profile: java" "LOOP should validate language profiles"
+pass "LOOP language profile validation"
+
+bad_project_type_output="$(run_expect_failure "LOOP should reject unsupported project types" env PATH="$PATH" "$LOOP_SCRIPT" --project-type backend-service --prompt "test")"
+assert_contains "$bad_project_type_output" "Unsupported project type: backend-service" "LOOP should validate project types"
+pass "LOOP project-type validation"
+
 FAKE_CODEX_LOG="$TEST_TMPDIR/loop.log"
 export FAKE_CODEX_LOG
 fake_bin="$(setup_fake_codex)"
+setup_fake_claude >/dev/null
 target_dir="$TEST_TMPDIR/project"
 mkdir -p "$target_dir"
+git init -q "$target_dir"
+target_dir_physical="$(cd "$target_dir" && pwd -P)"
 prompt_file="$TEST_TMPDIR/prompt.txt"
 printf 'ship from file' >"$prompt_file"
 run_expect_success "LOOP should invoke codex with prompt and target directory" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --target-dir "$target_dir" --prompt "ship it" >/dev/null
 loop_log="$(cat "$FAKE_CODEX_LOG")"
 assert_contains "$loop_log" "cwd=$target_dir" "LOOP should run codex in the requested target directory"
 assert_contains "$loop_log" "arg=exec" "LOOP should call codex exec"
+assert_contains "$loop_log" "arg=--dangerously-bypass-approvals-and-sandbox" "LOOP should bypass codex sandboxing by default"
+assert_contains "$loop_log" "arg=--cd" "LOOP should tell codex which directory is the workspace root"
+assert_contains "$loop_log" "arg=$target_dir_physical" "LOOP should pass the target directory to codex"
+assert_contains "$loop_log" "arg=--add-dir" "LOOP should allow codex to write to the target directory"
 assert_contains "$loop_log" "arg=ship it" "LOOP should forward the prompt"
 pass "LOOP execution wiring"
+
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-profiles.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "LOOP should inject language and project-type guidance into the prompt" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$target_dir" --language python --project-type mobile-game --prompt "ship it" >/dev/null
+loop_profiles_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$loop_profiles_log" "[Language Adaptation]" "LOOP should prepend language adaptation guidance"
+assert_contains "$loop_profiles_log" "Target language: python" "LOOP should name the selected language profile"
+assert_contains "$loop_profiles_log" "[Project-Type Adaptation]" "LOOP should prepend project-type guidance"
+assert_contains "$loop_profiles_log" "Target project type: mobile-game" "LOOP should name the selected project type"
+assert_contains "$loop_profiles_log" "[User Request]" "LOOP should keep the user request section"
+assert_contains "$loop_profiles_log" "ship it" "LOOP should preserve the original user request inside the final prompt"
+pass "LOOP prompt adaptation"
+
+auto_detect_dir="$TEST_TMPDIR/auto-detect-rust"
+mkdir -p "$auto_detect_dir"
+printf '[package]\nname = "arena"\nversion = "0.1.0"\n' >"$auto_detect_dir/Cargo.toml"
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-auto-detect.log"
+export FAKE_CLAUDE_LOG
+loop_auto_detect_output="$(run_expect_success "LOOP should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$auto_detect_dir" --prompt "build a multiplayer arena prototype")"
+loop_auto_detect_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$loop_auto_detect_output" "Language profile: rust (auto-detected)" "LOOP should report an auto-detected language profile"
+assert_contains "$loop_auto_detect_output" "Project type: online-game (auto-detected)" "LOOP should report an auto-detected project type"
+assert_contains "$loop_auto_detect_log" "Target language: rust" "LOOP should auto-detect Rust from the repository"
+assert_contains "$loop_auto_detect_log" "Target project type: online-game" "LOOP should auto-detect an online game from the prompt"
+pass "LOOP auto detection"
+
+default_artifacts_root="$target_dir/.evoprogrammer/runs"
+loop_artifact_dir="$(find "$default_artifacts_root" -maxdepth 2 -type f -name 'codex.log' | sort | head -n 1 | xargs dirname)"
+assert_directory_exists "$loop_artifact_dir" "LOOP should create a default artifacts directory"
+assert_file_exists "$loop_artifact_dir/prompt.txt" "LOOP artifacts should include the resolved prompt"
+assert_file_exists "$loop_artifact_dir/command.txt" "LOOP artifacts should include the codex command"
+assert_file_exists "$loop_artifact_dir/metadata.env" "LOOP artifacts should include run metadata"
+assert_file_exists "$loop_artifact_dir/codex.log" "LOOP artifacts should include a combined codex log"
+loop_artifact_metadata="$(cat "$loop_artifact_dir/metadata.env")"
+assert_contains "$loop_artifact_metadata" "STATUS=0" "LOOP metadata should record a successful exit status"
+assert_contains "$loop_artifact_metadata" "AGENT=codex" "LOOP metadata should record the selected agent"
+loop_artifact_log="$(cat "$loop_artifact_dir/codex.log")"
+assert_contains "$loop_artifact_log" "fake codex output for exec --dangerously-bypass-approvals-and-sandbox --cd $target_dir_physical --add-dir $target_dir_physical ship it" "LOOP artifacts should capture command output"
+pass "LOOP artifacts"
+
+loop_profiles_artifact_dir="$(find "$default_artifacts_root" -maxdepth 2 -type f -name 'claude.log' | sort | head -n 1 | xargs dirname)"
+loop_profiles_prompt="$(cat "$loop_profiles_artifact_dir/prompt.txt")"
+assert_contains "$loop_profiles_prompt" "Target language: python" "LOOP prompt artifacts should record the language guidance"
+assert_contains "$loop_profiles_prompt" "Target project type: mobile-game" "LOOP prompt artifacts should record the project-type guidance"
+pass "LOOP prompt artifacts"
+
+exclude_file="$target_dir/.git/info/exclude"
+assert_file_exists "$exclude_file" "LOOP should create a local git exclude file when the target is a git repo"
+exclude_contents="$(cat "$exclude_file")"
+assert_contains "$exclude_contents" ".evoprogrammer/" "LOOP should locally exclude EvoProgrammer artifacts from future runs"
+pass "LOOP git exclude"
 
 FAKE_CODEX_LOG="$TEST_TMPDIR/loop-codex-args.log"
 export FAKE_CODEX_LOG
@@ -118,6 +221,15 @@ assert_contains "$loop_codex_args_log" "arg=gpt-5" "LOOP should pass through cod
 assert_contains "$loop_codex_args_log" "arg=ship it" "LOOP should keep the prompt as the final codex argument"
 pass "LOOP codex-arg forwarding"
 
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-agent-args-list.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "LOOP should parse list-style agent args" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$target_dir" --agent-args "[\"--model\",\"sonnet\"]" --prompt "ship it" >/dev/null
+loop_agent_args_list_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$loop_agent_args_list_log" "arg=--model" "LOOP should parse list-style agent arg names"
+assert_contains "$loop_agent_args_list_log" "arg=sonnet" "LOOP should parse list-style agent arg values"
+assert_contains "$loop_agent_args_list_log" "arg=ship it" "LOOP should keep the prompt after list-style agent args"
+pass "LOOP agent-args list"
+
 FAKE_CODEX_LOG="$TEST_TMPDIR/loop-prompt-file.log"
 export FAKE_CODEX_LOG
 run_expect_success "LOOP should load prompts from a file" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --target-dir "$target_dir" --prompt-file "$prompt_file" >/dev/null
@@ -125,9 +237,31 @@ loop_prompt_file_log="$(cat "$FAKE_CODEX_LOG")"
 assert_contains "$loop_prompt_file_log" "arg=ship from file" "LOOP should read the prompt contents from disk"
 pass "LOOP prompt-file"
 
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/loop-claude.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "LOOP should support Claude Code as an agent" env PATH="$fake_bin:$PATH" "$LOOP_SCRIPT" --agent claude --target-dir "$target_dir" --agent-arg "--model" --agent-arg "sonnet" --prompt "ship it" >/dev/null
+loop_claude_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$loop_claude_log" "cwd=$target_dir" "LOOP should run claude in the requested target directory"
+assert_contains "$loop_claude_log" "arg=--print" "LOOP should call claude in print mode"
+assert_contains "$loop_claude_log" "arg=--dangerously-skip-permissions" "LOOP should bypass claude permissions by default"
+assert_contains "$loop_claude_log" "arg=--model" "LOOP should forward extra Claude arguments"
+assert_contains "$loop_claude_log" "arg=sonnet" "LOOP should forward Claude argument values"
+assert_contains "$loop_claude_log" "arg=ship it" "LOOP should forward the prompt to claude"
+loop_claude_artifact_dir="$(find "$default_artifacts_root" -maxdepth 1 -type d -name 'run-*' | sort | tail -n 1)"
+assert_file_exists "$loop_claude_artifact_dir/claude.log" "LOOP should capture Claude output in a tool-specific log file"
+loop_claude_metadata="$(cat "$loop_claude_artifact_dir/metadata.env")"
+assert_contains "$loop_claude_metadata" "AGENT=claude" "LOOP metadata should record the Claude agent"
+pass "LOOP claude agent"
+
 loop_dry_run_output="$(run_expect_success "LOOP dry-run should succeed without codex" env PATH="/usr/bin:/bin" "$LOOP_SCRIPT" --target-dir "$target_dir" --prompt "preview only" --dry-run)"
+assert_contains "$loop_dry_run_output" "Agent: codex" "LOOP dry-run should print the selected agent"
+assert_contains "$loop_dry_run_output" "Artifacts root: $target_dir/.evoprogrammer/runs" "LOOP dry-run should print the default artifacts root"
 assert_contains "$loop_dry_run_output" "Target directory: $target_dir" "LOOP dry-run should print the target directory"
-assert_contains "$loop_dry_run_output" "codex exec preview\\ only" "LOOP dry-run should print the codex command"
+assert_contains "$loop_dry_run_output" "codex exec" "LOOP dry-run should print the codex command"
+assert_contains "$loop_dry_run_output" "--dangerously-bypass-approvals-and-sandbox" "LOOP dry-run should show the codex sandbox bypass"
+assert_contains "$loop_dry_run_output" "--cd $target_dir_physical" "LOOP dry-run should show the codex workspace root"
+assert_contains "$loop_dry_run_output" "--add-dir $target_dir_physical" "LOOP dry-run should show the writable target directory"
+assert_contains "$loop_dry_run_output" "preview\\ only" "LOOP dry-run should keep the prompt in the command preview"
 pass "LOOP dry-run"
 
 empty_prompt_file="$TEST_TMPDIR/empty-prompt.txt"
@@ -175,6 +309,42 @@ assert_contains "$main_log" "cwd=$target_dir" "MAIN should pass target directory
 assert_contains "$main_log" "arg=repeatable" "MAIN should pass the prompt through to LOOP"
 pass "MAIN iteration wiring"
 
+main_session_dir="$(find "$default_artifacts_root" -maxdepth 1 -type d -name 'session-*' | head -n 1)"
+assert_directory_exists "$main_session_dir" "MAIN should create a session artifacts directory"
+assert_file_exists "$main_session_dir/session.env" "MAIN session artifacts should include session metadata"
+main_iteration_count="$(find "$main_session_dir/iterations" -maxdepth 1 -type d -name 'run-*' | wc -l | tr -d ' ')"
+assert_equals "$main_iteration_count" "2" "MAIN should create one artifacts directory per iteration"
+main_session_metadata="$(cat "$main_session_dir/session.env")"
+assert_contains "$main_session_metadata" "STATE=completed" "MAIN session metadata should mark successful completion"
+assert_contains "$main_session_metadata" "AGENT=codex" "MAIN session metadata should record the selected agent"
+pass "MAIN artifacts"
+
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-profiles.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "MAIN should forward language and project-type profiles" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$target_dir" --max-iterations 1 --language rust --project-type online-game --prompt "repeatable" >/dev/null
+main_profiles_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$main_profiles_log" "Target language: rust" "MAIN should inject the selected language profile"
+assert_contains "$main_profiles_log" "Target project type: online-game" "MAIN should inject the selected project type"
+assert_contains "$main_profiles_log" "[User Request]" "MAIN should preserve the prompt section after adaptation"
+pass "MAIN prompt adaptation"
+
+auto_main_dir="$TEST_TMPDIR/auto-detect-python"
+mkdir -p "$auto_main_dir"
+printf '[project]\nname = "lab"\nversion = "0.1.0"\n' >"$auto_main_dir/pyproject.toml"
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-auto-detect.log"
+export FAKE_CLAUDE_LOG
+main_auto_detect_output="$(run_expect_success "MAIN should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$auto_main_dir" --max-iterations 1 --prompt "build a reproducible experiment pipeline")"
+main_auto_detect_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$main_auto_detect_output" "Language profile: python (auto-detected)" "MAIN should report an auto-detected language profile"
+assert_contains "$main_auto_detect_output" "Project type: scientific-experiment (auto-detected)" "MAIN should report an auto-detected project type"
+assert_contains "$main_auto_detect_log" "Target language: python" "MAIN should auto-detect Python from the repository"
+assert_contains "$main_auto_detect_log" "Target project type: scientific-experiment" "MAIN should auto-detect a scientific experiment from the prompt"
+pass "MAIN auto detection"
+
+exclude_count="$(grep -c '^\.evoprogrammer/$' "$exclude_file")"
+assert_equals "$exclude_count" "1" "MAIN should not append duplicate local artifact excludes"
+pass "MAIN git exclude dedupe"
+
 FAKE_CODEX_LOG="$TEST_TMPDIR/main-codex-args.log"
 export FAKE_CODEX_LOG
 run_expect_success "MAIN should forward extra codex exec arguments" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --target-dir "$target_dir" --max-iterations 1 --codex-arg "--profile" --codex-arg "danger-full-access" --prompt "repeatable" >/dev/null
@@ -183,6 +353,15 @@ assert_contains "$main_codex_args_log" "arg=--profile" "MAIN should pass codex o
 assert_contains "$main_codex_args_log" "arg=danger-full-access" "MAIN should pass codex option values through LOOP"
 assert_contains "$main_codex_args_log" "arg=repeatable" "MAIN should keep the prompt when forwarding codex arguments"
 pass "MAIN codex-arg forwarding"
+
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-agent-args-list.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "MAIN should forward list-style agent args" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$target_dir" --max-iterations 1 --agent-args "[\"--model\",\"sonnet\"]" --prompt "repeatable" >/dev/null
+main_agent_args_list_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$main_agent_args_list_log" "arg=--model" "MAIN should forward list-style agent arg names"
+assert_contains "$main_agent_args_list_log" "arg=sonnet" "MAIN should forward list-style agent arg values"
+assert_contains "$main_agent_args_list_log" "arg=repeatable" "MAIN should keep the prompt when forwarding list-style agent args"
+pass "MAIN agent-args list"
 
 FAKE_CODEX_LOG="$TEST_TMPDIR/main-dash.log"
 export FAKE_CODEX_LOG
@@ -201,7 +380,9 @@ assert_contains "$main_prompt_file_log" "cwd=$target_dir" "MAIN prompt-file mode
 pass "MAIN prompt-file"
 
 main_dry_run_output="$(run_expect_success "MAIN dry-run should print the next iteration command" env PATH="/usr/bin:/bin" "$MAIN_SCRIPT" --target-dir "$target_dir" --max-iterations 3 --prompt-file "$prompt_file" --dry-run)"
+assert_contains "$main_dry_run_output" "Agent: codex" "MAIN dry-run should print the selected agent"
 assert_contains "$main_dry_run_output" "Max iterations: 3" "MAIN dry-run should print loop settings"
+assert_contains "$main_dry_run_output" "Artifacts root: $target_dir/.evoprogrammer/runs" "MAIN dry-run should print the default artifacts root"
 assert_contains "$main_dry_run_output" "--prompt-file" "MAIN dry-run should preserve prompt-file mode"
 assert_contains "$main_dry_run_output" "Target directory: $target_dir" "MAIN dry-run should print the target directory"
 pass "MAIN dry-run"
@@ -213,6 +394,16 @@ assert_contains "$continue_output" "Iteration 1 failed with exit code 23." "MAIN
 fail_count="$(grep -c '^arg=exec$' "$FAKE_CODEX_LOG")"
 assert_equals "$fail_count" "2" "MAIN should continue running after failures when configured"
 pass "MAIN continue-on-error"
+
+FAKE_CLAUDE_LOG="$TEST_TMPDIR/main-claude.log"
+export FAKE_CLAUDE_LOG
+run_expect_success "MAIN should support Claude Code as an agent" env PATH="$fake_bin:$PATH" "$MAIN_SCRIPT" --agent claude --target-dir "$target_dir" --max-iterations 1 --agent-arg "--model" --agent-arg "sonnet" --prompt "repeatable" >/dev/null
+main_claude_log="$(cat "$FAKE_CLAUDE_LOG")"
+assert_contains "$main_claude_log" "arg=--print" "MAIN should invoke Claude in print mode"
+assert_contains "$main_claude_log" "arg=--dangerously-skip-permissions" "MAIN should bypass Claude permissions by default"
+assert_contains "$main_claude_log" "arg=sonnet" "MAIN should pass through Claude argument values"
+assert_contains "$main_claude_log" "arg=repeatable" "MAIN should pass the prompt through to Claude"
+pass "MAIN claude agent"
 
 cli_help_output="$(run_expect_success "CLI help should succeed" "$CLI_SCRIPT" --help)"
 assert_contains "$cli_help_output" "Usage:" "CLI help should show usage"
@@ -253,13 +444,38 @@ doctor_missing_codex_output="$(run_expect_failure "DOCTOR should fail without co
 assert_contains "$doctor_missing_codex_output" "The 'codex' CLI is required" "DOCTOR should report missing codex"
 pass "DOCTOR missing codex"
 
+doctor_missing_claude_output="$(run_expect_failure "DOCTOR should fail without claude when requested" env PATH="/usr/bin:/bin" "$DOCTOR_SCRIPT" --agent claude --target-dir "$target_dir")"
+assert_contains "$doctor_missing_claude_output" "The 'claude' CLI is required" "DOCTOR should report missing claude"
+pass "DOCTOR missing claude"
+
 doctor_output="$(run_expect_success "DOCTOR should validate the environment" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --target-dir "$target_dir")"
+assert_contains "$doctor_output" "OK agent codex" "DOCTOR should print the selected default agent"
 assert_contains "$doctor_output" "OK target-dir $target_dir" "DOCTOR should validate the target directory"
-assert_contains "$doctor_output" "OK codex $fake_bin/codex" "DOCTOR should print the discovered codex path"
+assert_contains "$doctor_output" "OK artifacts-dir $target_dir/.evoprogrammer/runs" "DOCTOR should validate the default artifacts directory"
+assert_contains "$doctor_output" "OK command $fake_bin/codex" "DOCTOR should print the discovered codex path"
 pass "DOCTOR success"
 
+doctor_profiles_output="$(run_expect_success "DOCTOR should validate language and project-type profiles" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --language typescript --project-type ppt --target-dir "$target_dir")"
+assert_contains "$doctor_profiles_output" "OK language-profile typescript" "DOCTOR should print the selected language profile"
+assert_contains "$doctor_profiles_output" "OK project-type ppt" "DOCTOR should print the selected project type"
+pass "DOCTOR profile success"
+
+doctor_auto_detect_dir="$TEST_TMPDIR/doctor-auto-detect"
+mkdir -p "$doctor_auto_detect_dir"
+printf '{ "compilerOptions": { "strict": true } }\n' >"$doctor_auto_detect_dir/tsconfig.json"
+: >"$doctor_auto_detect_dir/slides.pptx"
+doctor_auto_detect_output="$(run_expect_success "DOCTOR should auto-detect language and project type" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --target-dir "$doctor_auto_detect_dir")"
+assert_contains "$doctor_auto_detect_output" "OK language-profile typescript (auto-detected)" "DOCTOR should auto-detect TypeScript from the repository"
+assert_contains "$doctor_auto_detect_output" "OK project-type ppt (auto-detected)" "DOCTOR should auto-detect PPT projects from the repository"
+pass "DOCTOR auto detection"
+
+claude_doctor_output="$(run_expect_success "DOCTOR should validate Claude Code when requested" env PATH="$fake_bin:$PATH" "$DOCTOR_SCRIPT" --agent claude --target-dir "$target_dir")"
+assert_contains "$claude_doctor_output" "OK agent claude" "DOCTOR should print the selected Claude agent"
+assert_contains "$claude_doctor_output" "OK command $fake_bin/claude" "DOCTOR should print the discovered Claude path"
+pass "DOCTOR claude success"
+
 cli_doctor_output="$(run_expect_success "CLI doctor should dispatch to DOCTOR" env PATH="$fake_bin:$PATH" "$CLI_SCRIPT" doctor --target-dir "$target_dir")"
-assert_contains "$cli_doctor_output" "OK codex $fake_bin/codex" "CLI doctor should run the doctor command"
+assert_contains "$cli_doctor_output" "OK command $fake_bin/codex" "CLI doctor should run the doctor command"
 pass "CLI doctor behavior"
 
 install_dir="$TEST_TMPDIR/install-bin"
