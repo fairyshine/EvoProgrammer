@@ -86,6 +86,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
+EvoProgrammer inspect --target-dir /path/to/project --format profiles
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
@@ -149,6 +150,7 @@ EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
+EvoProgrammer inspect --target-dir /path/to/project --format profiles
 ```
 
 Use `verify` when you want EvoProgrammer to execute the detected command chain
@@ -162,6 +164,10 @@ EvoProgrammer verify --target-dir /path/to/project --dry-run
 
 `inspect --format diagnostics` adds facts-cache counters for repo inspection, so
 you can see cache lookups, hit rate, and entry counts when profiling detection.
+
+`inspect --format profiles` shows the matched language, framework, and
+project-type candidates with their detection scores, which is useful when you
+want to understand or debug auto-detection decisions.
 
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable
@@ -203,6 +209,7 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `CLEAN.sh` | Artifact cleanup |
 | `STATUS.sh` | Run history viewer |
 | `lib/agents/definitions/` | Pluggable agent definitions |
+| `lib/profiles/diagnostics.sh` | Matched profile candidates and detection-score reporting |
 | `lib/profiles/definitions/` | Language, framework, and project-type profiles |
 | `lib/project-context/` | Repo inspection, command inference, and prompt rendering |
 

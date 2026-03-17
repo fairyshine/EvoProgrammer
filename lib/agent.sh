@@ -10,7 +10,7 @@ if [[ -z "${EVOP_AGENT_LIB_DIR:-}" ]]; then
     if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
         EVOP_AGENT_LIB_DIR="$EVOP_LIB_DIR/agents"
     else
-        EVOP_AGENT_LIB_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")/agents" && pwd)"
+        EVOP_AGENT_LIB_DIR="$(evop_callsite_dir)/agents"
     fi
 fi
 

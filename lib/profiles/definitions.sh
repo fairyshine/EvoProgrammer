@@ -185,6 +185,8 @@ evop_detect_profile_via_hooks() {
     local best_profile=""
     local best_score=-1
 
+    EVOP_DETECTED_PROFILE=""
+
     while IFS= read -r profile_name; do
         [[ -n "$profile_name" ]] || continue
         evop_load_profile_definition "$category_dir" "$profile_name"
@@ -203,6 +205,8 @@ evop_detect_profile_via_hooks() {
             evop_fail "Profile detect score must be a non-negative integer: $(evop_profile_definition_path "$category_dir" "$profile_name")"
         fi
 
+        evop_record_profile_detection_candidate "$category_dir" "$profile_name" "$score"
+
         if (( score > best_score )); then
             best_profile="$profile_name"
             best_score="$score"
@@ -212,7 +216,7 @@ evop_detect_profile_via_hooks() {
     evop_reset_profile_definition
 
     if [[ -n "$best_profile" ]]; then
-        printf '%s' "$best_profile"
+        EVOP_DETECTED_PROFILE="$best_profile"
         return 0
     fi
 

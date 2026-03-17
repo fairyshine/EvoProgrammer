@@ -131,6 +131,45 @@ evop_append_project_command_lines() {
     printf '%s' "$output"
 }
 
+evop_render_profile_detection_category_json() {
+    local category_dir="$1"
+    local output="["
+    local profile_name=""
+    local score=""
+    local needs_comma=0
+
+    while IFS=$'\t' read -r profile_name score; do
+        [[ -n "$profile_name" ]] || continue
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+        output+="{\"name\": $(evop_render_json_string "$profile_name"), \"score\": $score}"
+        needs_comma=1
+    done < <(evop_profile_detection_candidates_sorted "$category_dir")
+
+    output+="]"
+    printf '%s' "$output"
+}
+
+evop_render_profile_detection_json() {
+    local output="{"
+    local category_dir=""
+    local json_key=""
+    local needs_comma=0
+
+    for category_dir in languages frameworks project-types; do
+        json_key="$(evop_profile_diagnostics_json_key "$category_dir")" || continue
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+        output+="$(evop_render_json_string "$json_key"): $(evop_render_profile_detection_category_json "$category_dir")"
+        needs_comma=1
+    done
+
+    output+="}"
+    printf '%s' "$output"
+}
+
 evop_render_project_context_json() {
     printf '{\n'
     printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
@@ -142,6 +181,7 @@ evop_render_project_context_json() {
         "$(evop_render_json_string_or_null "${FRAMEWORK_PROFILE_SOURCE:-}")" \
         "$(evop_render_json_string_or_null "${PROJECT_TYPE:-}")" \
         "$(evop_render_json_string_or_null "${PROJECT_TYPE_SOURCE:-}")"
+    printf '  "profile_detection": %s,\n' "$(evop_render_profile_detection_json)"
     printf '  "package_manager": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER")"
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
     printf '  "commands": %s,\n' "$(evop_render_project_commands_json)"
@@ -244,6 +284,31 @@ evop_render_project_context_prompt() {
     printf '%b' "$guidance"
 }
 
+evop_print_profile_detection_report() {
+    local category_dir=""
+    local label=""
+    local profile_name=""
+    local score=""
+
+    [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
+    printf 'Profile detection report:\n'
+
+    for category_dir in languages frameworks project-types; do
+        label="$(evop_profile_diagnostics_label "$category_dir")" || continue
+        printf '%s:\n' "$label"
+
+        if ! evop_profile_detection_has_candidates "$category_dir"; then
+            printf -- '- none\n'
+            continue
+        fi
+
+        while IFS=$'\t' read -r profile_name score; do
+            [[ -n "$profile_name" ]] || continue
+            printf -- '- %s (score: %s)\n' "$profile_name" "$score"
+        done < <(evop_profile_detection_candidates_sorted "$category_dir")
+    done
+}
+
 evop_print_project_context() {
     local output_style="${1:-default}"
     local slot=""
@@ -334,6 +399,8 @@ evop_print_project_inspection_report() {
 }
 
 evop_print_project_inspection_diagnostics() {
+    local line=""
+
     evop_print_project_inspection_report
     printf 'Inspection diagnostics:\n'
     printf -- '- Facts directory: %s\n' "${EVOP_PROJECT_CONTEXT_FACTS_DIR:-unknown}"
@@ -343,6 +410,11 @@ evop_print_project_inspection_diagnostics() {
     while IFS= read -r line; do
         printf -- '- Timing %s\n' "$line"
     done < <(evop_print_project_context_timings)
+    while IFS= read -r line; do
+        [[ "$line" == Target\ directory:* ]] && continue
+        [[ "$line" == Profile\ detection\ report:* ]] && continue
+        printf -- '- %s\n' "$line"
+    done < <(evop_print_profile_detection_report)
 }
 
 evop_print_project_inspection_timings() {

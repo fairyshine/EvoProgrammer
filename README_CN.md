@@ -86,6 +86,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
+EvoProgrammer inspect --target-dir /path/to/project --format profiles
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
@@ -149,6 +150,7 @@ EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
+EvoProgrammer inspect --target-dir /path/to/project --format profiles
 ```
 
 当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：
@@ -161,6 +163,9 @@ EvoProgrammer verify --target-dir /path/to/project --dry-run
 
 `inspect --format diagnostics` 会额外输出仓库检测 facts 缓存的命中、未命中和条目数，
 方便分析一次检测为什么快或慢。
+
+`inspect --format profiles` 会输出命中的语言、框架、项目类型候选项及其检测分数，
+方便理解和排查自动检测的决策过程。
 
 `verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
 看到的命令计划保持一致。
@@ -201,6 +206,7 @@ verbosity=0
 | `CLEAN.sh` | 产物清理 |
 | `STATUS.sh` | 运行历史查看 |
 | `lib/agents/definitions/` | 可插拔 agent 定义 |
+| `lib/profiles/diagnostics.sh` | 命中的 profile 候选项和检测分数 |
 | `lib/profiles/definitions/` | 语言、框架和项目类型 profile |
 | `lib/project-context/` | 仓库检测、命令推导与 prompt 渲染 |
 

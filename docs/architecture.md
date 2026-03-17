@@ -33,6 +33,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 ### 3. Profile system
 
 - `lib/profiles/detect.sh`: profile entrypoints
+- `lib/profiles/diagnostics.sh`: matched-candidate and score tracking for profile auto-detection
 - `lib/profiles/definitions/`: language/framework/project-type definitions
 - `lib/profiles/resolve.sh`: merges explicit flags and auto-detection results
 
@@ -55,6 +56,11 @@ The facts and timings sub-layers expose diagnostics to the render layer, which
 keeps `inspect --format diagnostics`, `inspect --format timings`, and
 `inspect --format json` informative without leaking cache or measurement
 internals into the CLI entrypoint.
+
+The profile diagnostics sub-layer keeps auto-detection observable without
+re-running detection logic in presentation code, so `inspect --format profiles`,
+diagnostics output, and JSON rendering all read from the same candidate-score
+state.
 
 ## Command Model
 

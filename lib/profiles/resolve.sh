@@ -24,6 +24,7 @@ evop_resolve_profiles() {
     EVOP_RESOLVED_FRAMEWORK_SOURCE="none"
     EVOP_RESOLVED_PROJECT_TYPE="$requested_project_type"
     EVOP_RESOLVED_PROJECT_SOURCE="none"
+    evop_reset_profile_diagnostics
     EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS=0
     EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS=0
     EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS=0
@@ -36,7 +37,8 @@ evop_resolve_profiles() {
         EVOP_RESOLVED_LANGUAGE_SOURCE="explicit"
     else
         started_ms="$(evop_now_millis)"
-        if EVOP_RESOLVED_LANGUAGE_PROFILE="$(evop_detect_language_profile "$target_dir" "$prompt")"; then
+        if evop_detect_language_profile "$target_dir" "$prompt"; then
+            EVOP_RESOLVED_LANGUAGE_PROFILE="$EVOP_DETECTED_PROFILE"
             EVOP_RESOLVED_LANGUAGE_SOURCE="auto"
         else
             EVOP_RESOLVED_LANGUAGE_PROFILE=""
@@ -48,7 +50,8 @@ evop_resolve_profiles() {
         EVOP_RESOLVED_FRAMEWORK_SOURCE="explicit"
     else
         started_ms="$(evop_now_millis)"
-        if EVOP_RESOLVED_FRAMEWORK_PROFILE="$(evop_detect_framework_profile "$target_dir" "$prompt")"; then
+        if evop_detect_framework_profile "$target_dir" "$prompt"; then
+            EVOP_RESOLVED_FRAMEWORK_PROFILE="$EVOP_DETECTED_PROFILE"
             EVOP_RESOLVED_FRAMEWORK_SOURCE="auto"
         else
             EVOP_RESOLVED_FRAMEWORK_PROFILE=""
@@ -60,7 +63,8 @@ evop_resolve_profiles() {
         EVOP_RESOLVED_PROJECT_SOURCE="explicit"
     else
         started_ms="$(evop_now_millis)"
-        if EVOP_RESOLVED_PROJECT_TYPE="$(evop_detect_project_type "$target_dir" "$prompt")"; then
+        if evop_detect_project_type "$target_dir" "$prompt"; then
+            EVOP_RESOLVED_PROJECT_TYPE="$EVOP_DETECTED_PROFILE"
             EVOP_RESOLVED_PROJECT_SOURCE="auto"
         else
             EVOP_RESOLVED_PROJECT_TYPE=""

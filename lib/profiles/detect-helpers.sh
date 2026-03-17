@@ -10,11 +10,20 @@ declare -a EVOP_DETECT_PATH_BASENAMES=()
 EVOP_DETECT_CACHE_RESULT=""
 
 if [[ -n "${ZSH_VERSION:-}" ]]; then
+    EVOP_DETECT_CACHE_BACKEND="associative-array"
     typeset -A EVOP_DETECT_MATCHING_FILES_CACHE
     typeset -A EVOP_DETECT_DIRECTORY_TEXT_CACHE
+    typeset -A EVOP_DETECT_FILE_TEXT_CACHE
+elif [[ -n "${BASH_VERSION:-}" && ${BASH_VERSINFO[0]:-0} -ge 4 ]]; then
+    EVOP_DETECT_CACHE_BACKEND="associative-array"
+    declare -A EVOP_DETECT_MATCHING_FILES_CACHE=()
+    declare -A EVOP_DETECT_DIRECTORY_TEXT_CACHE=()
+    declare -A EVOP_DETECT_FILE_TEXT_CACHE=()
 else
+    EVOP_DETECT_CACHE_BACKEND="line-table"
     EVOP_DETECT_MATCHING_FILES_CACHE=""
     EVOP_DETECT_DIRECTORY_TEXT_CACHE=""
+    EVOP_DETECT_FILE_TEXT_CACHE=""
 fi
 
 EVOP_DETECT_PRUNE_DIRS=(.git node_modules vendor target build dist __pycache__ .venv .next .tox .mypy_cache .pytest_cache .cargo .gradle .bundle)
@@ -26,12 +35,14 @@ evop_reset_detection_facts() {
     EVOP_DETECT_PATH_BASENAMES=()
     EVOP_DETECT_CACHE_RESULT=""
 
-    if [[ -n "${ZSH_VERSION:-}" ]]; then
+    if [[ "$EVOP_DETECT_CACHE_BACKEND" == "associative-array" ]]; then
         EVOP_DETECT_MATCHING_FILES_CACHE=()
         EVOP_DETECT_DIRECTORY_TEXT_CACHE=()
+        EVOP_DETECT_FILE_TEXT_CACHE=()
     else
         EVOP_DETECT_MATCHING_FILES_CACHE=""
         EVOP_DETECT_DIRECTORY_TEXT_CACHE=""
+        EVOP_DETECT_FILE_TEXT_CACHE=""
     fi
 }
 
@@ -53,16 +64,15 @@ evop_collect_detection_facts() {
     done
 
     while IFS= read -r -d '' entry_path; do
-        rel="${entry_path#"$directory"/}"
-        EVOP_DETECT_FILES_REL+=("$rel")
-        EVOP_DETECT_FILE_BASENAMES+=("$(basename "$entry_path")")
-    done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o -type f -print0 2>/dev/null)
-
-    while IFS= read -r -d '' entry_path; do
         if [[ "$entry_path" == "$directory" ]]; then
             continue
         fi
+        rel="${entry_path#"$directory"/}"
         EVOP_DETECT_PATH_BASENAMES+=("$(basename "$entry_path")")
+        if [[ -f "$entry_path" ]]; then
+            EVOP_DETECT_FILES_REL+=("$rel")
+            EVOP_DETECT_FILE_BASENAMES+=("$(basename "$entry_path")")
+        fi
     done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o \( -type f -o -type d \) -print0 2>/dev/null)
 }
 
@@ -89,45 +99,73 @@ evop_detection_cache_key() {
 evop_detection_cache_lookup() {
     local cache_name="$1"
     local cache_key="$2"
+    local cache_contents=""
+    local current_key=""
+    local cached_value=""
 
     EVOP_DETECT_CACHE_RESULT=""
 
-    if [[ -z "${ZSH_VERSION:-}" ]]; then
-        return 1
+    if [[ "$EVOP_DETECT_CACHE_BACKEND" == "associative-array" ]]; then
+        case "$cache_name" in
+            EVOP_DETECT_MATCHING_FILES_CACHE)
+                [[ -n "${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set}" ]] || return 1
+                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
+                ;;
+            EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                [[ -n "${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set}" ]] || return 1
+                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
+                ;;
+            EVOP_DETECT_FILE_TEXT_CACHE)
+                [[ -n "${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]+set}" ]] || return 1
+                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]}"
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+
+        return 0
     fi
 
-    case "$cache_name" in
-        EVOP_DETECT_MATCHING_FILES_CACHE)
-            [[ -n ${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set} ]] || return 1
-            EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
-            ;;
-        EVOP_DETECT_DIRECTORY_TEXT_CACHE)
-            [[ -n ${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set} ]] || return 1
-            EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
-            ;;
-        *)
-            return 1
-            ;;
-    esac
+    eval "cache_contents=\${$cache_name-}"
+    while IFS=$'\t' read -r current_key cached_value; do
+        [[ -n "$current_key" ]] || continue
+        if [[ "$current_key" == "$cache_key" ]]; then
+            EVOP_DETECT_CACHE_RESULT="$cached_value"
+            return 0
+        fi
+    done <<<"$cache_contents"
+
+    return 1
 }
 
 evop_detection_cache_store() {
     local cache_name="$1"
     local cache_key="$2"
     local cache_value="$3"
+    local cache_contents=""
 
-    if [[ -z "${ZSH_VERSION:-}" ]]; then
+    if [[ "$EVOP_DETECT_CACHE_BACKEND" == "associative-array" ]]; then
+        case "$cache_name" in
+            EVOP_DETECT_MATCHING_FILES_CACHE)
+                EVOP_DETECT_MATCHING_FILES_CACHE["$cache_key"]="$cache_value"
+                ;;
+            EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                EVOP_DETECT_DIRECTORY_TEXT_CACHE["$cache_key"]="$cache_value"
+                ;;
+            EVOP_DETECT_FILE_TEXT_CACHE)
+                EVOP_DETECT_FILE_TEXT_CACHE["$cache_key"]="$cache_value"
+                ;;
+        esac
         return 0
     fi
 
-    case "$cache_name" in
-        EVOP_DETECT_MATCHING_FILES_CACHE)
-            EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]="$cache_value"
-            ;;
-        EVOP_DETECT_DIRECTORY_TEXT_CACHE)
-            EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]="$cache_value"
-            ;;
-    esac
+    eval "cache_contents=\${$cache_name-}"
+    if [[ -n "$cache_contents" ]]; then
+        printf -v "$cache_name" '%s\n%s\t%s' "$cache_contents" "$cache_key" "$cache_value"
+    else
+        printf -v "$cache_name" '%s\t%s' "$cache_key" "$cache_value"
+    fi
 }
 
 evop_filename_matches_any_pattern() {
@@ -259,6 +297,23 @@ evop_text_contains_any() {
     return 1
 }
 
+evop_detection_file_text() {
+    local file_path="$1"
+    local file_text=""
+
+    if evop_detection_cache_lookup EVOP_DETECT_FILE_TEXT_CACHE "$file_path"; then
+        printf '%s' "$EVOP_DETECT_CACHE_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        file_text="$(tr '[:upper:]' '[:lower:]' <"$file_path")"
+    fi
+
+    evop_detection_cache_store EVOP_DETECT_FILE_TEXT_CACHE "$file_path" "$file_text"
+    printf '%s' "$file_text"
+}
+
 evop_directory_contains_text() {
     local directory="$1"
     local text="$2"
@@ -266,6 +321,8 @@ evop_directory_contains_text() {
     local cache_key=""
     local matching_files=""
     local rel_path=""
+    local lowered_text=""
+    local file_text=""
 
     cache_key="$(evop_detection_cache_key "$directory" "$text" "$@")"
     if evop_detection_cache_lookup EVOP_DETECT_DIRECTORY_TEXT_CACHE "$cache_key"; then
@@ -279,9 +336,11 @@ evop_directory_contains_text() {
         return 1
     fi
 
+    lowered_text="$(evop_lowercase "$text")"
     while IFS= read -r rel_path; do
         [[ -n "$rel_path" ]] || continue
-        if grep -Fqi -- "$text" "$directory/$rel_path"; then
+        file_text="$(evop_detection_file_text "$directory/$rel_path")"
+        if [[ "$file_text" == *"$lowered_text"* ]]; then
             evop_detection_cache_store EVOP_DETECT_DIRECTORY_TEXT_CACHE "$cache_key" "1"
             return 0
         fi

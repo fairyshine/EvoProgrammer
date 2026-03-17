@@ -4,7 +4,7 @@ if [[ -z "${EVOP_AGENT_DEFINITIONS_DIR:-}" ]]; then
     if [[ -n "${EVOP_AGENT_LIB_DIR:-}" ]]; then
         EVOP_AGENT_DEFINITIONS_DIR="$EVOP_AGENT_LIB_DIR/definitions"
     else
-        EVOP_AGENT_DEFINITIONS_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/definitions"
+        EVOP_AGENT_DEFINITIONS_DIR="$(evop_callsite_dir)/definitions"
     fi
 fi
 

@@ -4,7 +4,7 @@ if [[ -z "${PROJECT_CONTEXT_LIB_DIR:-}" ]]; then
     if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
         PROJECT_CONTEXT_LIB_DIR="$EVOP_LIB_DIR/project-context"
     else
-        PROJECT_CONTEXT_LIB_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/project-context"
+        PROJECT_CONTEXT_LIB_DIR="$(evop_callsite_dir)/project-context"
     fi
 fi
 

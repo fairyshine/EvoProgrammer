@@ -32,6 +32,34 @@ evop_function_exists() {
     typeset -f "$1" >/dev/null 2>&1
 }
 
+evop_callsite_file_path() {
+    if [[ -n "${BASH_SOURCE[1]:-}" ]]; then
+        printf '%s' "${BASH_SOURCE[1]}"
+        return 0
+    fi
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        if [[ -n "${funcfiletrace[1]:-}" ]]; then
+            printf '%s' "${funcfiletrace[1]%:*}"
+            return 0
+        fi
+
+        if [[ -n "${funcsourcetrace[1]:-}" ]]; then
+            printf '%s' "${funcsourcetrace[1]%:*}"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+evop_callsite_dir() {
+    local file_path=""
+
+    file_path="$(evop_callsite_file_path)" || return 1
+    (cd "$(dirname -- "$file_path")" && pwd)
+}
+
 evop_require_executable_file() {
     local file_path="$1"
     local label="$2"

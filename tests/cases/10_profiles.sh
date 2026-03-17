@@ -36,3 +36,15 @@ EOF
 assert_contains "$profile_hook_output" "Inspect package entrypoints, service modules, schemas, and tests before editing." "Language profiles should be able to contribute project-context search guidance"
 assert_contains "$profile_hook_output" "Existing pytest-style tests are present; extend the nearest coverage before broadening integration checks." "Profile hooks should be able to add dynamic analysis based on the target directory"
 pass "Profile project-context hooks"
+
+profile_catalog_zsh_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+printf 'languages=%s\n' "$(evop_supported_profiles_as_string languages)"
+EOF
+)"
+assert_contains "$profile_catalog_zsh_output" "languages=cpp" "Profile catalog should load cleanly under zsh"
+pass "Profile catalog zsh compatibility"

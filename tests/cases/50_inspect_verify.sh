@@ -31,6 +31,7 @@ print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'lin
 print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
 print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
+print(f"profile_detection_ok={any(item['name'] == 'typescript' for item in data['profile_detection']['languages'])}")
 PY
 )"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
@@ -41,6 +42,7 @@ assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should i
 assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should include facts-cache lookup diagnostics"
 assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
 assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should include phase timings"
+assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT json should include profile-detection candidates"
 pass "INSPECT json"
 
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
@@ -49,6 +51,7 @@ assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT di
 assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT diagnostics should print cache lookup counts"
 assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
 assert_contains "$inspect_diagnostics_output" "Timing resolve_profiles:" "INSPECT diagnostics should print timing diagnostics"
+assert_contains "$inspect_diagnostics_output" "Language candidates:" "INSPECT diagnostics should include profile detection candidates"
 pass "INSPECT diagnostics"
 
 inspect_timings_output="$(run_expect_success "INSPECT should render timings context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format timings)"
@@ -56,6 +59,14 @@ assert_contains "$inspect_timings_output" "Inspection timings (ms):" "INSPECT ti
 assert_contains "$inspect_timings_output" "resolve_profiles:" "INSPECT timings should print the overall resolve timing"
 assert_contains "$inspect_timings_output" "finalize_analysis:" "INSPECT timings should print the overall finalize timing"
 pass "INSPECT timings"
+
+inspect_profiles_output="$(run_expect_success "INSPECT should render profile detection candidates" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format profiles)"
+assert_contains "$inspect_profiles_output" "Profile detection report:" "INSPECT profiles mode should print the profile detection heading"
+assert_contains "$inspect_profiles_output" "Language candidates:" "INSPECT profiles mode should print language candidates"
+assert_contains "$inspect_profiles_output" "typescript (score: 100)" "INSPECT profiles mode should include the detected TypeScript candidate"
+assert_contains "$inspect_profiles_output" "Framework candidates:" "INSPECT profiles mode should print framework candidates"
+assert_contains "$inspect_profiles_output" "nextjs (score: 95)" "INSPECT profiles mode should include the detected Next.js candidate"
+pass "INSPECT profiles"
 
 setup_verify_workspace
 verify_output="$(run_expect_success "VERIFY should run the detected verification chain" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR")"

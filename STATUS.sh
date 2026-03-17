@@ -145,7 +145,7 @@ for dir in "${entries[@]}"; do
         break
     fi
     format_entry "$dir"
-    ((count++))
+    ((count += 1))
 done
 
 printf '\n%d of %d entries shown.\n' "$count" "${#entries[@]}"
