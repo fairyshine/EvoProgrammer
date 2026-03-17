@@ -33,6 +33,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 ### 3. Profile system
 
 - `lib/profiles/detect.sh`: profile entrypoints
+- `lib/profiles/candidates.sh`: cheap candidate planning that narrows which profiles need to be loaded for a given repo and prompt
 - `lib/profiles/diagnostics.sh`: matched-candidate and score tracking for profile auto-detection
 - `lib/profiles/definitions/`: language/framework/project-type definitions
 - `lib/profiles/resolve.sh`: merges explicit flags and auto-detection results
@@ -57,10 +58,12 @@ keeps `inspect --format diagnostics`, `inspect --format timings`, and
 `inspect --format json` informative without leaking cache or measurement
 internals into the CLI entrypoint.
 
-The profile diagnostics sub-layer keeps auto-detection observable without
-re-running detection logic in presentation code, so `inspect --format profiles`,
-diagnostics output, and JSON rendering all read from the same candidate-score
-state.
+The profile candidate and diagnostics sub-layers keep auto-detection both fast
+and observable. Candidate planning narrows the expensive hook-loading path using
+cheap repo facts first, while diagnostics preserves the final matched candidates
+without re-running detection logic in presentation code. That keeps
+`inspect --format profiles`, `inspect --format env`, diagnostics output, and
+JSON rendering aligned on the same detection state.
 
 ## Command Model
 

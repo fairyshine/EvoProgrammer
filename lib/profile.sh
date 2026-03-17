@@ -19,5 +19,6 @@ fi
 source "$PROFILE_LIB_DIR/diagnostics.sh"
 source "$PROFILE_LIB_DIR/catalog.sh"
 source "$PROFILE_LIB_DIR/detect.sh"
+source "$PROFILE_LIB_DIR/candidates.sh"
 source "$PROJECT_CONTEXT_LIB"
 source "$PROFILE_LIB_DIR/resolve.sh"

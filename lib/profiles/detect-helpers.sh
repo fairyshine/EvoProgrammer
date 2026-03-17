@@ -173,8 +173,15 @@ evop_filename_matches_any_pattern() {
     shift
     local pattern
 
-    # shellcheck disable=SC2254
     for pattern in "$@"; do
+        if [[ -n "${ZSH_VERSION:-}" ]]; then
+            if [[ "$filename" == ${~pattern} ]]; then
+                return 0
+            fi
+            continue
+        fi
+
+        # shellcheck disable=SC2254
         case "$filename" in
             $pattern)
                 return 0
@@ -187,7 +194,9 @@ evop_filename_matches_any_pattern() {
 
 evop_directory_has_file_named() {
     local directory="$1"
-    local filename="$2"
+    shift
+    local filename=""
+    local basename=""
 
     evop_ensure_detection_facts "$directory"
 
@@ -195,11 +204,12 @@ evop_directory_has_file_named() {
         return 1
     fi
 
-    local basename
     for basename in "${EVOP_DETECT_FILE_BASENAMES[@]}"; do
-        if [[ "$basename" == "$filename" ]]; then
-            return 0
-        fi
+        for filename in "$@"; do
+            if [[ "$basename" == "$filename" ]]; then
+                return 0
+            fi
+        done
     done
 
     return 1
@@ -227,7 +237,9 @@ evop_directory_has_file_pattern() {
 
 evop_directory_has_path_named() {
     local directory="$1"
-    local name="$2"
+    shift
+    local name=""
+    local basename=""
 
     evop_ensure_detection_facts "$directory"
 
@@ -235,11 +247,12 @@ evop_directory_has_path_named() {
         return 1
     fi
 
-    local basename
     for basename in "${EVOP_DETECT_PATH_BASENAMES[@]}"; do
-        if [[ "$basename" == "$name" ]]; then
-            return 0
-        fi
+        for name in "$@"; do
+            if [[ "$basename" == "$name" ]]; then
+                return 0
+            fi
+        done
     done
 
     return 1

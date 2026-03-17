@@ -45,6 +45,27 @@ assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should i
 assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT json should include profile-detection candidates"
 pass "INSPECT json"
 
+inspect_env_summary="$(
+    ROOT_DIR="$ROOT_DIR" INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" bash <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format env)"
+
+printf '%s\n' "$EVOP_INSPECT_LANGUAGE_PROFILE"
+printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
+printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
+printf 'automation_ok=%s\n' "$([[ "$EVOP_INSPECT_AUTOMATION" == *".github/workflows"* ]] && printf true || printf false)"
+printf 'workflow_ok=%s\n' "$([[ "$EVOP_INSPECT_TASK_WORKFLOW" == *"Reproduce or localize the failure path first"* ]] && printf true || printf false)"
+printf 'timings_ok=%s\n' "$([[ "$EVOP_INSPECT_TIMING_RESOLVE_PROFILES_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export the detected language profile"
+assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
+assert_contains "$inspect_env_summary" "pnpm lint" "INSPECT env should export command slots"
+assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should export automation surfaces"
+assert_contains "$inspect_env_summary" "workflow_ok=true" "INSPECT env should export workflow guidance"
+assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
+pass "INSPECT env"
+
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
 assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"
 assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"

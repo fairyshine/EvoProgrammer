@@ -48,3 +48,43 @@ EOF
 )"
 assert_contains "$profile_catalog_zsh_output" "languages=cpp" "Profile catalog should load cleanly under zsh"
 pass "Profile catalog zsh compatibility"
+
+profile_candidate_output="$(
+    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf '#!/usr/bin/env bash\n' >"$tmpdir/tool.sh"
+
+evop_prepare_profile_detection_candidates "languages" "$tmpdir" ""
+
+printf 'mode=%s\n' "$EVOP_PROFILE_CANDIDATE_MODE"
+printf 'candidates=%s\n' "$EVOP_PROFILE_CANDIDATE_LIST"
+EOF
+)"
+assert_contains "$profile_candidate_output" "mode=filtered" "Profile candidate planning should narrow obvious repositories"
+assert_contains "$profile_candidate_output" "candidates=shell" "Profile candidate planning should keep the matching shell profile"
+pass "Profile candidate planning"
+
+profile_detect_zsh_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf '#!/usr/bin/env bash\n' >"$tmpdir/tool.sh"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'detected=%s\n' "$EVOP_DETECTED_PROFILE"
+else
+    printf 'detected=none\n'
+fi
+EOF
+)"
+assert_contains "$profile_detect_zsh_output" "detected=shell" "Profile detection should honor filename patterns under zsh"
+pass "Profile detect zsh patterns"

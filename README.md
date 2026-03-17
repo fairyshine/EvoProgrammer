@@ -87,6 +87,7 @@ EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
+EvoProgrammer inspect --target-dir /path/to/project --format env
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
@@ -151,6 +152,7 @@ EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing te
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
+EvoProgrammer inspect --target-dir /path/to/project --format env
 ```
 
 Use `verify` when you want EvoProgrammer to execute the detected command chain
@@ -168,6 +170,10 @@ you can see cache lookups, hit rate, and entry counts when profiling detection.
 `inspect --format profiles` shows the matched language, framework, and
 project-type candidates with their detection scores, which is useful when you
 want to understand or debug auto-detection decisions.
+
+`inspect --format env` exports the same resolved context as shell-safe
+`EVOP_INSPECT_*` assignments, so CI jobs and helper scripts can `source` the
+result instead of re-parsing human-readable output.
 
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable
@@ -210,6 +216,7 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `STATUS.sh` | Run history viewer |
 | `lib/agents/definitions/` | Pluggable agent definitions |
 | `lib/profiles/diagnostics.sh` | Matched profile candidates and detection-score reporting |
+| `lib/profiles/candidates.sh` | Cheap candidate planning that narrows profile loading before hook execution |
 | `lib/profiles/definitions/` | Language, framework, and project-type profiles |
 | `lib/project-context/` | Repo inspection, command inference, and prompt rendering |
 

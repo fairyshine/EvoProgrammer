@@ -202,6 +202,66 @@ evop_render_project_context_json() {
     printf '}\n'
 }
 
+evop_print_env_assignment() {
+    printf '%s=%q\n' "$1" "$2"
+}
+
+evop_print_project_inspection_env() {
+    local slot=""
+    local command=""
+    local source=""
+    local slot_key=""
+
+    evop_print_env_assignment "EVOP_INSPECT_TARGET_DIR" "${TARGET_DIR:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT" "${AGENT:-}"
+    evop_print_env_assignment "EVOP_INSPECT_LANGUAGE_PROFILE" "${LANGUAGE_PROFILE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_LANGUAGE_PROFILE_SOURCE" "${LANGUAGE_PROFILE_SOURCE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_FRAMEWORK_PROFILE" "${FRAMEWORK_PROFILE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_FRAMEWORK_PROFILE_SOURCE" "${FRAMEWORK_PROFILE_SOURCE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_PROJECT_TYPE" "${PROJECT_TYPE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_PROJECT_TYPE_SOURCE" "${PROJECT_TYPE_SOURCE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_PACKAGE_MANAGER" "${EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER:-}"
+    evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
+
+    while IFS= read -r slot; do
+        command="$(evop_get_project_command "$slot")"
+        source="$(evop_get_project_command_source "$slot")"
+        slot_key="$(printf '%s' "$slot" | tr '[:lower:]-' '[:upper:]_')"
+        evop_print_env_assignment "EVOP_INSPECT_${slot_key}_COMMAND" "$command"
+        evop_print_env_assignment "EVOP_INSPECT_${slot_key}_COMMAND_SOURCE" "$source"
+    done < <(evop_project_command_slots)
+
+    evop_print_env_assignment "EVOP_INSPECT_SEARCH_ROOTS" "${EVOP_PROJECT_CONTEXT_SEARCH_ROOTS:-}"
+    evop_print_env_assignment "EVOP_INSPECT_STRUCTURE" "${EVOP_PROJECT_CONTEXT_STRUCTURE:-}"
+    evop_print_env_assignment "EVOP_INSPECT_CONVENTIONS" "${EVOP_PROJECT_CONTEXT_CONVENTIONS:-}"
+    evop_print_env_assignment "EVOP_INSPECT_RISK_AREAS" "${EVOP_PROJECT_CONTEXT_RISK_AREAS:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AUTOMATION" "${EVOP_PROJECT_CONTEXT_AUTOMATION:-}"
+    evop_print_env_assignment "EVOP_INSPECT_VALIDATION" "${EVOP_PROJECT_CONTEXT_VALIDATION:-}"
+    evop_print_env_assignment "EVOP_INSPECT_TASK_KIND" "${EVOP_PROJECT_CONTEXT_TASK_KIND:-}"
+    evop_print_env_assignment "EVOP_INSPECT_TASK_WORKFLOW" "${EVOP_PROJECT_CONTEXT_TASK_WORKFLOW:-}"
+    evop_print_env_assignment "EVOP_INSPECT_SEARCH_STRATEGY" "${EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY:-}"
+    evop_print_env_assignment "EVOP_INSPECT_EDIT_STRATEGY" "${EVOP_PROJECT_CONTEXT_EDIT_STRATEGY:-}"
+    evop_print_env_assignment "EVOP_INSPECT_VERIFICATION_STRATEGY" "${EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY:-}"
+    evop_print_env_assignment "EVOP_INSPECT_RISK_FOCUS" "${EVOP_PROJECT_CONTEXT_RISK_FOCUS:-}"
+    evop_print_env_assignment "EVOP_INSPECT_PROFILE_DETECTION_LANGUAGES" "$(evop_profile_detection_candidates_sorted languages)"
+    evop_print_env_assignment "EVOP_INSPECT_PROFILE_DETECTION_FRAMEWORKS" "$(evop_profile_detection_candidates_sorted frameworks)"
+    evop_print_env_assignment "EVOP_INSPECT_PROFILE_DETECTION_PROJECT_TYPES" "$(evop_profile_detection_candidates_sorted project-types)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_BACKEND" "${EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND:-}"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_LOOKUPS" "${EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_HITS" "${EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_MISSES" "${EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_HIT_RATE_PERCENT" "$(evop_project_context_cache_hit_rate_percent)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_RELATIVE_EXISTS_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_LITERAL_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_REGEX_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_LANGUAGE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_FRAMEWORK_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_PROJECT_TYPE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_ANALYZE_CONTEXT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_RESOLVE_PROFILES_MS" "${EVOP_PROJECT_CONTEXT_TIMING_RESOLVE_PROFILES_MS:-0}"
+    evop_print_env_assignment "EVOP_INSPECT_TIMING_FINALIZE_ANALYSIS_MS" "${EVOP_PROJECT_CONTEXT_TIMING_FINALIZE_ANALYSIS_MS:-0}"
+}
+
 evop_render_project_context_prompt() {
     local guidance=""
     local has_repo_context=0

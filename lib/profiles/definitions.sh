@@ -4,6 +4,9 @@
 
 PROFILE_DEFINITIONS_DIR="$PROFILE_CATALOG_DIR/definitions"
 EVOP_PROFILE_CATEGORIES="languages frameworks project-types"
+EVOP_SUPPORTED_PROFILES_CACHE_LANGUAGES=""
+EVOP_SUPPORTED_PROFILES_CACHE_FRAMEWORKS=""
+EVOP_SUPPORTED_PROFILES_CACHE_PROJECT_TYPES=""
 
 evop_validate_profile_category() {
     local category_dir="$1"
@@ -20,20 +23,48 @@ evop_validate_profile_category() {
 evop_supported_profiles_for_category() {
     local category_dir="$1"
     local category_path
+    local cache_var_name=""
+    local cached_profiles=""
+    local discovered_profiles=""
 
     evop_validate_profile_category "$category_dir"
     category_path="$PROFILE_DEFINITIONS_DIR/$category_dir"
+
+    case "$category_dir" in
+        languages)
+            cache_var_name="EVOP_SUPPORTED_PROFILES_CACHE_LANGUAGES"
+            ;;
+        frameworks)
+            cache_var_name="EVOP_SUPPORTED_PROFILES_CACHE_FRAMEWORKS"
+            ;;
+        project-types)
+            cache_var_name="EVOP_SUPPORTED_PROFILES_CACHE_PROJECT_TYPES"
+            ;;
+    esac
+
+    eval "cached_profiles=\${$cache_var_name-}"
+    if [[ -n "$cached_profiles" ]]; then
+        printf '%s\n' "$cached_profiles"
+        return 0
+    fi
 
     if [[ ! -d "$category_path" ]]; then
         return 0
     fi
 
     while IFS= read -r profile_dir; do
-        basename "$profile_dir"
+        [[ -n "$discovered_profiles" ]] && discovered_profiles+=$'\n'
+        discovered_profiles+="$(basename "$profile_dir")"
     done < <(
         find "$category_path" -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/profile.sh' ';' -print 2>/dev/null \
             | LC_ALL=C sort
     )
+
+    printf -v "$cache_var_name" '%s' "$discovered_profiles"
+
+    if [[ -n "$discovered_profiles" ]]; then
+        printf '%s\n' "$discovered_profiles"
+    fi
 }
 
 evop_profile_match_file_named() {
@@ -184,8 +215,18 @@ evop_detect_profile_via_hooks() {
     local score
     local best_profile=""
     local best_score=-1
+    local candidate_mode="all"
+    local candidate_profiles=""
 
     EVOP_DETECTED_PROFILE=""
+    evop_prepare_profile_detection_candidates "$category_dir" "$target_dir" "$prompt"
+    candidate_mode="$EVOP_PROFILE_CANDIDATE_MODE"
+    candidate_profiles="$EVOP_PROFILE_CANDIDATE_LIST"
+
+    if [[ "$candidate_mode" == "none" ]]; then
+        evop_reset_profile_definition
+        return 1
+    fi
 
     while IFS= read -r profile_name; do
         [[ -n "$profile_name" ]] || continue
@@ -211,7 +252,13 @@ evop_detect_profile_via_hooks() {
             best_profile="$profile_name"
             best_score="$score"
         fi
-    done < <(evop_supported_profiles_for_category "$category_dir")
+    done < <(
+        if [[ "$candidate_mode" == "filtered" ]]; then
+            printf '%s\n' "$candidate_profiles"
+        else
+            evop_supported_profiles_for_category "$category_dir"
+        fi
+    )
 
     evop_reset_profile_definition
 
