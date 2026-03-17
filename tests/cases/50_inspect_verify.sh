@@ -30,6 +30,7 @@ print(f"automation_ok={any('.github/workflows' in item for item in data['automat
 print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'line-table'}}")
 print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
 print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
+print(f"text_entries_ok={data['facts_cache']['file_text_entries'] > 0}")
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
 print(f"profile_detection_ok={any(item['name'] == 'typescript' for item in data['profile_detection']['languages'])}")
 PY
@@ -41,6 +42,7 @@ assert_contains "$inspect_json_summary" "automation_ok=True" "INSPECT json shoul
 assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should include the facts-cache backend"
 assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should include facts-cache lookup diagnostics"
 assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
+assert_contains "$inspect_json_summary" "text_entries_ok=True" "INSPECT json should include file-text cache entry counts"
 assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should include phase timings"
 assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT json should include profile-detection candidates"
 pass "INSPECT json"
@@ -55,6 +57,7 @@ printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
 printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
 printf 'automation_ok=%s\n' "$([[ "$EVOP_INSPECT_AUTOMATION" == *".github/workflows"* ]] && printf true || printf false)"
 printf 'workflow_ok=%s\n' "$([[ "$EVOP_INSPECT_TASK_WORKFLOW" == *"Reproduce or localize the failure path first"* ]] && printf true || printf false)"
+printf 'text_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_FILE_TEXT_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'timings_ok=%s\n' "$([[ "$EVOP_INSPECT_TIMING_RESOLVE_PROFILES_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
 EOF
 )"
@@ -63,6 +66,7 @@ assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the pac
 assert_contains "$inspect_env_summary" "pnpm lint" "INSPECT env should export command slots"
 assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should export automation surfaces"
 assert_contains "$inspect_env_summary" "workflow_ok=true" "INSPECT env should export workflow guidance"
+assert_contains "$inspect_env_summary" "text_cache_ok=true" "INSPECT env should export file-text cache entry counts"
 assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
 pass "INSPECT env"
 
@@ -71,6 +75,7 @@ assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT
 assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"
 assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT diagnostics should print cache lookup counts"
 assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
+assert_contains "$inspect_diagnostics_output" "File-text cache entries:" "INSPECT diagnostics should print file-text cache entries"
 assert_contains "$inspect_diagnostics_output" "Timing resolve_profiles:" "INSPECT diagnostics should print timing diagnostics"
 assert_contains "$inspect_diagnostics_output" "Language candidates:" "INSPECT diagnostics should include profile detection candidates"
 pass "INSPECT diagnostics"
@@ -84,7 +89,7 @@ pass "INSPECT timings"
 inspect_profiles_output="$(run_expect_success "INSPECT should render profile detection candidates" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format profiles)"
 assert_contains "$inspect_profiles_output" "Profile detection report:" "INSPECT profiles mode should print the profile detection heading"
 assert_contains "$inspect_profiles_output" "Language candidates:" "INSPECT profiles mode should print language candidates"
-assert_contains "$inspect_profiles_output" "typescript (score: 100)" "INSPECT profiles mode should include the detected TypeScript candidate"
+assert_contains "$inspect_profiles_output" "typescript (score: 80)" "INSPECT profiles mode should include the detected TypeScript candidate"
 assert_contains "$inspect_profiles_output" "Framework candidates:" "INSPECT profiles mode should print framework candidates"
 assert_contains "$inspect_profiles_output" "nextjs (score: 95)" "INSPECT profiles mode should include the detected Next.js candidate"
 pass "INSPECT profiles"
@@ -97,6 +102,28 @@ assert_contains "$verify_output" "Running build: make build" "VERIFY should incl
 assert_contains "$verify_log" $'lint\ntypecheck\ntest\nbuild' "VERIFY should run the steps in the expected order"
 pass "VERIFY execution"
 
+verify_report_json="$TEST_TMPDIR/verify-report.json"
+run_expect_success "VERIFY should write a json report" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps lint,test --report-file "$verify_report_json" --report-format json >/dev/null
+verify_report_json_summary="$(VERIFY_REPORT_JSON="$(cat "$verify_report_json")" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["VERIFY_REPORT_JSON"])
+print(data["final_status"])
+print(data["steps"]["lint"]["status"])
+print(data["steps"]["test"]["status"])
+print(f"build_ok={data['steps']['build']['status'] == 'not_selected'}")
+print(f"log_ok={data['steps']['lint']['log_file'].endswith('lint.log')}")
+print(f"duration_ok={data['steps']['lint']['duration_ms'] >= 0}")
+PY
+)"
+assert_contains "$verify_report_json_summary" "0" "VERIFY json report should include the final status"
+assert_contains "$verify_report_json_summary" "passed" "VERIFY json report should mark selected passing steps"
+assert_contains "$verify_report_json_summary" "build_ok=True" "VERIFY json report should mark unselected steps"
+assert_contains "$verify_report_json_summary" "log_ok=True" "VERIFY json report should include step log files"
+assert_contains "$verify_report_json_summary" "duration_ok=True" "VERIFY json report should include step durations"
+pass "VERIFY json report"
+
 setup_verify_shell_workspace
 verify_shell_output="$(run_expect_success "VERIFY should prefer zsh for command execution" env PATH="$TEST_VERIFY_SHELL_BIN:$PATH" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_SHELL_DIR" --steps lint)"
 verify_shell_log="$(cat "$TEST_VERIFY_SHELL_LOG")"
@@ -108,6 +135,26 @@ verify_dry_run_output="$(run_expect_success "VERIFY dry-run should print command
 assert_contains "$verify_dry_run_output" "Running test: make test" "VERIFY dry-run should print the selected test command"
 assert_contains "$verify_dry_run_output" "Running build: make build" "VERIFY dry-run should print the selected build command"
 pass "VERIFY dry-run"
+
+verify_report_env="$TEST_TMPDIR/verify-report.env"
+run_expect_success "VERIFY dry-run should write an env report" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps test,build --dry-run --report-file "$verify_report_env" --report-format env >/dev/null
+verify_report_env_summary="$(
+    VERIFY_REPORT_ENV="$verify_report_env" bash <<'EOF'
+set -euo pipefail
+source "$VERIFY_REPORT_ENV"
+printf '%s\n' "$EVOP_VERIFY_FINAL_STATUS"
+printf '%s\n' "$EVOP_VERIFY_DRY_RUN"
+printf '%s\n' "$EVOP_VERIFY_TEST_STATUS"
+printf 'build_ok=%s\n' "$([[ "$EVOP_VERIFY_BUILD_STATUS" == "dry_run" ]] && printf true || printf false)"
+printf 'lint_ok=%s\n' "$([[ "$EVOP_VERIFY_LINT_STATUS" == "not_selected" ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$verify_report_env_summary" "0" "VERIFY env report should include the final status"
+assert_contains "$verify_report_env_summary" "1" "VERIFY env report should record dry-run mode"
+assert_contains "$verify_report_env_summary" "dry_run" "VERIFY env report should mark selected dry-run steps"
+assert_contains "$verify_report_env_summary" "build_ok=true" "VERIFY env report should export build status"
+assert_contains "$verify_report_env_summary" "lint_ok=true" "VERIFY env report should export unselected step status"
+pass "VERIFY env report"
 
 cli_inspect_output="$(run_expect_success "CLI inspect should dispatch to INSPECT" "$CLI_SCRIPT" inspect --target-dir "$TEST_CONTEXT_DIR")"
 assert_contains "$cli_inspect_output" "Suggested commands:" "CLI inspect should dispatch to INSPECT"

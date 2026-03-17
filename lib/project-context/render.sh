@@ -254,6 +254,7 @@ evop_print_project_inspection_env() {
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_RELATIVE_EXISTS_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_LITERAL_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_REGEX_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_TEXT_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_LANGUAGE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS:-0}"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_FRAMEWORK_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS:-0}"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_PROJECT_TYPE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS:-0}"

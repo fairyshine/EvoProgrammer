@@ -91,6 +91,8 @@ EvoProgrammer inspect --target-dir /path/to/project --format env
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project \
+  --report-file ./verify-report.json --report-format json
 
 # 查看版本
 EvoProgrammer --version
@@ -161,6 +163,7 @@ EvoProgrammer inspect --target-dir /path/to/project --format env
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --dry-run
+EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report.env --report-format env
 ```
 
 `inspect --format diagnostics` 会额外输出仓库检测 facts 缓存的命中、未命中和条目数，
@@ -174,6 +177,10 @@ EvoProgrammer verify --target-dir /path/to/project --dry-run
 
 `verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
 看到的命令计划保持一致。
+
+`verify --report-file` 会把实际执行过的步骤结果、退出码、耗时和日志路径输出成
+JSON 或可 `source` 的 `EVOP_VERIFY_*` 环境变量，方便在 CI 或外层脚本里复用，
+不用再解析标准输出。
 
 ## 项目配置文件
 

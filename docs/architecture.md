@@ -43,12 +43,13 @@ This layer answers: "What kind of repo is this?"
 ### 4. Project inspection
 
 - `lib/project-context/commands.sh`: package manager and command-slot inference
-- `lib/project-context/facts.sh`: cached filesystem and file-match facts for repo inspection, plus cache diagnostics
+- `lib/project-context/facts.sh`: cached filesystem, file-match, and manifest-text facts for repo inspection, plus cache diagnostics
 - `lib/project-context/timings.sh`: phase timing capture for profile resolution and inspection diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/render.sh`: prompt and human-readable rendering
 - `lib/project-context/state.sh`: shared inspection state
+- `lib/verify.sh`: reusable verification-report state and JSON/env rendering
 
 This layer answers: "How should this repo be searched, changed, verified, and
 operated?"
@@ -56,7 +57,9 @@ operated?"
 The facts and timings sub-layers expose diagnostics to the render layer, which
 keeps `inspect --format diagnostics`, `inspect --format timings`, and
 `inspect --format json` informative without leaking cache or measurement
-internals into the CLI entrypoint.
+internals into the CLI entrypoint. The facts cache now also stores manifest text
+for repeated literal lookups so repo analysis can avoid re-reading the same
+files dozens of times in one inspection pass.
 
 The profile candidate and diagnostics sub-layers keep auto-detection both fast
 and observable. Candidate planning narrows the expensive hook-loading path using
@@ -88,6 +91,11 @@ That makes the command plan reusable across:
 - `inspect`
 - `verify`
 - metadata written into artifacts
+
+Verification execution also records first-class step results, durations, and log
+paths. `VERIFY.sh` can emit that report as JSON or shell-safe env assignments so
+CI and helper scripts can consume the same execution state without scraping the
+human-readable log stream.
 
 ## Detection Strategy
 

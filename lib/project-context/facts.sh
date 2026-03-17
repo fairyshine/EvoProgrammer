@@ -8,21 +8,28 @@ EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS=0
 EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS=0
 EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=0
 EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
+EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=0
+EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
 
 if [[ -n "${ZSH_VERSION:-}" ]]; then
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="associative-array"
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=1
     typeset -A EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE
     typeset -A EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE
     typeset -A EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE
+    typeset -A EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE
 elif [[ -n "${BASH_VERSION:-}" && ${BASH_VERSINFO[0]:-0} -ge 4 ]]; then
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="associative-array"
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=1
     declare -A EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=()
     declare -A EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
     declare -A EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
+    declare -A EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
 else
     EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=""
     EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=""
     EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=""
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=""
 fi
 
 evop_reset_project_context_facts() {
@@ -31,15 +38,18 @@ evop_reset_project_context_facts() {
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS=0
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=0
     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
 
     if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; then
         EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=()
         EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
         EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
     else
         EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=""
         EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=""
         EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=""
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=""
     fi
 }
 
@@ -119,6 +129,10 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     [[ -n ${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]+set} ]] || return 1
                     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]}"
                     ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    [[ -n ${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]+set} ]] || return 1
+                    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]}"
+                    ;;
                 *)
                     return 1
                     ;;
@@ -140,6 +154,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                 EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
                     EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]="$cached_value"
                     ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]="$cached_value"
+                    ;;
             esac
         }
 
@@ -153,6 +170,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     ;;
                 EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
                     printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[@]}"
+                    ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[@]}"
                     ;;
                 *)
                     printf '0'
@@ -177,6 +197,10 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     [[ -n "${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]+set}" ]] || return 1
                     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]}"
                     ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    [[ -n "${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]+set}" ]] || return 1
+                    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]}"
+                    ;;
                 *)
                     return 1
                     ;;
@@ -198,6 +222,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                 EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
                     EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE["$cache_key"]="$cached_value"
                     ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE["$cache_key"]="$cached_value"
+                    ;;
             esac
         }
 
@@ -211,6 +238,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     ;;
                 EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
                     printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[@]}"
+                    ;;
+                EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+                    printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[@]}"
                     ;;
                 *)
                     printf '0'
@@ -281,10 +311,11 @@ evop_print_project_context_facts_diagnostics() {
     printf 'Relative-exists cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)"
     printf 'File-literal cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)"
     printf 'File-regex cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
+    printf 'File-text cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)"
 }
 
 evop_render_project_context_facts_diagnostics_json() {
-    printf '{"backend": %s, "lookups": %s, "hits": %s, "misses": %s, "hit_rate_percent": %s, "relative_exists_entries": %s, "file_literal_entries": %s, "file_regex_entries": %s}' \
+    printf '{"backend": %s, "lookups": %s, "hits": %s, "misses": %s, "hit_rate_percent": %s, "relative_exists_entries": %s, "file_literal_entries": %s, "file_regex_entries": %s, "file_text_entries": %s}' \
         "\"$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND\"" \
         "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS" \
         "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS" \
@@ -292,7 +323,8 @@ evop_render_project_context_facts_diagnostics_json() {
         "$(evop_project_context_cache_hit_rate_percent)" \
         "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)" \
         "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)" \
-        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
+        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)" \
+        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)"
 }
 
 evop_project_relative_exists() {
@@ -317,11 +349,41 @@ evop_project_relative_exists() {
     return 1
 }
 
+evop_project_file_text_cached() {
+    local file_path="$1"
+    local file_text=""
+
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
+
+    if (( EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED != 1 )); then
+        if [[ -f "$file_path" ]]; then
+            EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT="$(cat -- "$file_path")"
+            printf '%s' "$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        fi
+        return 0
+    fi
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        file_text="$(cat -- "$file_path")"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE "$file_path" "$file_text"
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT="$file_text"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+}
+
 evop_project_file_contains_literal_cached() {
     local file_path="$1"
     local needle="$2"
     local cache_key="$file_path|$needle"
     local cached_value=""
+    local file_text=""
 
     if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE "$cache_key"; then
         cached_value="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
@@ -329,7 +391,14 @@ evop_project_file_contains_literal_cached() {
         return $?
     fi
 
-    if [[ -f "$file_path" ]] && grep -Fq -- "$needle" "$file_path"; then
+    if (( EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED == 1 )); then
+        evop_project_file_text_cached "$file_path" >/dev/null
+        file_text="$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        if [[ "$file_text" == *"$needle"* ]]; then
+            evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE "$cache_key" "1"
+            return 0
+        fi
+    elif [[ -f "$file_path" ]] && grep -Fq -- "$needle" "$file_path"; then
         evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE "$cache_key" "1"
         return 0
     fi

@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC1090,SC2034,SC2154
 
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
 evop_exec_with_preferred_shell "$0" "$@"
@@ -14,6 +14,7 @@ AGENT_LIB="$SCRIPT_DIR/lib/agent.sh"
 PROFILE_LIB="$SCRIPT_DIR/lib/profile.sh"
 CLI_LIB="$SCRIPT_DIR/lib/cli.sh"
 CONFIG_LIB="$SCRIPT_DIR/lib/config.sh"
+VERIFY_LIB="$SCRIPT_DIR/lib/verify.sh"
 
 source "$COMMON_LIB"
 source "$RUNTIME_LIB"
@@ -21,11 +22,14 @@ source "$AGENT_LIB"
 source "$PROFILE_LIB"
 source "$CLI_LIB"
 source "$CONFIG_LIB"
+source "$VERIFY_LIB"
 
 evop_init_common_context
 VERIFY_STEPS=""
 CONTINUE_ON_ERROR=0
 LIST_ONLY=0
+REPORT_FILE=""
+REPORT_FORMAT="json"
 
 evop_parse_verify_steps() {
     local raw="${1:-}"
@@ -65,8 +69,7 @@ evop_parse_verify_steps() {
 evop_run_verify_step() {
     local slot="$1"
     local command="$2"
-    local verify_dir="$3"
-    local log_file="$verify_dir/$slot.log"
+    local log_file="$3"
     local exit_code=0
 
     evop_log_info "Running $slot: $command"
@@ -74,7 +77,7 @@ evop_run_verify_step() {
         return 0
     fi
 
-    mkdir -p "$verify_dir"
+    mkdir -p "$(dirname "$log_file")"
     set +e
     (
         cd "$TARGET_DIR"
@@ -105,6 +108,8 @@ Options:
       --steps CSV          Comma-separated subset of: lint,typecheck,test,build.
       --list               Print the detected verification commands and exit.
   -c, --continue-on-error  Keep going after a failed verification step.
+      --report-file FILE   Write a machine-readable verification summary file.
+      --report-format NAME Report format: json or env. Default: json.
       --dry-run            Print the selected commands without running them.
   -h, --help               Show this help text.
 EOF
@@ -124,6 +129,16 @@ while (($# > 0)); do
         --list)
             LIST_ONLY=1
             shift
+            ;;
+        --report-file)
+            evop_require_option_value "$1" "$#"
+            REPORT_FILE="$2"
+            shift 2
+            ;;
+        --report-format)
+            evop_require_option_value "$1" "$#"
+            REPORT_FORMAT="$2"
+            shift 2
             ;;
         -c|--continue-on-error)
             CONTINUE_ON_ERROR=1
@@ -157,6 +172,13 @@ fi
 evop_finalize_analysis_context
 
 selected_steps="$(evop_parse_verify_steps "$VERIFY_STEPS")"
+case "$REPORT_FORMAT" in
+    json|env)
+        ;;
+    *)
+        evop_fail "Unsupported verify report format: $REPORT_FORMAT"
+        ;;
+esac
 
 if (( LIST_ONLY == 1 )); then
     printf 'Target directory: %s\n' "$TARGET_DIR"
@@ -176,33 +198,57 @@ fi
 verify_dir="$(evop_prepare_unique_dir "$artifacts_root" "verify")"
 ran_any=0
 final_status=0
+evop_begin_verify_report "$TARGET_DIR" "$verify_dir" "$selected_steps" "$CONTINUE_ON_ERROR" "$DRY_RUN"
 
 while IFS= read -r slot; do
+    step_started_ms=0
+    step_duration_ms=0
+    step_exit_code=0
+    step_log_file="$verify_dir/$slot.log"
+
     [[ -n "$slot" ]] || continue
     command="$(evop_get_project_command "$slot")"
     if [[ -z "$command" ]]; then
         evop_log_info "Skipping $slot: no command detected."
+        evop_record_verify_step "$slot" "" "" "skipped" 0 0
         continue
     fi
 
     ran_any=1
-    if evop_run_verify_step "$slot" "$command" "$verify_dir"; then
-        :
+    if [[ "$DRY_RUN" == "1" ]]; then
+        evop_run_verify_step "$slot" "$command" "$step_log_file"
+        evop_record_verify_step "$slot" "$command" "" "dry_run" 0 0
     else
-        final_status=$?
-        evop_print_stderr "Verification step '$slot' failed with exit code $final_status."
-        if (( CONTINUE_ON_ERROR == 0 )); then
-            exit "$final_status"
+        step_started_ms="$(evop_now_millis)"
+        if evop_run_verify_step "$slot" "$command" "$step_log_file"; then
+            step_duration_ms="$(evop_elapsed_millis_since "$step_started_ms")"
+            evop_record_verify_step "$slot" "$command" "$step_log_file" "passed" 0 "$step_duration_ms"
+        else
+            step_exit_code=$?
+            step_duration_ms="$(evop_elapsed_millis_since "$step_started_ms")"
+            evop_record_verify_step "$slot" "$command" "$step_log_file" "failed" "$step_exit_code" "$step_duration_ms"
+            final_status=$step_exit_code
+            evop_print_stderr "Verification step '$slot' failed with exit code $final_status."
+            if (( CONTINUE_ON_ERROR == 0 )); then
+                EVOP_VERIFY_REPORT_FINAL_STATUS="$final_status"
+                evop_write_verify_report "$REPORT_FILE" "$REPORT_FORMAT"
+                exit "$final_status"
+            fi
         fi
     fi
 done <<<"$selected_steps"
 
 if (( ran_any == 0 )); then
+    EVOP_VERIFY_REPORT_FINAL_STATUS=1
+    evop_write_verify_report "$REPORT_FILE" "$REPORT_FORMAT"
     evop_fail "No runnable verification commands were detected for the selected steps."
 fi
 
 if [[ "$DRY_RUN" != "1" ]]; then
     evop_log_info "Verification logs: $verify_dir"
 fi
+
+EVOP_VERIFY_REPORT_FINAL_STATUS="$final_status"
+evop_write_verify_report "$REPORT_FILE" "$REPORT_FORMAT"
 
 exit "$final_status"

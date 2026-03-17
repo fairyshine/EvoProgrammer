@@ -91,6 +91,8 @@ EvoProgrammer inspect --target-dir /path/to/project --format env
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project \
+  --report-file ./verify-report.json --report-format json
 
 # Check version
 EvoProgrammer --version
@@ -162,6 +164,7 @@ itself:
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --dry-run
+EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report.env --report-format env
 ```
 
 `inspect --format diagnostics` adds facts-cache counters for repo inspection, so
@@ -178,6 +181,11 @@ result instead of re-parsing human-readable output.
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable
 commands.
+
+`verify --report-file` writes the executed step results, exit codes, durations,
+and log paths as either JSON or shell-safe `EVOP_VERIFY_*` assignments. That
+makes it easier to chain EvoProgrammer verification into CI or wrapper scripts
+without parsing stdout.
 
 ## Project Configuration
 
