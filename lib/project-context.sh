@@ -10,6 +10,7 @@ fi
 
 source "$PROJECT_CONTEXT_LIB_DIR/state.sh"
 source "$PROJECT_CONTEXT_LIB_DIR/facts.sh"
+source "$PROJECT_CONTEXT_LIB_DIR/timings.sh"
 source "$PROJECT_CONTEXT_LIB_DIR/commands.sh"
 source "$PROJECT_CONTEXT_LIB_DIR/repo-analysis.sh"
 source "$PROJECT_CONTEXT_LIB_DIR/workflow.sh"

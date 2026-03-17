@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/sh
+# shellcheck shell=bash
 
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
 evop_exec_with_preferred_shell "$0" "$@"
@@ -40,8 +41,11 @@ evop_parse_verify_steps() {
         return 0
     fi
 
-    raw="${raw//,/ }"
-    for item in $raw; do
+    while IFS= read -r item; do
+        item="${item#"${item%%[![:space:]]*}"}"
+        item="${item%"${item##*[![:space:]]}"}"
+        [[ -n "$item" ]] || continue
+
         case "$item" in
             lint|typecheck|test|build)
                 if [[ "$normalized" != *"$item"* ]]; then
@@ -53,7 +57,7 @@ evop_parse_verify_steps() {
                 evop_fail "Unsupported verify step: $item"
                 ;;
         esac
-    done
+    done < <(printf '%s\n' "$raw" | tr ',' '\n')
 
     printf '%s' "$normalized"
 }

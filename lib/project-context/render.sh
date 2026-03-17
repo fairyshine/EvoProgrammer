@@ -152,6 +152,7 @@ evop_render_project_context_json() {
     printf '  "automation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
     printf '  "validation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_VALIDATION")"
     printf '  "facts_cache": %s,\n' "$(evop_render_project_context_facts_diagnostics_json)"
+    printf '  "timings": %s,\n' "$(evop_render_project_context_timings_json)"
     printf '  "task_kind": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_KIND")"
     printf '  "task_workflow": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_WORKFLOW")"
     printf '  "search_strategy": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
@@ -339,4 +340,14 @@ evop_print_project_inspection_diagnostics() {
     while IFS= read -r line; do
         printf -- '- %s\n' "$line"
     done < <(evop_print_project_context_facts_diagnostics)
+    while IFS= read -r line; do
+        printf -- '- Timing %s\n' "$line"
+    done < <(evop_print_project_context_timings)
+}
+
+evop_print_project_inspection_timings() {
+    printf 'Inspection timings (ms):\n'
+    while IFS= read -r line; do
+        printf -- '- %s\n' "$line"
+    done < <(evop_print_project_context_timings)
 }

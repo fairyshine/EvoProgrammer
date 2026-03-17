@@ -5,7 +5,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 
 ## Core Flow
 
-1. `bin/EvoProgrammer` dispatches to a subcommand.
+1. `bin/EvoProgrammer` dispatches to a subcommand through a POSIX bootstrap shim and then re-execs into the preferred interactive shell.
 2. CLI context resolution loads config, validates flags, and resolves the target directory.
 3. Profile detection identifies language, framework, and project type.
 4. Project inspection derives package manager, workspace mode, command plan, structure hints, conventions, and risk areas.
@@ -42,6 +42,7 @@ This layer answers: "What kind of repo is this?"
 
 - `lib/project-context/commands.sh`: package manager and command-slot inference
 - `lib/project-context/facts.sh`: cached filesystem and file-match facts for repo inspection, plus cache diagnostics
+- `lib/project-context/timings.sh`: phase timing capture for profile resolution and inspection diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/render.sh`: prompt and human-readable rendering
@@ -50,9 +51,10 @@ This layer answers: "What kind of repo is this?"
 This layer answers: "How should this repo be searched, changed, verified, and
 operated?"
 
-The facts sub-layer exposes cache diagnostics to the render layer, which keeps
-`inspect --format diagnostics` and `inspect --format json` informative without
-leaking cache internals into the CLI entrypoint.
+The facts and timings sub-layers expose diagnostics to the render layer, which
+keeps `inspect --format diagnostics`, `inspect --format timings`, and
+`inspect --format json` informative without leaking cache or measurement
+internals into the CLI entrypoint.
 
 ## Command Model
 

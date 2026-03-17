@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC1003,SC1091,SC2034
+
 EVOPROGRAMMER_DEFAULT_AGENT="codex"
 EVOP_PARSED_LIST=()
 EVOP_AGENT_COMMAND=()
@@ -37,7 +39,7 @@ evop_build_agent_command() {
 
     evop_load_agent_definition "$agent"
 
-    if ! declare -F evop_agent_build_command >/dev/null 2>&1; then
+    if ! evop_function_exists evop_agent_build_command; then
         evop_fail "Agent definition for '$agent' does not define evop_agent_build_command."
     fi
 

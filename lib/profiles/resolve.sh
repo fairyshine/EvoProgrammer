@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+
 EVOP_RESOLVED_LANGUAGE_PROFILE=""
 EVOP_RESOLVED_LANGUAGE_SOURCE="none"
 EVOP_RESOLVED_FRAMEWORK_PROFILE=""
@@ -13,6 +15,8 @@ evop_resolve_profiles() {
     local requested_language_profile="${3:-}"
     local requested_framework_profile="${4:-}"
     local requested_project_type="${5:-}"
+    local started_ms=0
+    local total_started_ms=0
 
     EVOP_RESOLVED_LANGUAGE_PROFILE="$requested_language_profile"
     EVOP_RESOLVED_LANGUAGE_SOURCE="none"
@@ -20,32 +24,55 @@ evop_resolve_profiles() {
     EVOP_RESOLVED_FRAMEWORK_SOURCE="none"
     EVOP_RESOLVED_PROJECT_TYPE="$requested_project_type"
     EVOP_RESOLVED_PROJECT_SOURCE="none"
+    EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_RESOLVE_PROFILES_MS=0
+
+    total_started_ms="$(evop_now_millis)"
 
     if [[ -n "$requested_language_profile" ]]; then
         EVOP_RESOLVED_LANGUAGE_SOURCE="explicit"
-    elif EVOP_RESOLVED_LANGUAGE_PROFILE="$(evop_detect_language_profile "$target_dir" "$prompt")"; then
-        EVOP_RESOLVED_LANGUAGE_SOURCE="auto"
     else
-        EVOP_RESOLVED_LANGUAGE_PROFILE=""
+        started_ms="$(evop_now_millis)"
+        if EVOP_RESOLVED_LANGUAGE_PROFILE="$(evop_detect_language_profile "$target_dir" "$prompt")"; then
+            EVOP_RESOLVED_LANGUAGE_SOURCE="auto"
+        else
+            EVOP_RESOLVED_LANGUAGE_PROFILE=""
+        fi
+        EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS="$(evop_elapsed_millis_since "$started_ms")"
     fi
 
     if [[ -n "$requested_framework_profile" ]]; then
         EVOP_RESOLVED_FRAMEWORK_SOURCE="explicit"
-    elif EVOP_RESOLVED_FRAMEWORK_PROFILE="$(evop_detect_framework_profile "$target_dir" "$prompt")"; then
-        EVOP_RESOLVED_FRAMEWORK_SOURCE="auto"
     else
-        EVOP_RESOLVED_FRAMEWORK_PROFILE=""
+        started_ms="$(evop_now_millis)"
+        if EVOP_RESOLVED_FRAMEWORK_PROFILE="$(evop_detect_framework_profile "$target_dir" "$prompt")"; then
+            EVOP_RESOLVED_FRAMEWORK_SOURCE="auto"
+        else
+            EVOP_RESOLVED_FRAMEWORK_PROFILE=""
+        fi
+        EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS="$(evop_elapsed_millis_since "$started_ms")"
     fi
 
     if [[ -n "$requested_project_type" ]]; then
         EVOP_RESOLVED_PROJECT_SOURCE="explicit"
-    elif EVOP_RESOLVED_PROJECT_TYPE="$(evop_detect_project_type "$target_dir" "$prompt")"; then
-        EVOP_RESOLVED_PROJECT_SOURCE="auto"
     else
-        EVOP_RESOLVED_PROJECT_TYPE=""
+        started_ms="$(evop_now_millis)"
+        if EVOP_RESOLVED_PROJECT_TYPE="$(evop_detect_project_type "$target_dir" "$prompt")"; then
+            EVOP_RESOLVED_PROJECT_SOURCE="auto"
+        else
+            EVOP_RESOLVED_PROJECT_TYPE=""
+        fi
+        EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS="$(evop_elapsed_millis_since "$started_ms")"
     fi
 
+    started_ms="$(evop_now_millis)"
     evop_analyze_project_context "$target_dir" "$prompt" "$EVOP_RESOLVED_LANGUAGE_PROFILE" "$EVOP_RESOLVED_FRAMEWORK_PROFILE" "$EVOP_RESOLVED_PROJECT_TYPE"
+    EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS="$(evop_elapsed_millis_since "$started_ms")"
+
+    EVOP_PROJECT_CONTEXT_TIMING_RESOLVE_PROFILES_MS="$(evop_elapsed_millis_since "$total_started_ms")"
 }
 
 evop_apply_resolved_profiles() {

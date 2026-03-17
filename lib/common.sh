@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+
 EVOPROGRAMMER_DEFAULT_PROMPT="improve this repo"
 EVOP_VERBOSITY="${EVOP_VERBOSITY:-1}"
 
@@ -24,6 +26,10 @@ evop_fail() {
     local exit_code="${2:-1}"
     evop_print_stderr "$message"
     exit "$exit_code"
+}
+
+evop_function_exists() {
+    typeset -f "$1" >/dev/null 2>&1
 }
 
 evop_require_executable_file() {

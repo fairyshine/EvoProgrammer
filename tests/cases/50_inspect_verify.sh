@@ -30,6 +30,7 @@ print(f"automation_ok={any('.github/workflows' in item for item in data['automat
 print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'line-table'}}")
 print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
 print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
+print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
 PY
 )"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
@@ -39,6 +40,7 @@ assert_contains "$inspect_json_summary" "automation_ok=True" "INSPECT json shoul
 assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should include the facts-cache backend"
 assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should include facts-cache lookup diagnostics"
 assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
+assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should include phase timings"
 pass "INSPECT json"
 
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
@@ -46,7 +48,14 @@ assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT
 assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"
 assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT diagnostics should print cache lookup counts"
 assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
+assert_contains "$inspect_diagnostics_output" "Timing resolve_profiles:" "INSPECT diagnostics should print timing diagnostics"
 pass "INSPECT diagnostics"
+
+inspect_timings_output="$(run_expect_success "INSPECT should render timings context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format timings)"
+assert_contains "$inspect_timings_output" "Inspection timings (ms):" "INSPECT timings should print the timings heading"
+assert_contains "$inspect_timings_output" "resolve_profiles:" "INSPECT timings should print the overall resolve timing"
+assert_contains "$inspect_timings_output" "finalize_analysis:" "INSPECT timings should print the overall finalize timing"
+pass "INSPECT timings"
 
 setup_verify_workspace
 verify_output="$(run_expect_success "VERIFY should run the detected verification chain" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR")"

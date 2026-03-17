@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+
 PROFILE_DEFINITIONS_DIR="$PROFILE_CATALOG_DIR/definitions"
 EVOP_PROFILE_CATEGORIES="languages frameworks project-types"
 
@@ -167,7 +169,7 @@ evop_apply_profile_project_context_hooks() {
 
     evop_load_profile_definition "$category_dir" "$profile_name"
 
-    if declare -F evop_profile_apply_project_context >/dev/null 2>&1; then
+    if evop_function_exists evop_profile_apply_project_context; then
         evop_profile_apply_project_context "$target_dir" "$prompt"
     fi
 
@@ -187,7 +189,7 @@ evop_detect_profile_via_hooks() {
         [[ -n "$profile_name" ]] || continue
         evop_load_profile_definition "$category_dir" "$profile_name"
 
-        if ! declare -F evop_profile_detect >/dev/null 2>&1; then
+        if ! evop_function_exists evop_profile_detect; then
             continue
         fi
 

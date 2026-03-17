@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+
 EVOP_CLI_OPTION_HANDLED=0
 EVOP_CLI_OPTION_SHIFT=0
 
@@ -146,6 +148,10 @@ evop_finalize_doctor_context() {
 }
 
 evop_finalize_analysis_context() {
+    local started_ms=0
+
+    evop_reset_project_context_timings
+    started_ms="$(evop_now_millis)"
     evop_load_project_config "$TARGET_DIR"
     evop_validate_agent "$AGENT"
     evop_validate_language_profile "$LANGUAGE_PROFILE"
@@ -157,4 +163,5 @@ evop_finalize_analysis_context() {
     evop_resolve_profiles "$target_dir_abs" "$resolved_prompt" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE"
     evop_apply_resolved_profiles
     artifacts_root="$(evop_resolve_artifacts_root "$TARGET_DIR" "$ARTIFACTS_DIR")"
+    EVOP_PROJECT_CONTEXT_TIMING_FINALIZE_ANALYSIS_MS="$(evop_elapsed_millis_since "$started_ms")"
 }
