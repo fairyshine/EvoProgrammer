@@ -39,7 +39,7 @@ Options:
   -p, --prompt TEXT        Optional prompt signal used for task-kind inference.
   -f, --prompt-file FILE   Read the optional prompt signal from a file.
   -t, --target-dir DIR     Repository directory to inspect.
-      --format NAME        Output format: summary, doctor, or prompt.
+      --format NAME        Output format: summary, doctor, prompt, or json.
   -h, --help               Show this help text.
 EOF
 }
@@ -81,7 +81,7 @@ if (($# > 0)); then
 fi
 
 case "$OUTPUT_FORMAT" in
-    summary|doctor|prompt)
+    summary|doctor|prompt|json)
         ;;
     *)
         evop_fail "Unsupported inspect format: $OUTPUT_FORMAT"
@@ -101,5 +101,8 @@ case "$OUTPUT_FORMAT" in
         ;;
     prompt)
         printf '%s' "$(evop_render_project_context_prompt)"
+        ;;
+    json)
+        evop_render_project_context_json
         ;;
 esac

@@ -7,12 +7,23 @@ assert_contains "$inspect_output" "Language profile: typescript (auto-detected)"
 assert_contains "$inspect_output" "Framework profile: nextjs (auto-detected)" "INSPECT should print the detected framework profile"
 assert_contains "$inspect_output" "Suggested commands:" "INSPECT should print the suggested command section"
 assert_contains "$inspect_output" "Lint: pnpm lint [package.json script]" "INSPECT should include command sources"
+assert_contains "$inspect_output" "Operational surfaces:" "INSPECT should print operational surfaces"
+assert_contains "$inspect_output" ".github/workflows" "INSPECT should report CI workflow surfaces"
 pass "INSPECT summary"
 
 inspect_prompt_output="$(run_expect_success "INSPECT should render prompt context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format prompt)"
 assert_contains "$inspect_prompt_output" "[Repository Context]" "INSPECT prompt mode should render repository context"
 assert_contains "$inspect_prompt_output" "[Recommended Workflow]" "INSPECT prompt mode should render workflow guidance"
+assert_contains "$inspect_prompt_output" "Operational surfaces:" "INSPECT prompt mode should render operational surfaces"
 pass "INSPECT prompt"
+
+inspect_json_output="$(run_expect_success "INSPECT should render machine-readable json context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format json)"
+inspect_json_summary="$(printf '%s' "$inspect_json_output" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data["profiles"]["language"]["name"]); print(data["package_manager"]); print(data["commands"]["lint"]["command"]); print(any(".github/workflows" in item for item in data["automation"]))')"
+assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
+assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
+assert_contains "$inspect_json_summary" "pnpm lint" "INSPECT json should include the lint command"
+assert_contains "$inspect_json_summary" "True" "INSPECT json should include automation entries"
+pass "INSPECT json"
 
 setup_verify_workspace
 verify_output="$(run_expect_success "VERIFY should run the detected verification chain" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR")"

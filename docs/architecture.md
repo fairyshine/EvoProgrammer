@@ -41,6 +41,7 @@ This layer answers: "What kind of repo is this?"
 ### 4. Project inspection
 
 - `lib/project-context/commands.sh`: package manager and command-slot inference
+- `lib/project-context/facts.sh`: cached filesystem and file-match facts for repo inspection
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/render.sh`: prompt and human-readable rendering

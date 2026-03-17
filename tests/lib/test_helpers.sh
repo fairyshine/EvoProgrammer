@@ -181,10 +181,14 @@ setup_context_workspace() {
 
     TEST_CONTEXT_DIR="$TEST_TMPDIR/context-web"
     mkdir -p \
+        "$TEST_CONTEXT_DIR/.github/workflows" \
+        "$TEST_CONTEXT_DIR/.devcontainer" \
         "$TEST_CONTEXT_DIR/src/app" \
         "$TEST_CONTEXT_DIR/src/components" \
         "$TEST_CONTEXT_DIR/src/services" \
         "$TEST_CONTEXT_DIR/src/store" \
+        "$TEST_CONTEXT_DIR/scripts" \
+        "$TEST_CONTEXT_DIR/docs" \
         "$TEST_CONTEXT_DIR/tests" \
         "$TEST_CONTEXT_DIR/prisma" \
         "$TEST_CONTEXT_DIR/src/auth" \
@@ -203,6 +207,12 @@ setup_context_workspace() {
     printf 'export const session = {};\n' >"$TEST_CONTEXT_DIR/src/auth/session.ts"
     printf 'export type SharedUser = { id: string };\n' >"$TEST_CONTEXT_DIR/packages/shared/src/types/user.ts"
     printf 'NEXT_PUBLIC_API_URL=http://localhost:3000\n' >"$TEST_CONTEXT_DIR/.env.example"
+    printf 'name: ci\n' >"$TEST_CONTEXT_DIR/.github/workflows/ci.yml"
+    printf '{ "name": "context-devcontainer" }\n' >"$TEST_CONTEXT_DIR/.devcontainer/devcontainer.json"
+    printf 'FROM node:20\n' >"$TEST_CONTEXT_DIR/Dockerfile"
+    printf 'version: "3.9"\nservices:\n  web:\n    build: .\n' >"$TEST_CONTEXT_DIR/docker-compose.yml"
+    printf 'release workflow\n' >"$TEST_CONTEXT_DIR/scripts/release"
+    printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
 }
 
 setup_verify_workspace() {

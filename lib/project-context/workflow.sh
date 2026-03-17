@@ -108,12 +108,14 @@ evop_analyze_project_context() {
     local project_type="${5:-}"
 
     evop_reset_project_context
+    evop_use_project_context_facts_dir "$target_dir"
     EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER="$(evop_choose_package_manager "$target_dir" "$language_profile" || true)"
     EVOP_PROJECT_CONTEXT_WORKSPACE_MODE="$(evop_detect_workspace_mode "$target_dir")"
 
     evop_detect_command_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile"
     evop_detect_structure_hints "$target_dir"
     evop_detect_conventions "$target_dir" "$language_profile"
+    evop_detect_automation_hints "$target_dir"
     evop_detect_risk_areas "$target_dir"
     evop_detect_validation_hints
     evop_detect_task_workflow "$prompt"

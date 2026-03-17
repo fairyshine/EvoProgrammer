@@ -34,6 +34,76 @@ evop_format_inline_lines() {
     printf '%s' "$output"
 }
 
+evop_json_escape() {
+    local value="$1"
+
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+    value="${value//$'\n'/\\n}"
+    value="${value//$'\r'/\\r}"
+    value="${value//$'\t'/\\t}"
+
+    printf '%s' "$value"
+}
+
+evop_render_json_string() {
+    printf '"%s"' "$(evop_json_escape "$1")"
+}
+
+evop_render_json_string_or_null() {
+    if [[ -n "$1" ]]; then
+        evop_render_json_string "$1"
+    else
+        printf 'null'
+    fi
+}
+
+evop_render_json_array_from_lines() {
+    local text="$1"
+    local output="["
+    local line=""
+    local needs_comma=0
+
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+        output+="$(evop_render_json_string "$line")"
+        needs_comma=1
+    done <<<"$text"
+
+    output+="]"
+    printf '%s' "$output"
+}
+
+evop_render_project_commands_json() {
+    local output="{"
+    local slot=""
+    local command=""
+    local source=""
+    local needs_comma=0
+
+    while IFS= read -r slot; do
+        command="$(evop_get_project_command "$slot")"
+        source="$(evop_get_project_command_source "$slot")"
+
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+
+        output+="$(evop_render_json_string "$slot"): {\"command\": "
+        output+="$(evop_render_json_string_or_null "$command")"
+        output+=", \"source\": "
+        output+="$(evop_render_json_string_or_null "$source")"
+        output+="}"
+        needs_comma=1
+    done < <(evop_project_command_slots)
+
+    output+="}"
+    printf '%s' "$output"
+}
+
 evop_append_project_command_lines() {
     local prefix="$1"
     local include_sources="${2:-0}"
@@ -61,11 +131,40 @@ evop_append_project_command_lines() {
     printf '%s' "$output"
 }
 
+evop_render_project_context_json() {
+    printf '{\n'
+    printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
+    printf '  "agent": %s,\n' "$(evop_render_json_string_or_null "${AGENT:-}")"
+    printf '  "profiles": {"language": {"name": %s, "source": %s}, "framework": {"name": %s, "source": %s}, "project_type": {"name": %s, "source": %s}},\n' \
+        "$(evop_render_json_string_or_null "${LANGUAGE_PROFILE:-}")" \
+        "$(evop_render_json_string_or_null "${LANGUAGE_PROFILE_SOURCE:-}")" \
+        "$(evop_render_json_string_or_null "${FRAMEWORK_PROFILE:-}")" \
+        "$(evop_render_json_string_or_null "${FRAMEWORK_PROFILE_SOURCE:-}")" \
+        "$(evop_render_json_string_or_null "${PROJECT_TYPE:-}")" \
+        "$(evop_render_json_string_or_null "${PROJECT_TYPE_SOURCE:-}")"
+    printf '  "package_manager": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER")"
+    printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
+    printf '  "commands": %s,\n' "$(evop_render_project_commands_json)"
+    printf '  "search_roots": %s,\n' "$(evop_render_json_array_from_lines "${EVOP_PROJECT_CONTEXT_SEARCH_ROOTS//, /$'\n'}")"
+    printf '  "structure": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_STRUCTURE")"
+    printf '  "conventions": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_CONVENTIONS")"
+    printf '  "risk_areas": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_RISK_AREAS")"
+    printf '  "automation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
+    printf '  "validation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_VALIDATION")"
+    printf '  "task_kind": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_KIND")"
+    printf '  "task_workflow": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_WORKFLOW")"
+    printf '  "search_strategy": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
+    printf '  "edit_strategy": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
+    printf '  "verification_strategy": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY")"
+    printf '  "risk_focus": %s\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_RISK_FOCUS")"
+    printf '}\n'
+}
+
 evop_render_project_context_prompt() {
     local guidance=""
     local has_repo_context=0
 
-    if [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" || -n "$EVOP_PROJECT_CONTEXT_STRUCTURE" || -n "$EVOP_PROJECT_CONTEXT_CONVENTIONS" || -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" || -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] || evop_project_has_any_command; then
+    if [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" || -n "$EVOP_PROJECT_CONTEXT_STRUCTURE" || -n "$EVOP_PROJECT_CONTEXT_CONVENTIONS" || -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" || -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" || -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] || evop_project_has_any_command; then
         has_repo_context=1
     fi
 
@@ -95,6 +194,11 @@ evop_render_project_context_prompt() {
         if [[ -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" ]]; then
             guidance+="Risk areas:\n"
             guidance+="$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_RISK_AREAS")"
+            guidance+=$'\n'
+        fi
+        if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
+            guidance+="Operational surfaces:\n"
+            guidance+="$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
             guidance+=$'\n'
         fi
         if [[ -n "$EVOP_PROJECT_CONTEXT_VALIDATION" ]]; then
@@ -154,6 +258,7 @@ evop_print_project_context() {
         [[ -n "$EVOP_PROJECT_CONTEXT_LINT_COMMAND" ]] && printf 'OK lint-command %s\n' "$EVOP_PROJECT_CONTEXT_LINT_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND" ]] && printf 'OK typecheck-command %s\n' "$EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] && printf 'OK search-roots %s\n' "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS"
+        [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]] && printf 'OK automation %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
         [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && printf 'OK task-kind %s\n' "$EVOP_PROJECT_CONTEXT_TASK_KIND"
         [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && printf 'OK search-strategy %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
         [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && printf 'OK edit-strategy %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
@@ -174,6 +279,10 @@ evop_print_project_context() {
         printf '\n'
     done < <(evop_project_command_slots)
     [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] && printf 'Search roots: %s\n' "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS"
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
+        printf 'Operational surfaces:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
+    fi
     [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && printf 'Task kind: %s\n' "$EVOP_PROJECT_CONTEXT_TASK_KIND"
     [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && printf 'Search strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
     [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && printf 'Edit strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
@@ -184,7 +293,12 @@ evop_print_project_context() {
 evop_print_project_inspection_report() {
     [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
     [[ -n "${AGENT:-}" ]] && printf 'Agent: %s\n' "$AGENT"
-    evop_print_current_profiles
+    evop_print_resolved_profile "Language profile" "$LANGUAGE_PROFILE" "$LANGUAGE_PROFILE_SOURCE"
+    evop_print_resolved_profile "Framework profile" "$FRAMEWORK_PROFILE" "$FRAMEWORK_PROFILE_SOURCE"
+    evop_print_resolved_profile "Project type" "$PROJECT_TYPE" "$PROJECT_TYPE_SOURCE"
+
+    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
 
     if evop_project_has_any_command; then
         printf 'Suggested commands:\n'
@@ -204,6 +318,11 @@ evop_print_project_inspection_report() {
     if [[ -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" ]]; then
         printf 'Risk areas:\n'
         printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_RISK_AREAS")"
+    fi
+
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
+        printf 'Operational surfaces:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_VALIDATION" ]]; then

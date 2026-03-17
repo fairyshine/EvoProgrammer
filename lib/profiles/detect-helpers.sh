@@ -58,6 +58,7 @@ evop_filename_matches_any_pattern() {
     shift
     local pattern
 
+    # shellcheck disable=SC2254
     for pattern in "$@"; do
         case "$filename" in
             $pattern)

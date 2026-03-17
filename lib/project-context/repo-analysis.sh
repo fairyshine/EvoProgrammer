@@ -4,16 +4,14 @@ evop_file_contains_regex() {
     local file_path="$1"
     local regex="$2"
 
-    [[ -f "$file_path" ]] || return 1
-    grep -Eq "$regex" "$file_path"
+    evop_project_file_contains_regex_cached "$file_path" "$regex"
 }
 
 evop_file_contains_literal() {
     local file_path="$1"
     local text="$2"
 
-    [[ -f "$file_path" ]] || return 1
-    grep -Fq -- "$text" "$file_path"
+    evop_project_file_contains_literal_cached "$file_path" "$text"
 }
 
 evop_package_json_has_script() {
@@ -43,7 +41,7 @@ evop_existing_relative_path() {
     local rel_path
 
     for rel_path in "$@"; do
-        if [[ -e "$target_dir/$rel_path" ]]; then
+        if evop_project_relative_exists "$target_dir" "$rel_path"; then
             printf '%s' "$rel_path"
             return 0
         fi
@@ -57,7 +55,7 @@ evop_add_structure_hint() {
     local rel_path="$2"
     local description="$3"
 
-    [[ -e "$target_dir/$rel_path" ]] || return 0
+    evop_project_relative_exists "$target_dir" "$rel_path" || return 0
     evop_append_multiline EVOP_PROJECT_CONTEXT_STRUCTURE "$rel_path: $description"
     evop_append_csv_unique EVOP_PROJECT_CONTEXT_SEARCH_ROOTS "$rel_path"
 }
@@ -77,6 +75,7 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "src/features" "feature-focused modules"
     evop_add_structure_hint "$target_dir" "services" "service or API integration layer"
     evop_add_structure_hint "$target_dir" "src/services" "service or API integration layer"
+    evop_add_structure_hint "$target_dir" "scripts" "automation or release scripts"
     evop_add_structure_hint "$target_dir" "store" "state management"
     evop_add_structure_hint "$target_dir" "src/store" "state management"
     evop_add_structure_hint "$target_dir" "src/stores" "state management"
@@ -89,6 +88,7 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "server" "backend or server entrypoints"
     evop_add_structure_hint "$target_dir" "src/server" "backend or server entrypoints"
     evop_add_structure_hint "$target_dir" "backend" "backend services or adapters"
+    evop_add_structure_hint "$target_dir" "docs" "project documentation and design notes"
     evop_add_structure_hint "$target_dir" "tests" "automated tests"
     evop_add_structure_hint "$target_dir" "test" "automated tests"
     evop_add_structure_hint "$target_dir" "__tests__" "automated tests"
@@ -150,6 +150,41 @@ evop_detect_conventions() {
     fi
 }
 
+evop_detect_automation_hints() {
+    local target_dir="$1"
+    local has_container_surface=0
+
+    if evop_project_relative_exists "$target_dir" ".github/workflows"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "GitHub Actions workflows live under .github/workflows."
+    fi
+
+    if evop_project_relative_exists "$target_dir" ".gitlab-ci.yml"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "GitLab CI is configured through .gitlab-ci.yml."
+    fi
+
+    if evop_project_relative_exists "$target_dir" ".devcontainer" \
+        || evop_project_relative_exists "$target_dir" ".devcontainer/devcontainer.json"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "Dev container configuration is present."
+    fi
+
+    if evop_existing_relative_path "$target_dir" "Dockerfile" "docker/Dockerfile" "Dockerfile.dev" >/dev/null \
+        || evop_existing_relative_path "$target_dir" "docker-compose.yml" "docker-compose.yaml" "compose.yml" "compose.yaml" >/dev/null; then
+        has_container_surface=1
+    fi
+
+    if (( has_container_surface == 1 )); then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "Container build or compose definitions are present."
+    fi
+
+    if evop_project_relative_exists "$target_dir" "scripts"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "Repository automation scripts live under scripts/."
+    fi
+
+    if evop_project_relative_exists "$target_dir" "docs"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_AUTOMATION "Project documentation lives under docs/."
+    fi
+}
+
 evop_detect_risk_areas() {
     local target_dir="$1"
 
@@ -184,6 +219,10 @@ evop_detect_risk_areas() {
         || evop_directory_has_path_named "$target_dir" "controllers" \
         || evop_directory_has_path_named "$target_dir" "openapi"; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Public API routes or contracts should be changed conservatively."
+    fi
+
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "CI, container, or developer-environment automation may need updates when workflows or runtime contracts change."
     fi
 }
 

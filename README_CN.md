@@ -84,6 +84,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 
 # 查看仓库自动检测结果
 EvoProgrammer inspect --target-dir /path/to/project
+EvoProgrammer inspect --target-dir /path/to/project --format json
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
@@ -145,6 +146,7 @@ EvoProgrammer status --last 5
 ```bash
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
+EvoProgrammer inspect --target-dir /path/to/project --format json
 ```
 
 当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：

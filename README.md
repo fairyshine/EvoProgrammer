@@ -8,7 +8,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 
 ## Why EvoProgrammer
 
-**Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterate this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
+**Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterates this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
 
 **Broad language, framework, and project coverage** — 13 languages, 24 frameworks, 17 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Bevy multiplayer game, a FastAPI microservice, or a Godot single-player adventure, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
 
@@ -84,6 +84,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 
 # Inspect what EvoProgrammer detected in a repo
 EvoProgrammer inspect --target-dir /path/to/project
+EvoProgrammer inspect --target-dir /path/to/project --format json
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
@@ -145,6 +146,7 @@ calls an agent:
 ```bash
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
+EvoProgrammer inspect --target-dir /path/to/project --format json
 ```
 
 Use `verify` when you want EvoProgrammer to execute the detected command chain
