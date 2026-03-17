@@ -79,6 +79,12 @@ EvoProgrammer --prompt-file ./prompt.txt
 # 只预览命令不执行
 EvoProgrammer --max-iterations 3 --dry-run "完善项目结构并补测试"
 
+# 复用 inspect 导出的 env 上下文快照
+EvoProgrammer inspect --target-dir /path/to/project \
+  --report-file ./project-context.env --report-format env
+EvoProgrammer verify --context-file ./project-context.env --steps lint,test
+EvoProgrammer once --context-file ./project-context.env "Optimize startup time"
+
 # 检查运行环境
 EvoProgrammer doctor --target-dir /path/to/project
 
@@ -139,6 +145,7 @@ EvoProgrammer status --format json --report-file ./status-report.json --report-f
 | `-f, --prompt-file FILE` | 从文件读取提示词 |
 | `-t, --target-dir DIR` | 目标仓库目录 |
 | `-o, --artifacts-dir DIR` | 自定义产物存储位置 |
+| `--context-file FILE` | 复用 `inspect --format env` 生成的上下文快照 |
 | `-n, --max-iterations N` | 迭代 N 次后停止（0 = 不限） |
 | `-d, --delay-seconds N` | 迭代间隔秒数 |
 | `-c, --continue-on-error` | 失败后继续循环 |
@@ -182,6 +189,10 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --report-file` 可以把任意 inspect 输出格式落盘，包括 JSON 和可 `source`
 的 env 导出，方便在 CI 或包装脚本里直接消费。
+
+`--context-file` 允许 `inspect`、`verify`、`doctor`、`once` 和循环模式复用先前
+`inspect --format env` 生成的上下文快照，而不是每次都重新做同一轮仓库检测。
+这对 CI 包装脚本和同一仓库上的连续运行更稳定，也更快。
 
 `verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
 看到的命令计划保持一致。

@@ -50,6 +50,7 @@ This layer answers: "What kind of repo is this?"
 - `lib/project-context/timings.sh`: phase timing capture for profile resolution and inspection diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
+- `lib/project-context/snapshot.sh`: reusable inspect-env snapshot loading and workflow refresh
 - `lib/project-context/render.sh`: prompt and human-readable rendering
 - `lib/project-context/state.sh`: shared inspection state
 - `lib/verify.sh`: reusable verification-report state and JSON/env rendering
@@ -62,7 +63,16 @@ keeps `inspect --format diagnostics`, `inspect --format timings`, and
 `inspect --format json` informative without leaking cache or measurement
 internals into the CLI entrypoint. The facts cache now also stores manifest text
 for repeated literal lookups so repo analysis can avoid re-reading the same
-files dozens of times in one inspection pass.
+files dozens of times in one inspection pass. Cache entry counts are also
+tracked as first-class diagnostics now, so rendering diagnostics or replaying a
+saved inspection snapshot does not need to recount cache contents.
+
+The snapshot sub-layer lets other entrypoints reuse an earlier
+`inspect --format env` report. That keeps profile resolution and repo analysis
+centralized in one place while allowing `verify`, `doctor`, `LOOP.sh`, and
+`MAIN.sh` to skip repeated inspection work when the repo context is already
+known. Prompt-dependent workflow guidance is rebuilt on top of the reused repo
+context so `--context-file` remains compatible with different task prompts.
 
 The profile candidate and diagnostics sub-layers keep auto-detection both fast
 and observable. Candidate planning narrows the expensive hook-loading path using

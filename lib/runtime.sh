@@ -203,8 +203,9 @@ evop_build_loop_command() {
     local framework_profile="$6"
     local project_type="$7"
     local artifacts_dir="$8"
-    local agent_args_list="$9"
-    shift 9
+    local context_file="$9"
+    local agent_args_list="${10}"
+    shift 10
 
     EVOP_LOOP_COMMAND=("$loop_script" --agent "$agent")
 
@@ -227,6 +228,10 @@ evop_build_loop_command() {
     fi
 
     EVOP_LOOP_COMMAND+=(--artifacts-dir "$artifacts_dir")
+
+    if [[ -n "$context_file" ]]; then
+        EVOP_LOOP_COMMAND+=(--context-file "$context_file")
+    fi
 
     if [[ -n "$agent_args_list" ]]; then
         EVOP_LOOP_COMMAND+=(--agent-args "$agent_args_list")

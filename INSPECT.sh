@@ -44,6 +44,7 @@ Options:
   -p, --prompt TEXT        Optional prompt signal used for task-kind inference.
   -f, --prompt-file FILE   Read the optional prompt signal from a file.
   -t, --target-dir DIR     Repository directory to inspect.
+      --context-file FILE  Reuse an `inspect --format env` context snapshot.
       --format NAME        Output format: summary, diagnostics, profiles, doctor, prompt, timings, json, or env.
       --report-file FILE   Also write inspect output to a file.
       --report-format NAME Report file format. Defaults to --format.

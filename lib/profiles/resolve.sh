@@ -105,6 +105,8 @@ evop_print_resolved_profile() {
     printf '%s%s%s' "$label" "$separator" "$value"
     if [[ "$source" == "auto" ]]; then
         printf ' (auto-detected)'
+    elif [[ "$source" == "context-file" ]]; then
+        printf ' (from context file)'
     fi
     printf '\n'
 }

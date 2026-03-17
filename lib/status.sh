@@ -56,11 +56,7 @@ evop_status_validate_kind() {
 }
 
 evop_status_decode_env_value() {
-    local encoded_value="$1"
-    local decoded_value=""
-
-    eval "decoded_value=$encoded_value"
-    printf '%s' "$decoded_value"
+    evop_decode_env_value "$1"
 }
 
 evop_status_entry_kind_matches() {

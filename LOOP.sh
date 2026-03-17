@@ -67,6 +67,7 @@ Options:
   -f, --prompt-file FILE    Read the prompt from a file.
   -t, --target-dir DIR      Repository directory to run in.
   -o, --artifacts-dir DIR   Root directory used to store run artifacts.
+      --context-file FILE   Reuse an `inspect --format env` context snapshot.
       --agent-args JSON     JSON-like string list of extra agent arguments.
   -a, --agent-arg ARG       Extra argument to pass to the agent CLI. Repeat as needed.
       --codex-arg ARG       Backward-compatible alias for --agent-arg.
@@ -80,6 +81,8 @@ Environment variables:
   EVOPROGRAMMER_ARTIFACTS_DIR
                            Root directory used to store run artifacts.
                            Default: TARGET_DIR/.evoprogrammer/runs
+  EVOPROGRAMMER_CONTEXT_FILE
+                           Reuse an `inspect --format env` context snapshot.
   EVOPROGRAMMER_AGENT        Agent to run. Default: codex
   EVOPROGRAMMER_AGENT_ARGS   JSON-like string list of extra agent arguments
   EVOPROGRAMMER_LANGUAGE_PROFILE

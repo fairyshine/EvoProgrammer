@@ -111,6 +111,14 @@ evop_is_blank() {
     [[ "$value" =~ ^[[:space:]]*$ ]]
 }
 
+evop_decode_env_value() {
+    local encoded_value="$1"
+    local decoded_value=""
+
+    eval "decoded_value=$encoded_value"
+    printf '%s' "$decoded_value"
+}
+
 evop_resolve_prompt() {
     local prompt="$1"
     local prompt_file="$2"

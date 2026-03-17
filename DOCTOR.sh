@@ -41,6 +41,8 @@ Options:
   -t, --target-dir DIR   Repository directory to validate.
   -o, --artifacts-dir DIR
                          Root directory used to store run artifacts.
+      --context-file FILE
+                         Reuse an `inspect --format env` context snapshot.
   -h, --help             Show this help text.
 
 Environment variables:
@@ -55,6 +57,8 @@ Environment variables:
   EVOPROGRAMMER_ARTIFACTS_DIR
                            Root directory used to store run artifacts.
                            Default: TARGET_DIR/.evoprogrammer/runs
+  EVOPROGRAMMER_CONTEXT_FILE
+                           Reuse an `inspect --format env` context snapshot.
 EOF
 }
 

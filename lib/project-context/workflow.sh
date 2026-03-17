@@ -31,6 +31,15 @@ evop_detect_task_workflow() {
     EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Find the nearest existing implementation first, extend types, data flow, and tests together, and avoid inventing a parallel pattern."
 }
 
+evop_reset_project_context_workflow() {
+    EVOP_PROJECT_CONTEXT_TASK_KIND=""
+    EVOP_PROJECT_CONTEXT_TASK_WORKFLOW=""
+    EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY=""
+    EVOP_PROJECT_CONTEXT_EDIT_STRATEGY=""
+    EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY=""
+    EVOP_PROJECT_CONTEXT_RISK_FOCUS=""
+}
+
 evop_apply_profile_workflow() {
     local category_dir="$1"
     local profile_name="${2:-}"
@@ -100,6 +109,22 @@ evop_finalize_workflow_strategy() {
     fi
 }
 
+evop_rebuild_project_context_workflow() {
+    local target_dir="$1"
+    local prompt="${2:-}"
+    local language_profile="${3:-}"
+    local framework_profile="${4:-}"
+    local project_type="${5:-}"
+
+    evop_reset_project_context_workflow
+    evop_detect_task_workflow "$prompt"
+    evop_apply_profile_workflow "languages" "$language_profile" "$target_dir" "$prompt"
+    evop_apply_profile_workflow "frameworks" "$framework_profile" "$target_dir" "$prompt"
+    evop_apply_profile_workflow "project-types" "$project_type" "$target_dir" "$prompt"
+    evop_detect_task_kind_workflow
+    evop_finalize_workflow_strategy
+}
+
 evop_analyze_project_context() {
     local target_dir="$1"
     local prompt="${2:-}"
@@ -128,9 +153,5 @@ evop_analyze_project_context() {
         fi
     fi
 
-    evop_apply_profile_workflow "languages" "$language_profile" "$target_dir" "$prompt"
-    evop_apply_profile_workflow "frameworks" "$framework_profile" "$target_dir" "$prompt"
-    evop_apply_profile_workflow "project-types" "$project_type" "$target_dir" "$prompt"
-    evop_detect_task_kind_workflow
-    evop_finalize_workflow_strategy
+    evop_rebuild_project_context_workflow "$target_dir" "$prompt" "$language_profile" "$framework_profile" "$project_type"
 }

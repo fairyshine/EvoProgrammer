@@ -88,7 +88,7 @@ find_subcommand() {
             --)
                 break
                 ;;
-            -g|--agent|--language|--framework|--project-type|-p|--prompt|-f|--prompt-file|-t|--target-dir|-o|--artifacts-dir|-n|--max-iterations|-d|--delay-seconds|--agent-args|-a|--agent-arg|--codex-arg)
+            -g|--agent|--language|--framework|--project-type|-p|--prompt|-f|--prompt-file|-t|--target-dir|-o|--artifacts-dir|--context-file|-n|--max-iterations|-d|--delay-seconds|--agent-args|-a|--agent-arg|--codex-arg)
                 expecting_value=1
                 ;;
             -c|--continue-on-error|--dry-run|-q|--quiet|-v|--verbose)

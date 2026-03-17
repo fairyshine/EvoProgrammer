@@ -105,6 +105,7 @@ Options:
   -f, --prompt-file FILE   Read the optional prompt signal from a file.
   -t, --target-dir DIR     Repository directory to verify.
   -o, --artifacts-dir DIR  Root directory used to store verification logs.
+      --context-file FILE  Reuse an `inspect --format env` context snapshot.
       --steps CSV          Comma-separated subset of: lint,typecheck,test,build.
       --list               Print the detected verification commands and exit.
   -c, --continue-on-error  Keep going after a failed verification step.

@@ -79,6 +79,12 @@ EvoProgrammer --prompt-file ./prompt.txt
 # Preview the command without running
 EvoProgrammer --max-iterations 3 --dry-run "Refine the project structure and add tests"
 
+# Reuse an inspect env snapshot across commands
+EvoProgrammer inspect --target-dir /path/to/project \
+  --report-file ./project-context.env --report-format env
+EvoProgrammer verify --context-file ./project-context.env --steps lint,test
+EvoProgrammer once --context-file ./project-context.env "Optimize startup time"
+
 # Check environment readiness
 EvoProgrammer doctor --target-dir /path/to/project
 
@@ -139,6 +145,7 @@ EvoProgrammer status --format json --report-file ./status-report.json --report-f
 | `-f, --prompt-file FILE` | Read prompt from file |
 | `-t, --target-dir DIR` | Target repository directory |
 | `-o, --artifacts-dir DIR` | Custom artifact storage location |
+| `--context-file FILE` | Reuse an `inspect --format env` context snapshot |
 | `-n, --max-iterations N` | Stop after N iterations (0 = unlimited) |
 | `-d, --delay-seconds N` | Delay between iterations |
 | `-c, --continue-on-error` | Keep looping after a failed iteration |
@@ -185,6 +192,11 @@ result instead of re-parsing human-readable output.
 
 `inspect --report-file` writes any inspect format to disk, including JSON and
 shell-safe env exports for CI jobs and wrapper scripts.
+
+`--context-file` lets `inspect`, `verify`, `doctor`, `once`, and loop mode reuse
+an earlier `inspect --format env` snapshot instead of re-detecting the same
+repository context every time. That is useful when you want reproducible CI
+wrappers or faster repeated runs against the same repo state.
 
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable

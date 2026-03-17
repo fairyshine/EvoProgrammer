@@ -36,9 +36,9 @@ build_loop_command() {
     local artifacts_dir="$1"
 
     if ((${#LOOP_ARGS[@]} > 0)); then
-        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$AGENT_ARGS_LIST" "${LOOP_ARGS[@]}"
+        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST" "${LOOP_ARGS[@]}"
     else
-        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$AGENT_ARGS_LIST"
+        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST"
     fi
 
     loop_cmd=("${EVOP_LOOP_COMMAND[@]}")
@@ -85,6 +85,7 @@ Options:
   -f, --prompt-file FILE      Read the prompt from a file before each iteration.
   -t, --target-dir DIR        Repository directory to run in.
   -o, --artifacts-dir DIR     Root directory used to store session artifacts.
+      --context-file FILE     Reuse an `inspect --format env` context snapshot.
   -n, --max-iterations NUM    0 means run forever.
   -d, --delay-seconds NUM     Delay between runs.
   -c, --continue-on-error     Keep looping after a failed run.
@@ -105,6 +106,7 @@ Environment variables:
     EVOPROGRAMMER_TARGET_DIR         Repository directory to run in. Default: current directory.
     EVOPROGRAMMER_ARTIFACTS_DIR      Root directory used to store session artifacts.
                                      Default: TARGET_DIR/.evoprogrammer/runs
+    EVOPROGRAMMER_CONTEXT_FILE       Reuse an `inspect --format env` context snapshot.
     EVOPROGRAMMER_MAX_ITERATIONS     0 means run forever. Default: 0.
     EVOPROGRAMMER_DELAY_SECONDS      Delay between runs. Default: 0.
   EVOPROGRAMMER_CONTINUE_ON_ERROR  1 keeps looping after a failed run. Default: 0.
