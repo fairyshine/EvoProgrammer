@@ -126,22 +126,22 @@ evop_reset_profile_definition() {
 evop_load_profile_definition() {
     local category_dir="$1"
     local profile_name="$2"
-    local path
+    local definition_path
     local profile_dir
 
     evop_reset_profile_definition
-    path="$(evop_profile_definition_path "$category_dir" "$profile_name")"
-    if [[ ! -f "$path" ]]; then
-        evop_fail "Profile definition is missing: $path"
+    definition_path="$(evop_profile_definition_path "$category_dir" "$profile_name")"
+    if [[ ! -f "$definition_path" ]]; then
+        evop_fail "Profile definition is missing: $definition_path"
     fi
 
-    profile_dir="$(cd "$(dirname "$path")" && pwd)"
+    profile_dir="$(cd "$(dirname "$definition_path")" && pwd)"
     EVOP_PROFILE_DIR="$profile_dir"
     EVOP_PROFILE_SCRIPTS_DIR="$profile_dir/scripts"
     EVOP_PROFILE_PROMPT=""
 
     # shellcheck source=/dev/null
-    source "$path"
+    source "$definition_path"
 }
 
 evop_print_profile_prompt() {

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+EVOP_LIB_DIR="$ROOT_DIR/lib"
 MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
 LOOP_SCRIPT="$ROOT_DIR/LOOP.sh"
 DOCTOR_SCRIPT="$ROOT_DIR/DOCTOR.sh"
@@ -25,6 +29,8 @@ Usage:
   EvoProgrammer [global-options] doctor [options]
   EvoProgrammer [global-options] inspect [options]
   EvoProgrammer [global-options] verify [options]
+  EvoProgrammer [global-options] clean [options]
+  EvoProgrammer [global-options] status [options]
   EvoProgrammer help
 
 Default behavior:
@@ -35,6 +41,8 @@ Subcommands:
   doctor  Validate local prerequisites and target directory wiring.
   inspect Print the detected repo language/framework/project context and command plan.
   verify  Run the detected verification commands for the target repo.
+  clean   Remove old run artifacts from the target directory.
+  status  Show recent run and session history from the target directory.
   help    Show this help text.
 
 Examples:
@@ -48,11 +56,14 @@ Examples:
   EvoProgrammer doctor --target-dir /path/to/project
   EvoProgrammer inspect --target-dir /path/to/project --format summary
   EvoProgrammer verify --target-dir /path/to/project --steps lint,test
+  EvoProgrammer clean --target-dir /path/to/project --older-than 7 --dry-run
+  EvoProgrammer status --target-dir /path/to/project --last 5
 
 Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
  './LOOP.sh --help' for single-run options, './DOCTOR.sh --help'
 for environment checks, './INSPECT.sh --help' for repo inspection, and
- './VERIFY.sh --help' for command verification.
+ './VERIFY.sh --help' for command verification, './CLEAN.sh --help' for
+artifact cleanup, and './STATUS.sh --help' for run history.
 EOF
 }
 
@@ -130,6 +141,8 @@ evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
 evop_require_executable_file "$DOCTOR_SCRIPT" "Doctor script"
 evop_require_executable_file "$INSPECT_SCRIPT" "Inspect script"
 evop_require_executable_file "$VERIFY_SCRIPT" "Verify script"
+evop_require_executable_file "$CLEAN_SCRIPT" "Clean script"
+evop_require_executable_file "$STATUS_SCRIPT" "Status script"
 
 find_subcommand "$@" || true
 

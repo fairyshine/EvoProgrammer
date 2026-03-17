@@ -22,6 +22,13 @@ assert_contains "$verify_output" "Running build: make build" "VERIFY should incl
 assert_contains "$verify_log" $'lint\ntypecheck\ntest\nbuild' "VERIFY should run the steps in the expected order"
 pass "VERIFY execution"
 
+setup_verify_shell_workspace
+verify_shell_output="$(run_expect_success "VERIFY should prefer zsh for command execution" env PATH="$TEST_VERIFY_SHELL_BIN:$PATH" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_SHELL_DIR" --steps lint)"
+verify_shell_log="$(cat "$TEST_VERIFY_SHELL_LOG")"
+assert_contains "$verify_shell_output" "Running lint: make lint" "VERIFY should still run the detected lint command"
+assert_contains "$verify_shell_log" "zsh" "VERIFY should execute commands through zsh when available"
+pass "VERIFY shell preference"
+
 verify_dry_run_output="$(run_expect_success "VERIFY dry-run should print commands without executing them" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps test,build --dry-run)"
 assert_contains "$verify_dry_run_output" "Running test: make test" "VERIFY dry-run should print the selected test command"
 assert_contains "$verify_dry_run_output" "Running build: make build" "VERIFY dry-run should print the selected build command"

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+# shellcheck source=lib/common.sh
+# shellcheck source=lib/profile.sh
 LOOP_SCRIPT="$ROOT_DIR/LOOP.sh"
 MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
 CLI_SCRIPT="$ROOT_DIR/bin/EvoProgrammer"
@@ -32,6 +35,15 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local haystack="$1"
+    local needle="$2"
+    local context="$3"
+    if [[ "$haystack" == *"$needle"* ]]; then
+        fail "$context"
+    fi
+}
+
 assert_equals() {
     local actual="$1"
     local expected="$2"
@@ -43,17 +55,17 @@ assert_equals() {
 }
 
 assert_file_exists() {
-    local path="$1"
+    local file_path="$1"
     local context="$2"
-    if [[ ! -f "$path" ]]; then
+    if [[ ! -f "$file_path" ]]; then
         fail "$context"
     fi
 }
 
 assert_directory_exists() {
-    local path="$1"
+    local dir_path="$1"
     local context="$2"
-    if [[ ! -d "$path" ]]; then
+    if [[ ! -d "$dir_path" ]]; then
         fail "$context"
     fi
 }
@@ -215,4 +227,28 @@ test:
 build:
 	@printf 'build\n' >>"$TEST_VERIFY_LOG"
 EOF
+}
+
+setup_verify_shell_workspace() {
+    if [[ -n "${TEST_VERIFY_SHELL_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_VERIFY_SHELL_DIR="$TEST_TMPDIR/verify-shell-project"
+    TEST_VERIFY_SHELL_LOG="$TEST_TMPDIR/verify-shell.log"
+    TEST_VERIFY_SHELL_BIN="$TEST_TMPDIR/verify-shell-bin"
+
+    mkdir -p "$TEST_VERIFY_SHELL_DIR" "$TEST_VERIFY_SHELL_BIN"
+
+    cat >"$TEST_VERIFY_SHELL_DIR/Makefile" <<'EOF'
+lint:
+	@true
+EOF
+
+    cat >"$TEST_VERIFY_SHELL_BIN/make" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "\${EVOP_PREFERRED_SHELL:-unknown}" >"$TEST_VERIFY_SHELL_LOG"
+EOF
+    chmod +x "$TEST_VERIFY_SHELL_BIN/make"
 }

@@ -21,31 +21,31 @@ evop_log_verbose() {
 
 evop_fail() {
     local message="$1"
-    local status="${2:-1}"
+    local exit_code="${2:-1}"
     evop_print_stderr "$message"
-    exit "$status"
+    exit "$exit_code"
 }
 
 evop_require_executable_file() {
-    local path="$1"
+    local file_path="$1"
     local label="$2"
-    if [[ ! -x "$path" ]]; then
-        evop_fail "$label is missing or not executable: $path"
+    if [[ ! -x "$file_path" ]]; then
+        evop_fail "$label is missing or not executable: $file_path"
     fi
 }
 
 evop_require_directory() {
-    local path="$1"
-    if [[ ! -d "$path" ]]; then
-        evop_fail "Target directory does not exist: $path"
+    local dir_path="$1"
+    if [[ ! -d "$dir_path" ]]; then
+        evop_fail "Target directory does not exist: $dir_path"
     fi
 }
 
 evop_require_regular_file() {
-    local path="$1"
+    local file_path="$1"
     local label="$2"
-    if [[ ! -f "$path" ]]; then
-        evop_fail "$label does not exist: $path"
+    if [[ ! -f "$file_path" ]]; then
+        evop_fail "$label does not exist: $file_path"
     fi
 }
 

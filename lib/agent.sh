@@ -4,7 +4,13 @@ EVOPROGRAMMER_DEFAULT_AGENT="codex"
 EVOP_PARSED_LIST=()
 EVOP_AGENT_COMMAND=()
 
-EVOP_AGENT_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/agents" && pwd)"
+if [[ -z "${EVOP_AGENT_LIB_DIR:-}" ]]; then
+    if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
+        EVOP_AGENT_LIB_DIR="$EVOP_LIB_DIR/agents"
+    else
+        EVOP_AGENT_LIB_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")/agents" && pwd)"
+    fi
+fi
 
 source "$EVOP_AGENT_LIB_DIR/catalog.sh"
 source "$EVOP_AGENT_LIB_DIR/validate.sh"

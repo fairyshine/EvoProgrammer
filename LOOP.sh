@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/lib"
+EVOP_LIB_DIR="$LIB_DIR"
 COMMON_LIB="$LIB_DIR/common.sh"
 RUNTIME_LIB="$LIB_DIR/runtime.sh"
 AGENT_LIB="$LIB_DIR/agent.sh"
@@ -27,8 +31,8 @@ evop_init_common_context
 declare -a AGENT_ARGS=()
 
 write_run_metadata() {
-    local path="$1"
-    local status="$2"
+    local metadata_path="$1"
+    local run_status="$2"
     local started_at="$3"
     local finished_at="$4"
     local prompt_source="$5"
@@ -37,13 +41,13 @@ write_run_metadata() {
     local output_file="$8"
 
     evop_build_common_metadata_args "$prompt_source" "$artifacts_root"
-    evop_write_env_file "$path" \
+    evop_write_env_file "$metadata_path" \
         MODE "single" \
         "${EVOP_COMMON_METADATA_ARGS[@]}" \
         RUN_DIR "$run_dir" \
         STARTED_AT "$started_at" \
         FINISHED_AT "$finished_at" \
-        STATUS "$status" \
+        STATUS "$run_status" \
         OUTPUT_FILE "$output_file"
 }
 
@@ -176,14 +180,14 @@ evop_log_info "Artifacts directory: $run_dir"
 evop_run_hook "$TARGET_DIR" "pre-iteration"
 
 if evop_run_and_capture "$TARGET_DIR" "$output_file" "${agent_cmd[@]}"; then
-    status=0
+    run_status=0
 else
-    status=$?
+    run_status=$?
 fi
 
 evop_run_hook "$TARGET_DIR" "post-iteration"
 
 finished_at="$(evop_timestamp_utc)"
-write_run_metadata "$metadata_file" "$status" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"
+write_run_metadata "$metadata_file" "$run_status" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"
 
-exit "$status"
+exit "$run_status"

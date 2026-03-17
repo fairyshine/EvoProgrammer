@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
+EVOP_LIB_DIR="$SCRIPT_DIR/lib"
 COMMON_LIB="$SCRIPT_DIR/lib/common.sh"
 RUNTIME_LIB="$SCRIPT_DIR/lib/runtime.sh"
 
@@ -87,7 +91,7 @@ format_entry() {
     local name
     local metadata=""
     local agent=""
-    local status=""
+    local item_status=""
     local started=""
     local mode=""
 
@@ -108,13 +112,13 @@ format_entry() {
     started="$(read_env_value "$metadata" STARTED_AT)"
 
     if [[ "$mode" == "session" ]]; then
-        status="$(read_env_value "$metadata" STATE)"
+        item_status="$(read_env_value "$metadata" STATE)"
         local last_iter
         last_iter="$(read_env_value "$metadata" LAST_ITERATION)"
-        printf '%s  %s  agent=%s  state=%s  iterations=%s\n' "$name" "$started" "$agent" "$status" "$last_iter"
+        printf '%s  %s  agent=%s  state=%s  iterations=%s\n' "$name" "$started" "$agent" "$item_status" "$last_iter"
     else
-        status="$(read_env_value "$metadata" STATUS)"
-        printf '%s  %s  agent=%s  status=%s\n' "$name" "$started" "$agent" "$status"
+        item_status="$(read_env_value "$metadata" STATUS)"
+        printf '%s  %s  agent=%s  status=%s\n' "$name" "$started" "$agent" "$item_status"
     fi
 }
 

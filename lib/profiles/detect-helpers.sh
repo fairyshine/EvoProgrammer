@@ -17,7 +17,7 @@ evop_reset_detection_facts() {
 
 evop_collect_detection_facts() {
     local directory="$1"
-    local path
+    local entry_path
     local rel
     local prune_args=()
     local dir_name
@@ -31,17 +31,17 @@ evop_collect_detection_facts() {
     # remove trailing -o
     unset 'prune_args[${#prune_args[@]}-1]'
 
-    while IFS= read -r -d '' path; do
-        rel="${path#"$directory"/}"
+    while IFS= read -r -d '' entry_path; do
+        rel="${entry_path#"$directory"/}"
         EVOP_DETECT_FILES_REL+=("$rel")
-        EVOP_DETECT_FILE_BASENAMES+=("$(basename "$path")")
+        EVOP_DETECT_FILE_BASENAMES+=("$(basename "$entry_path")")
     done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o -type f -print0 2>/dev/null)
 
-    while IFS= read -r -d '' path; do
-        if [[ "$path" == "$directory" ]]; then
+    while IFS= read -r -d '' entry_path; do
+        if [[ "$entry_path" == "$directory" ]]; then
             continue
         fi
-        EVOP_DETECT_PATH_BASENAMES+=("$(basename "$path")")
+        EVOP_DETECT_PATH_BASENAMES+=("$(basename "$entry_path")")
     done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o \( -type f -o -type d \) -print0 2>/dev/null)
 }
 

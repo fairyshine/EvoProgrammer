@@ -34,30 +34,30 @@ evop_prompt_source_label() {
 }
 
 evop_resolve_physical_dir() {
-    local path="$1"
+    local target_path="$1"
     (
-        cd "$path" && pwd -P
+        cd "$target_path" && pwd -P
     )
 }
 
 evop_path_is_within() {
-    local path="$1"
+    local target_path="$1"
     local parent_dir="$2"
 
-    [[ "$path" == "$parent_dir" || "$path" == "$parent_dir/"* ]]
+    [[ "$target_path" == "$parent_dir" || "$target_path" == "$parent_dir/"* ]]
 }
 
 evop_relative_path_within() {
-    local path="$1"
+    local target_path="$1"
     local parent_dir="$2"
 
-    if [[ "$path" == "$parent_dir" ]]; then
+    if [[ "$target_path" == "$parent_dir" ]]; then
         printf '.'
         return 0
     fi
 
-    if [[ "$path" == "$parent_dir/"* ]]; then
-        printf '%s' "${path#"$parent_dir"/}"
+    if [[ "$target_path" == "$parent_dir/"* ]]; then
+        printf '%s' "${target_path#"$parent_dir"/}"
         return 0
     fi
 
@@ -65,14 +65,14 @@ evop_relative_path_within() {
 }
 
 evop_append_unique_line() {
-    local path="$1"
+    local file_path="$1"
     local line="$2"
 
-    mkdir -p "$(dirname "$path")"
-    touch "$path"
+    mkdir -p "$(dirname "$file_path")"
+    touch "$file_path"
 
-    if ! grep -Fqx -- "$line" "$path"; then
-        printf '%s\n' "$line" >>"$path"
+    if ! grep -Fqx -- "$line" "$file_path"; then
+        printf '%s\n' "$line" >>"$file_path"
     fi
 }
 
@@ -154,27 +154,27 @@ evop_prepare_unique_dir() {
 }
 
 evop_write_command_file() {
-    local path="$1"
+    local file_path="$1"
     shift
     local first=1
 
-    mkdir -p "$(dirname "$path")"
-    : >"$path"
+    mkdir -p "$(dirname "$file_path")"
+    : >"$file_path"
 
     for arg in "$@"; do
         if (( first == 1 )); then
-            printf '%q' "$arg" >>"$path"
+            printf '%q' "$arg" >>"$file_path"
             first=0
         else
-            printf ' %q' "$arg" >>"$path"
+            printf ' %q' "$arg" >>"$file_path"
         fi
     done
 
-    printf '\n' >>"$path"
+    printf '\n' >>"$file_path"
 }
 
 evop_write_env_file() {
-    local path="$1"
+    local file_path="$1"
     shift
     local key
     local value
@@ -183,14 +183,14 @@ evop_write_env_file() {
         evop_fail "Metadata entries must be key/value pairs."
     fi
 
-    mkdir -p "$(dirname "$path")"
-    : >"$path"
+    mkdir -p "$(dirname "$file_path")"
+    : >"$file_path"
 
     while (($# > 0)); do
         key="$1"
         value="$2"
         shift 2
-        printf '%s=%q\n' "$key" "$value" >>"$path"
+        printf '%s=%q\n' "$key" "$value" >>"$file_path"
     done
 }
 
@@ -241,7 +241,7 @@ evop_run_and_capture() {
     local target_dir="$1"
     local output_file="$2"
     shift 2
-    local status
+    local exit_code
 
     mkdir -p "$(dirname "$output_file")"
 
@@ -250,8 +250,9 @@ evop_run_and_capture() {
         cd "$target_dir"
         "$@"
     ) 2>&1 | tee "$output_file"
-    status="${PIPESTATUS[0]}"
+    evop_capture_pipeline_status0
+    exit_code="$EVOP_PIPELINE_STATUS0"
     set -e
 
-    return "$status"
+    return "$exit_code"
 }

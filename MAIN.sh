@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 LOOP_SCRIPT="$SCRIPT_DIR/LOOP.sh"
 LIB_DIR="$SCRIPT_DIR/lib"
+EVOP_LIB_DIR="$LIB_DIR"
 COMMON_LIB="$LIB_DIR/common.sh"
 RUNTIME_LIB="$LIB_DIR/runtime.sh"
 AGENT_LIB="$LIB_DIR/agent.sh"
@@ -40,7 +44,7 @@ build_loop_command() {
 }
 
 write_session_metadata() {
-    local path="$1"
+    local metadata_path="$1"
     local state="$2"
     local started_at="$3"
     local finished_at="$4"
@@ -51,7 +55,7 @@ write_session_metadata() {
     local final_status="$9"
 
     evop_build_common_metadata_args "$prompt_source" "$artifacts_root"
-    evop_write_env_file "$path" \
+    evop_write_env_file "$metadata_path" \
         MODE "loop" \
         "${EVOP_COMMON_METADATA_ARGS[@]}" \
         SESSION_DIR "$session_dir" \
@@ -220,15 +224,15 @@ while (( MAX_ITERATIONS == 0 || iteration <= MAX_ITERATIONS )); do
         last_iteration="$iteration"
         final_status=0
     else
-        status=$?
+        exit_code=$?
         last_iteration="$iteration"
-        final_status="$status"
-        echo "Iteration $iteration failed with exit code $status." >&2
+        final_status="$exit_code"
+        echo "Iteration $iteration failed with exit code $exit_code." >&2
 
         if [[ "$CONTINUE_ON_ERROR" != "1" ]]; then
             finished_at="$(evop_timestamp_utc)"
             write_session_metadata "$session_metadata" "failed" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$session_dir" "$last_iteration" "$final_status"
-            exit "$status"
+            exit "$exit_code"
         fi
     fi
 

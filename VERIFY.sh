@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
+EVOP_LIB_DIR="$SCRIPT_DIR/lib"
 COMMON_LIB="$SCRIPT_DIR/lib/common.sh"
 RUNTIME_LIB="$SCRIPT_DIR/lib/runtime.sh"
 AGENT_LIB="$SCRIPT_DIR/lib/agent.sh"
@@ -59,7 +63,7 @@ evop_run_verify_step() {
     local command="$2"
     local verify_dir="$3"
     local log_file="$verify_dir/$slot.log"
-    local status=0
+    local exit_code=0
 
     evop_log_info "Running $slot: $command"
     if [[ "$DRY_RUN" == "1" ]]; then
@@ -70,11 +74,12 @@ evop_run_verify_step() {
     set +e
     (
         cd "$TARGET_DIR"
-        bash -lc "$command"
+        evop_run_with_preferred_shell "$command"
     ) 2>&1 | tee "$log_file"
-    status="${PIPESTATUS[0]}"
+    evop_capture_pipeline_status0
+    exit_code="$EVOP_PIPELINE_STATUS0"
     set -e
-    return "$status"
+    return "$exit_code"
 }
 
 usage() {

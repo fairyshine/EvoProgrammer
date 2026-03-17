@@ -202,5 +202,5 @@ verbosity=0
 ## 验证
 
 ```bash
-bash tests/run_tests.sh
+zsh tests/run_tests.sh
 ```

@@ -205,5 +205,5 @@ and layering model.
 ## Verification
 
 ```bash
-bash tests/run_tests.sh
+zsh tests/run_tests.sh
 ```

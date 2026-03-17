@@ -6,6 +6,10 @@ help_output="$(run_expect_success "LOOP help should succeed" "$LOOP_SCRIPT" --he
 assert_contains "$help_output" "Usage: ./LOOP.sh [options] [prompt]" "LOOP help output should mention options usage"
 pass "LOOP help"
 
+sh_help_output="$(run_expect_success "LOOP help should succeed via sh bootstrap" sh "$LOOP_SCRIPT" --help)"
+assert_contains "$sh_help_output" "Usage: ./LOOP.sh [options] [prompt]" "LOOP help should still work when invoked via sh"
+pass "LOOP help via sh"
+
 missing_codex_output="$(run_expect_failure "LOOP should fail without codex" env HOME="$HOME" PATH="/usr/bin:/bin" "$LOOP_SCRIPT" --prompt "test")"
 assert_contains "$missing_codex_output" "The 'codex' CLI is required" "LOOP should report missing codex"
 pass "LOOP missing codex"
@@ -46,7 +50,7 @@ pass "LOOP prompt after --"
 FAKE_CODEX_LOG="$TEST_TMPDIR/loop-default-target.log"
 export FAKE_CODEX_LOG
 (
-    cd "$TEST_TARGET_DIR"
+    cd "$TEST_TARGET_DIR" || exit 1
     run_expect_success "LOOP should default to current working directory" env -u EVOPROGRAMMER_TARGET_DIR PATH="$TEST_FAKE_BIN:$PATH" "$LOOP_SCRIPT" --prompt "default target" >/dev/null
 )
 loop_default_target_log="$(cat "$FAKE_CODEX_LOG")"

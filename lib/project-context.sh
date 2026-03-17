@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-PROJECT_CONTEXT_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/project-context" && pwd)"
+if [[ -z "${PROJECT_CONTEXT_LIB_DIR:-}" ]]; then
+    if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
+        PROJECT_CONTEXT_LIB_DIR="$EVOP_LIB_DIR/project-context"
+    else
+        PROJECT_CONTEXT_LIB_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/project-context"
+    fi
+fi
 
 source "$PROJECT_CONTEXT_LIB_DIR/state.sh"
 source "$PROJECT_CONTEXT_LIB_DIR/commands.sh"

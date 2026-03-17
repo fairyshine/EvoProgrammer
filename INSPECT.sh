@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
+. "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
+evop_exec_with_preferred_shell "$0" "$@"
+
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
+EVOP_LIB_DIR="$SCRIPT_DIR/lib"
 COMMON_LIB="$SCRIPT_DIR/lib/common.sh"
 RUNTIME_LIB="$SCRIPT_DIR/lib/runtime.sh"
 AGENT_LIB="$SCRIPT_DIR/lib/agent.sh"

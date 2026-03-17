@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-PROFILE_DETECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${PROFILE_DETECT_DIR:-}" ]]; then
+    if [[ -n "${PROFILE_LIB_DIR:-}" ]]; then
+        PROFILE_DETECT_DIR="$PROFILE_LIB_DIR"
+    else
+        PROFILE_DETECT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+    fi
+fi
 
 source "$PROFILE_DETECT_DIR/detect-helpers.sh"
 

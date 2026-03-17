@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-EVOP_AGENT_DEFINITIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/definitions" && pwd)"
+if [[ -z "${EVOP_AGENT_DEFINITIONS_DIR:-}" ]]; then
+    if [[ -n "${EVOP_AGENT_LIB_DIR:-}" ]]; then
+        EVOP_AGENT_DEFINITIONS_DIR="$EVOP_AGENT_LIB_DIR/definitions"
+    else
+        EVOP_AGENT_DEFINITIONS_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/definitions"
+    fi
+fi
 
 evop_supported_agents() {
     local agent_dir
@@ -40,16 +46,16 @@ evop_reset_agent_definition() {
 
 evop_load_agent_definition() {
     local agent_name="$1"
-    local path="$EVOP_AGENT_DEFINITIONS_DIR/$agent_name/agent.sh"
+    local definition_path="$EVOP_AGENT_DEFINITIONS_DIR/$agent_name/agent.sh"
 
     evop_reset_agent_definition
 
-    if [[ ! -f "$path" ]]; then
-        evop_fail "Agent definition is missing: $path"
+    if [[ ! -f "$definition_path" ]]; then
+        evop_fail "Agent definition is missing: $definition_path"
     fi
 
     EVOP_AGENT_COMMAND=()
 
     # shellcheck source=/dev/null
-    source "$path"
+    source "$definition_path"
 }

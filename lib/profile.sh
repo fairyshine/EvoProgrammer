@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 
-PROFILE_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/profiles" && pwd)"
-PROJECT_CONTEXT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/project-context.sh"
+if [[ -z "${PROFILE_LIB_DIR:-}" ]]; then
+    if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
+        PROFILE_LIB_DIR="$EVOP_LIB_DIR/profiles"
+    else
+        PROFILE_LIB_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/profiles"
+    fi
+fi
+
+if [[ -z "${PROJECT_CONTEXT_LIB:-}" ]]; then
+    if [[ -n "${EVOP_LIB_DIR:-}" ]]; then
+        PROJECT_CONTEXT_LIB="$EVOP_LIB_DIR/project-context.sh"
+    else
+        PROJECT_CONTEXT_LIB="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/project-context.sh"
+    fi
+fi
 
 source "$PROFILE_LIB_DIR/catalog.sh"
 source "$PROFILE_LIB_DIR/detect.sh"

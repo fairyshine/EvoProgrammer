@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 evop_file_contains_regex() {
-    local path="$1"
+    local file_path="$1"
     local regex="$2"
 
-    [[ -f "$path" ]] || return 1
-    grep -Eq "$regex" "$path"
+    [[ -f "$file_path" ]] || return 1
+    grep -Eq "$regex" "$file_path"
 }
 
 evop_file_contains_literal() {
-    local path="$1"
+    local file_path="$1"
     local text="$2"
 
-    [[ -f "$path" ]] || return 1
-    grep -Fq -- "$text" "$path"
+    [[ -f "$file_path" ]] || return 1
+    grep -Fq -- "$text" "$file_path"
 }
 
 evop_package_json_has_script() {
