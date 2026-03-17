@@ -11,7 +11,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 4. Project inspection derives package manager, workspace mode, command plan, structure hints, conventions, and risk areas.
 5. The result is consumed in one of three ways:
    - `LOOP.sh` / `MAIN.sh` inject it into the agent prompt.
-   - `INSPECT.sh` prints it for humans.
+   - `INSPECT.sh` prints it for humans or writes machine-readable report files.
    - `VERIFY.sh` executes the detected verification chain.
 
 ## Layers
@@ -29,6 +29,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/cli.sh`: shared flag parsing and context finalization
 - `lib/runtime.sh`: filesystem, artifacts, command capture, and path helpers
 - `lib/config.sh`: `.evoprogrammer.conf` loading
+- `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
 
 ### 3. Profile system
 
@@ -66,7 +67,9 @@ and observable. Candidate planning narrows the expensive hook-loading path using
 cheap repo facts first, while diagnostics preserves the final matched candidates
 without re-running detection logic in presentation code. That keeps
 `inspect --format profiles`, `inspect --format env`, diagnostics output, and
-JSON rendering aligned on the same detection state.
+JSON rendering aligned on the same detection state. The candidate layer now also
+short-circuits obvious shell/CLI repositories so framework and project-type
+detection do not source unrelated profile definitions.
 
 ## Command Model
 

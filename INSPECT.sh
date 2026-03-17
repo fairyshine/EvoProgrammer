@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC1090,SC1091,SC2034,SC2154
 
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
 evop_exec_with_preferred_shell "$0" "$@"
@@ -14,6 +14,7 @@ AGENT_LIB="$SCRIPT_DIR/lib/agent.sh"
 PROFILE_LIB="$SCRIPT_DIR/lib/profile.sh"
 CLI_LIB="$SCRIPT_DIR/lib/cli.sh"
 CONFIG_LIB="$SCRIPT_DIR/lib/config.sh"
+INSPECT_LIB="$SCRIPT_DIR/lib/inspect.sh"
 
 source "$COMMON_LIB"
 source "$RUNTIME_LIB"
@@ -21,9 +22,12 @@ source "$AGENT_LIB"
 source "$PROFILE_LIB"
 source "$CLI_LIB"
 source "$CONFIG_LIB"
+source "$INSPECT_LIB"
 
 evop_init_common_context
 OUTPUT_FORMAT="summary"
+REPORT_FILE=""
+REPORT_FORMAT=""
 
 usage() {
     cat <<'EOF'
@@ -41,6 +45,8 @@ Options:
   -f, --prompt-file FILE   Read the optional prompt signal from a file.
   -t, --target-dir DIR     Repository directory to inspect.
       --format NAME        Output format: summary, diagnostics, profiles, doctor, prompt, timings, json, or env.
+      --report-file FILE   Also write inspect output to a file.
+      --report-format NAME Report file format. Defaults to --format.
   -h, --help               Show this help text.
 EOF
 }
@@ -54,6 +60,16 @@ while (($# > 0)); do
         --format)
             evop_require_option_value "$1" "$#"
             OUTPUT_FORMAT="$2"
+            shift 2
+            ;;
+        --report-file)
+            evop_require_option_value "$1" "$#"
+            REPORT_FILE="$2"
+            shift 2
+            ;;
+        --report-format)
+            evop_require_option_value "$1" "$#"
+            REPORT_FORMAT="$2"
             shift 2
             ;;
         --)
@@ -81,41 +97,14 @@ if (($# > 0)); then
     exit 1
 fi
 
-case "$OUTPUT_FORMAT" in
-    summary|diagnostics|profiles|doctor|prompt|timings|json|env)
-        ;;
-    *)
-        evop_fail "Unsupported inspect format: $OUTPUT_FORMAT"
-        ;;
-esac
+evop_validate_inspect_format "$OUTPUT_FORMAT"
+
+if [[ -z "$REPORT_FORMAT" ]]; then
+    REPORT_FORMAT="$OUTPUT_FORMAT"
+fi
+evop_validate_inspect_format "$REPORT_FORMAT"
 
 evop_finalize_analysis_context
 
-case "$OUTPUT_FORMAT" in
-    summary)
-        evop_print_project_inspection_report
-        ;;
-    diagnostics)
-        evop_print_project_inspection_diagnostics
-        ;;
-    profiles)
-        evop_print_profile_detection_report
-        ;;
-    timings)
-        evop_print_project_inspection_timings
-        ;;
-    doctor)
-        printf 'OK agent %s\n' "$AGENT"
-        evop_print_current_profiles "doctor"
-        printf 'OK target-dir %s\n' "$TARGET_DIR"
-        ;;
-    prompt)
-        printf '%s' "$(evop_render_project_context_prompt)"
-        ;;
-    json)
-        evop_render_project_context_json
-        ;;
-    env)
-        evop_print_project_inspection_env
-        ;;
-esac
+evop_print_project_inspection_output "$OUTPUT_FORMAT"
+evop_write_project_inspection_report "$REPORT_FILE" "$REPORT_FORMAT"

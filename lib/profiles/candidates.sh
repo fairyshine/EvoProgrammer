@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# shellcheck disable=SC2034
+
 EVOP_PROFILE_CANDIDATE_MODE="all"
 EVOP_PROFILE_CANDIDATE_LIST=""
 
@@ -41,10 +43,67 @@ evop_profile_candidate_add_if_prompt_matches() {
     fi
 }
 
+evop_repo_has_non_shell_runtime_markers() {
+    local target_dir="$1"
+
+    if evop_directory_has_file_named "$target_dir" \
+        "package.json" \
+        "pyproject.toml" \
+        "requirements.txt" \
+        "setup.py" \
+        "Cargo.toml" \
+        "go.mod" \
+        "Gemfile" \
+        "composer.json" \
+        "pom.xml" \
+        "build.gradle" \
+        "build.gradle.kts" \
+        "Package.swift" \
+        "project.godot" \
+        "AndroidManifest.xml" \
+        "Info.plist" \
+        "CMakeLists.txt"; then
+        return 0
+    fi
+
+    if evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.uproject"; then
+        return 0
+    fi
+
+    return 1
+}
+
+evop_repo_looks_like_shell_cli() {
+    local target_dir="$1"
+
+    if evop_repo_has_non_shell_runtime_markers "$target_dir"; then
+        return 1
+    fi
+
+    if evop_directory_has_path_named "$target_dir" "bin"; then
+        return 0
+    fi
+
+    if evop_directory_has_file_pattern "$target_dir" "*.sh" \
+        && evop_directory_has_path_named "$target_dir" "lib" "tests"; then
+        return 0
+    fi
+
+    return 1
+}
+
 evop_prepare_language_profile_candidates() {
     local target_dir="$1"
     local prompt="${2:-}"
     local candidates=""
+
+    if evop_repo_looks_like_shell_cli "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "shell"
+        evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "bash" "shell" "shell script" "脚本"
+        EVOP_PROFILE_CANDIDATE_MODE="filtered"
+        EVOP_PROFILE_CANDIDATE_LIST="$candidates"
+        return 0
+    fi
 
     if evop_directory_has_file_named "$target_dir" "tsconfig.json" \
         || evop_directory_has_file_pattern "$target_dir" "*.ts" "*.tsx"; then
@@ -305,6 +364,8 @@ evop_prepare_framework_profile_candidates() {
     if [[ -n "$candidates" ]]; then
         EVOP_PROFILE_CANDIDATE_MODE="filtered"
         EVOP_PROFILE_CANDIDATE_LIST="$candidates"
+    elif evop_repo_looks_like_shell_cli "$target_dir"; then
+        EVOP_PROFILE_CANDIDATE_MODE="none"
     elif [[ -n "$prompt" ]]; then
         EVOP_PROFILE_CANDIDATE_MODE="all"
     else
@@ -343,6 +404,10 @@ evop_prepare_project_type_candidates() {
     if evop_directory_has_path_named "$target_dir" "public" \
         || evop_directory_has_path_named "$target_dir" "src"; then
         evop_profile_candidate_append_unique candidates "web-app"
+    fi
+
+    if evop_repo_looks_like_shell_cli "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "cli-tool"
     fi
 
     evop_profile_candidate_add_if_prompt_matches candidates "ai-agent" "$prompt" "ai agent" "assistant" "tool-using agent" "workflow agent"

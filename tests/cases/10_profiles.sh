@@ -88,3 +88,65 @@ EOF
 )"
 assert_contains "$profile_detect_zsh_output" "detected=shell" "Profile detection should honor filename patterns under zsh"
 pass "Profile detect zsh patterns"
+
+shell_cli_candidate_output="$(
+    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/bin" "$tmpdir/lib" "$tmpdir/tests"
+printf '#!/usr/bin/env bash\n' >"$tmpdir/bin/tool"
+printf '#!/usr/bin/env bash\n' >"$tmpdir/MAIN.sh"
+
+for category in languages frameworks project-types; do
+    evop_prepare_profile_detection_candidates "$category" "$tmpdir" ""
+    printf '%s_mode=%s\n' "$category" "$EVOP_PROFILE_CANDIDATE_MODE"
+    printf '%s_candidates=%s\n' "$category" "$EVOP_PROFILE_CANDIDATE_LIST"
+done
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+else
+    printf 'project_type=none\n'
+fi
+EOF
+)"
+assert_contains "$shell_cli_candidate_output" "languages_mode=filtered" "Shell CLI repos should narrow language candidates"
+assert_contains "$shell_cli_candidate_output" "languages_candidates=shell" "Shell CLI repos should keep the shell language candidate"
+assert_contains "$shell_cli_candidate_output" "frameworks_mode=none" "Shell CLI repos should skip irrelevant framework detection"
+assert_contains "$shell_cli_candidate_output" "project-types_mode=filtered" "Shell CLI repos should narrow project-type candidates"
+assert_contains "$shell_cli_candidate_output" "project-types_candidates=cli-tool" "Shell CLI repos should keep the cli-tool project type candidate"
+assert_contains "$shell_cli_candidate_output" "project_type=cli-tool" "Shell CLI repos should auto-detect the cli-tool project type"
+pass "Shell CLI project detection"
+
+shell_cli_candidate_zsh_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/bin" "$tmpdir/lib" "$tmpdir/tests"
+printf '#!/usr/bin/env bash\n' >"$tmpdir/bin/tool"
+printf '#!/usr/bin/env bash\n' >"$tmpdir/MAIN.sh"
+
+evop_prepare_profile_detection_candidates "frameworks" "$tmpdir" ""
+printf 'frameworks_mode=%s\n' "$EVOP_PROFILE_CANDIDATE_MODE"
+evop_prepare_profile_detection_candidates "project-types" "$tmpdir" ""
+printf 'project-types_candidates=%s\n' "$EVOP_PROFILE_CANDIDATE_LIST"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+else
+    printf 'project_type=none\n'
+fi
+EOF
+)"
+assert_contains "$shell_cli_candidate_zsh_output" "frameworks_mode=none" "Shell CLI repos should skip framework detection under zsh"
+assert_contains "$shell_cli_candidate_zsh_output" "project-types_candidates=cli-tool" "Shell CLI repos should keep cli-tool candidates under zsh"
+assert_contains "$shell_cli_candidate_zsh_output" "project_type=cli-tool" "Shell CLI repos should auto-detect cli-tool under zsh"
+pass "Shell CLI project detection zsh"

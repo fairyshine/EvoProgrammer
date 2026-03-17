@@ -88,6 +88,8 @@ EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
 EvoProgrammer inspect --target-dir /path/to/project --format env
+EvoProgrammer inspect --target-dir /path/to/project \
+  --report-file ./inspect-report.json --report-format json
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
@@ -155,6 +157,7 @@ EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
 EvoProgrammer inspect --target-dir /path/to/project --format env
+EvoProgrammer inspect --target-dir /path/to/project --report-file ./inspect-report.env --report-format env
 ```
 
 Use `verify` when you want EvoProgrammer to execute the detected command chain
@@ -177,6 +180,9 @@ want to understand or debug auto-detection decisions.
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, so CI jobs and helper scripts can `source` the
 result instead of re-parsing human-readable output.
+
+`inspect --report-file` writes any inspect format to disk, including JSON and
+shell-safe env exports for CI jobs and wrapper scripts.
 
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable
@@ -222,6 +228,7 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `VERIFY.sh` | Detected verification-chain runner |
 | `CLEAN.sh` | Artifact cleanup |
 | `STATUS.sh` | Run history viewer |
+| `lib/inspect.sh` | Inspect-format validation plus stdout/report-file dispatch |
 | `lib/agents/definitions/` | Pluggable agent definitions |
 | `lib/profiles/diagnostics.sh` | Matched profile candidates and detection-score reporting |
 | `lib/profiles/candidates.sh` | Cheap candidate planning that narrows profile loading before hook execution |

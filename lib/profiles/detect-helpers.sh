@@ -39,6 +39,56 @@ fi
 
 EVOP_DETECT_PRUNE_DIRS=(.git node_modules vendor target build dist __pycache__ .venv .next .tox .mypy_cache .pytest_cache .cargo .gradle .bundle)
 
+evop_detection_record_file_basename() {
+    local basename="$1"
+
+    if (( EVOP_DETECT_BASENAME_SET_ENABLED != 1 )); then
+        return 0
+    fi
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        EVOP_DETECT_FILE_BASENAME_SET[$basename]=1
+    else
+        EVOP_DETECT_FILE_BASENAME_SET["$basename"]=1
+    fi
+}
+
+evop_detection_record_path_basename() {
+    local basename="$1"
+
+    if (( EVOP_DETECT_BASENAME_SET_ENABLED != 1 )); then
+        return 0
+    fi
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        EVOP_DETECT_PATH_BASENAME_SET[$basename]=1
+    else
+        EVOP_DETECT_PATH_BASENAME_SET["$basename"]=1
+    fi
+}
+
+evop_detection_file_basename_exists() {
+    local basename="$1"
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        [[ -n ${EVOP_DETECT_FILE_BASENAME_SET[$basename]+set} ]]
+        return $?
+    fi
+
+    [[ -n "${EVOP_DETECT_FILE_BASENAME_SET[$basename]+set}" ]]
+}
+
+evop_detection_path_basename_exists() {
+    local basename="$1"
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        [[ -n ${EVOP_DETECT_PATH_BASENAME_SET[$basename]+set} ]]
+        return $?
+    fi
+
+    [[ -n "${EVOP_DETECT_PATH_BASENAME_SET[$basename]+set}" ]]
+}
+
 evop_reset_detection_facts() {
     EVOP_DETECT_FACTS_DIR=""
     EVOP_DETECT_FILES_REL=()
@@ -89,15 +139,11 @@ evop_collect_detection_facts() {
         rel="${entry_path#"$directory"/}"
         entry_basename="$(basename "$entry_path")"
         EVOP_DETECT_PATH_BASENAMES+=("$entry_basename")
-        if (( EVOP_DETECT_BASENAME_SET_ENABLED == 1 )); then
-            EVOP_DETECT_PATH_BASENAME_SET["$entry_basename"]=1
-        fi
+        evop_detection_record_path_basename "$entry_basename"
         if [[ -f "$entry_path" ]]; then
             EVOP_DETECT_FILES_REL+=("$rel")
             EVOP_DETECT_FILE_BASENAMES+=("$entry_basename")
-            if (( EVOP_DETECT_BASENAME_SET_ENABLED == 1 )); then
-                EVOP_DETECT_FILE_BASENAME_SET["$entry_basename"]=1
-            fi
+            evop_detection_record_file_basename "$entry_basename"
         fi
     done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o \( -type f -o -type d \) -print0 2>/dev/null)
 }
@@ -132,23 +178,43 @@ evop_detection_cache_lookup() {
     EVOP_DETECT_CACHE_RESULT=""
 
     if [[ "$EVOP_DETECT_CACHE_BACKEND" == "associative-array" ]]; then
-        case "$cache_name" in
-            EVOP_DETECT_MATCHING_FILES_CACHE)
-                [[ -n "${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set}" ]] || return 1
-                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
-                ;;
-            EVOP_DETECT_DIRECTORY_TEXT_CACHE)
-                [[ -n "${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set}" ]] || return 1
-                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
-                ;;
-            EVOP_DETECT_FILE_TEXT_CACHE)
-                [[ -n "${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]+set}" ]] || return 1
-                EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]}"
-                ;;
-            *)
-                return 1
-                ;;
-        esac
+        if [[ -n "${ZSH_VERSION:-}" ]]; then
+            case "$cache_name" in
+                EVOP_DETECT_MATCHING_FILES_CACHE)
+                    [[ -n ${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set} ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
+                    ;;
+                EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                    [[ -n ${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set} ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
+                    ;;
+                EVOP_DETECT_FILE_TEXT_CACHE)
+                    [[ -n ${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]+set} ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]}"
+                    ;;
+                *)
+                    return 1
+                    ;;
+            esac
+        else
+            case "$cache_name" in
+                EVOP_DETECT_MATCHING_FILES_CACHE)
+                    [[ -n "${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set}" ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
+                    ;;
+                EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                    [[ -n "${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set}" ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
+                    ;;
+                EVOP_DETECT_FILE_TEXT_CACHE)
+                    [[ -n "${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]+set}" ]] || return 1
+                    EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]}"
+                    ;;
+                *)
+                    return 1
+                    ;;
+            esac
+        fi
 
         return 0
     fi
@@ -172,17 +238,31 @@ evop_detection_cache_store() {
     local cache_contents=""
 
     if [[ "$EVOP_DETECT_CACHE_BACKEND" == "associative-array" ]]; then
-        case "$cache_name" in
-            EVOP_DETECT_MATCHING_FILES_CACHE)
-                EVOP_DETECT_MATCHING_FILES_CACHE["$cache_key"]="$cache_value"
-                ;;
-            EVOP_DETECT_DIRECTORY_TEXT_CACHE)
-                EVOP_DETECT_DIRECTORY_TEXT_CACHE["$cache_key"]="$cache_value"
-                ;;
-            EVOP_DETECT_FILE_TEXT_CACHE)
-                EVOP_DETECT_FILE_TEXT_CACHE["$cache_key"]="$cache_value"
-                ;;
-        esac
+        if [[ -n "${ZSH_VERSION:-}" ]]; then
+            case "$cache_name" in
+                EVOP_DETECT_MATCHING_FILES_CACHE)
+                    EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]="$cache_value"
+                    ;;
+                EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                    EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]="$cache_value"
+                    ;;
+                EVOP_DETECT_FILE_TEXT_CACHE)
+                    EVOP_DETECT_FILE_TEXT_CACHE[$cache_key]="$cache_value"
+                    ;;
+            esac
+        else
+            case "$cache_name" in
+                EVOP_DETECT_MATCHING_FILES_CACHE)
+                    EVOP_DETECT_MATCHING_FILES_CACHE["$cache_key"]="$cache_value"
+                    ;;
+                EVOP_DETECT_DIRECTORY_TEXT_CACHE)
+                    EVOP_DETECT_DIRECTORY_TEXT_CACHE["$cache_key"]="$cache_value"
+                    ;;
+                EVOP_DETECT_FILE_TEXT_CACHE)
+                    EVOP_DETECT_FILE_TEXT_CACHE["$cache_key"]="$cache_value"
+                    ;;
+            esac
+        fi
         return 0
     fi
 
@@ -232,7 +312,7 @@ evop_directory_has_file_named() {
 
     if (( EVOP_DETECT_BASENAME_SET_ENABLED == 1 )); then
         for filename in "$@"; do
-            if [[ -n "${EVOP_DETECT_FILE_BASENAME_SET[$filename]+set}" ]]; then
+            if evop_detection_file_basename_exists "$filename"; then
                 return 0
             fi
         done
@@ -284,7 +364,7 @@ evop_directory_has_path_named() {
 
     if (( EVOP_DETECT_BASENAME_SET_ENABLED == 1 )); then
         for name in "$@"; do
-            if [[ -n "${EVOP_DETECT_PATH_BASENAME_SET[$name]+set}" ]]; then
+            if evop_detection_path_basename_exists "$name"; then
                 return 0
             fi
         done

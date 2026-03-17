@@ -88,6 +88,8 @@ EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
 EvoProgrammer inspect --target-dir /path/to/project --format env
+EvoProgrammer inspect --target-dir /path/to/project \
+  --report-file ./inspect-report.json --report-format json
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
@@ -155,6 +157,7 @@ EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
 EvoProgrammer inspect --target-dir /path/to/project --format env
+EvoProgrammer inspect --target-dir /path/to/project --report-file ./inspect-report.env --report-format env
 ```
 
 当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：
@@ -174,6 +177,9 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --format env` 会把同一份检测上下文导出为可直接 `source` 的
 `EVOP_INSPECT_*` 环境变量，方便 CI 和脚本复用，而不必再解析面向人的文本输出。
+
+`inspect --report-file` 可以把任意 inspect 输出格式落盘，包括 JSON 和可 `source`
+的 env 导出，方便在 CI 或包装脚本里直接消费。
 
 `verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
 看到的命令计划保持一致。
@@ -217,6 +223,7 @@ verbosity=0
 | `VERIFY.sh` | 自动推导验证命令链并执行 |
 | `CLEAN.sh` | 产物清理 |
 | `STATUS.sh` | 运行历史查看 |
+| `lib/inspect.sh` | inspect 格式校验，以及 stdout/report-file 输出分发 |
 | `lib/agents/definitions/` | 可插拔 agent 定义 |
 | `lib/profiles/diagnostics.sh` | 命中的 profile 候选项和检测分数 |
 | `lib/profiles/candidates.sh` | 在执行 profile hook 前先做廉价候选筛选，减少不必要的加载 |

@@ -89,10 +89,43 @@ pass "INSPECT timings"
 inspect_profiles_output="$(run_expect_success "INSPECT should render profile detection candidates" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format profiles)"
 assert_contains "$inspect_profiles_output" "Profile detection report:" "INSPECT profiles mode should print the profile detection heading"
 assert_contains "$inspect_profiles_output" "Language candidates:" "INSPECT profiles mode should print language candidates"
-assert_contains "$inspect_profiles_output" "typescript (score: 80)" "INSPECT profiles mode should include the detected TypeScript candidate"
+assert_contains "$inspect_profiles_output" "typescript (score: 100)" "INSPECT profiles mode should include the detected TypeScript candidate"
 assert_contains "$inspect_profiles_output" "Framework candidates:" "INSPECT profiles mode should print framework candidates"
 assert_contains "$inspect_profiles_output" "nextjs (score: 95)" "INSPECT profiles mode should include the detected Next.js candidate"
 pass "INSPECT profiles"
+
+inspect_report_json="$TEST_TMPDIR/inspect-report.json"
+run_expect_success "INSPECT should write a json report file" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format summary --report-file "$inspect_report_json" --report-format json >/dev/null
+inspect_report_json_summary="$(INSPECT_REPORT_JSON="$(cat "$inspect_report_json")" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["INSPECT_REPORT_JSON"])
+print(data["profiles"]["framework"]["name"])
+print(data["commands"]["build"]["command"])
+print(f"automation_ok={any('docs/' in item or 'docs' in item for item in data['automation'])}")
+PY
+)"
+assert_contains "$inspect_report_json_summary" "nextjs" "INSPECT json report files should include detected profiles"
+assert_contains "$inspect_report_json_summary" "pnpm build" "INSPECT json report files should include command slots"
+assert_contains "$inspect_report_json_summary" "automation_ok=True" "INSPECT json report files should include automation hints"
+pass "INSPECT json report file"
+
+inspect_report_env="$TEST_TMPDIR/inspect-report.env"
+run_expect_success "INSPECT should write an env report file" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format summary --report-file "$inspect_report_env" --report-format env >/dev/null
+inspect_report_env_summary="$(
+    INSPECT_REPORT_ENV="$inspect_report_env" bash <<'EOF'
+set -euo pipefail
+source "$INSPECT_REPORT_ENV"
+printf '%s\n' "$EVOP_INSPECT_FRAMEWORK_PROFILE"
+printf '%s\n' "$EVOP_INSPECT_BUILD_COMMAND"
+printf 'diagnostics_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_LOOKUPS" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$inspect_report_env_summary" "nextjs" "INSPECT env report files should export detected profiles"
+assert_contains "$inspect_report_env_summary" "pnpm build" "INSPECT env report files should export command slots"
+assert_contains "$inspect_report_env_summary" "diagnostics_ok=true" "INSPECT env report files should export diagnostics"
+pass "INSPECT env report file"
 
 setup_verify_workspace
 verify_output="$(run_expect_success "VERIFY should run the detected verification chain" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR")"
