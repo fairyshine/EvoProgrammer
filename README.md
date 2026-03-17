@@ -85,6 +85,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 # Inspect what EvoProgrammer detected in a repo
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format json
+EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
@@ -147,6 +148,7 @@ calls an agent:
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
+EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 ```
 
 Use `verify` when you want EvoProgrammer to execute the detected command chain
@@ -157,6 +159,9 @@ EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --dry-run
 ```
+
+`inspect --format diagnostics` adds facts-cache counters for repo inspection, so
+you can see cache lookups, hit rate, and entry counts when profiling detection.
 
 `verify` uses the same command-detection layer as prompt generation, so `doctor`,
 `inspect`, agent prompts, and verification all agree on the repo's runnable

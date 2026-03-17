@@ -18,12 +18,35 @@ assert_contains "$inspect_prompt_output" "Operational surfaces:" "INSPECT prompt
 pass "INSPECT prompt"
 
 inspect_json_output="$(run_expect_success "INSPECT should render machine-readable json context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format json)"
-inspect_json_summary="$(printf '%s' "$inspect_json_output" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data["profiles"]["language"]["name"]); print(data["package_manager"]); print(data["commands"]["lint"]["command"]); print(any(".github/workflows" in item for item in data["automation"]))')"
+inspect_json_summary="$(INSPECT_JSON="$inspect_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["INSPECT_JSON"])
+print(data["profiles"]["language"]["name"])
+print(data["package_manager"])
+print(data["commands"]["lint"]["command"])
+print(f"automation_ok={any('.github/workflows' in item for item in data['automation'])}")
+print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'line-table'}}")
+print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
+print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
+PY
+)"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
 assert_contains "$inspect_json_summary" "pnpm lint" "INSPECT json should include the lint command"
-assert_contains "$inspect_json_summary" "True" "INSPECT json should include automation entries"
+assert_contains "$inspect_json_summary" "automation_ok=True" "INSPECT json should include automation entries"
+assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should include the facts-cache backend"
+assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should include facts-cache lookup diagnostics"
+assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
 pass "INSPECT json"
+
+inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
+assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"
+assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"
+assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT diagnostics should print cache lookup counts"
+assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
+pass "INSPECT diagnostics"
 
 setup_verify_workspace
 verify_output="$(run_expect_success "VERIFY should run the detected verification chain" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR")"

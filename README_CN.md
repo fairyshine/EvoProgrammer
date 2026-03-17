@@ -85,6 +85,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 # 查看仓库自动检测结果
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format json
+EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
@@ -147,6 +148,7 @@ EvoProgrammer status --last 5
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
+EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 ```
 
 当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：
@@ -156,6 +158,9 @@ EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --dry-run
 ```
+
+`inspect --format diagnostics` 会额外输出仓库检测 facts 缓存的命中、未命中和条目数，
+方便分析一次检测为什么快或慢。
 
 `verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
 看到的命令计划保持一致。

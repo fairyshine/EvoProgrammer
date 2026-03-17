@@ -41,7 +41,7 @@ This layer answers: "What kind of repo is this?"
 ### 4. Project inspection
 
 - `lib/project-context/commands.sh`: package manager and command-slot inference
-- `lib/project-context/facts.sh`: cached filesystem and file-match facts for repo inspection
+- `lib/project-context/facts.sh`: cached filesystem and file-match facts for repo inspection, plus cache diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/render.sh`: prompt and human-readable rendering
@@ -49,6 +49,10 @@ This layer answers: "What kind of repo is this?"
 
 This layer answers: "How should this repo be searched, changed, verified, and
 operated?"
+
+The facts sub-layer exposes cache diagnostics to the render layer, which keeps
+`inspect --format diagnostics` and `inspect --format json` informative without
+leaking cache internals into the CLI entrypoint.
 
 ## Command Model
 

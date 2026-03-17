@@ -151,6 +151,7 @@ evop_render_project_context_json() {
     printf '  "risk_areas": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_RISK_AREAS")"
     printf '  "automation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
     printf '  "validation": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_VALIDATION")"
+    printf '  "facts_cache": %s,\n' "$(evop_render_project_context_facts_diagnostics_json)"
     printf '  "task_kind": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_KIND")"
     printf '  "task_workflow": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_TASK_WORKFLOW")"
     printf '  "search_strategy": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
@@ -329,4 +330,13 @@ evop_print_project_inspection_report() {
         printf 'Validation plan:\n'
         printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_VALIDATION")"
     fi
+}
+
+evop_print_project_inspection_diagnostics() {
+    evop_print_project_inspection_report
+    printf 'Inspection diagnostics:\n'
+    printf -- '- Facts directory: %s\n' "${EVOP_PROJECT_CONTEXT_FACTS_DIR:-unknown}"
+    while IFS= read -r line; do
+        printf -- '- %s\n' "$line"
+    done < <(evop_print_project_context_facts_diagnostics)
 }
