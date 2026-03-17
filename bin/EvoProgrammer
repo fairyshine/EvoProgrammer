@@ -7,6 +7,8 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
 LOOP_SCRIPT="$ROOT_DIR/LOOP.sh"
 DOCTOR_SCRIPT="$ROOT_DIR/DOCTOR.sh"
+INSPECT_SCRIPT="$ROOT_DIR/INSPECT.sh"
+VERIFY_SCRIPT="$ROOT_DIR/VERIFY.sh"
 CLEAN_SCRIPT="$ROOT_DIR/CLEAN.sh"
 STATUS_SCRIPT="$ROOT_DIR/STATUS.sh"
 COMMON_LIB="$ROOT_DIR/lib/common.sh"
@@ -21,6 +23,8 @@ Usage:
   EvoProgrammer [global-options] [prompt]
   EvoProgrammer [global-options] once [options] [prompt]
   EvoProgrammer [global-options] doctor [options]
+  EvoProgrammer [global-options] inspect [options]
+  EvoProgrammer [global-options] verify [options]
   EvoProgrammer help
 
 Default behavior:
@@ -29,6 +33,8 @@ Default behavior:
 Subcommands:
   once    Run a single agent iteration in the current directory.
   doctor  Validate local prerequisites and target directory wiring.
+  inspect Print the detected repo language/framework/project context and command plan.
+  verify  Run the detected verification commands for the target repo.
   help    Show this help text.
 
 Examples:
@@ -40,10 +46,13 @@ Examples:
   EvoProgrammer --agent claude once --agent-args '["--model","sonnet"]' "scaffold tests"
   EvoProgrammer once --agent-args '["--model","gpt-5"]' "scaffold tests"
   EvoProgrammer doctor --target-dir /path/to/project
+  EvoProgrammer inspect --target-dir /path/to/project --format summary
+  EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 
 Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
- './LOOP.sh --help' for single-run options, and './DOCTOR.sh --help'
-for environment checks.
+ './LOOP.sh --help' for single-run options, './DOCTOR.sh --help'
+for environment checks, './INSPECT.sh --help' for repo inspection, and
+ './VERIFY.sh --help' for command verification.
 EOF
 }
 
@@ -83,7 +92,7 @@ find_subcommand() {
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
                 ;;
-            once|doctor|clean|status)
+            once|doctor|inspect|verify|clean|status)
                 EVOP_CLI_SUBCOMMAND="$arg"
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
@@ -119,6 +128,8 @@ build_forwarded_args() {
 evop_require_executable_file "$MAIN_SCRIPT" "Main script"
 evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
 evop_require_executable_file "$DOCTOR_SCRIPT" "Doctor script"
+evop_require_executable_file "$INSPECT_SCRIPT" "Inspect script"
+evop_require_executable_file "$VERIFY_SCRIPT" "Verify script"
 
 find_subcommand "$@" || true
 
@@ -136,6 +147,14 @@ case "${EVOP_CLI_SUBCOMMAND:-}" in
     doctor)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
         exec "$DOCTOR_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    inspect)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$INSPECT_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    verify)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$VERIFY_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     clean)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"

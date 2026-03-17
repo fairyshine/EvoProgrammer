@@ -52,256 +52,6 @@ evop_existing_relative_path() {
     return 1
 }
 
-evop_package_manager_script_command() {
-    local package_manager="$1"
-    local script_name="$2"
-
-    case "$package_manager" in
-        pnpm)
-            printf 'pnpm %s' "$script_name"
-            ;;
-        yarn)
-            printf 'yarn %s' "$script_name"
-            ;;
-        bun)
-            printf 'bun run %s' "$script_name"
-            ;;
-        npm|*)
-            printf 'npm run %s' "$script_name"
-            ;;
-    esac
-}
-
-evop_choose_package_manager() {
-    local target_dir="$1"
-    local language_profile="${2:-}"
-
-    case "$language_profile" in
-        python)
-            if [[ -f "$target_dir/poetry.lock" ]]; then
-                printf 'poetry'
-                return 0
-            fi
-            if [[ -f "$target_dir/uv.lock" ]]; then
-                printf 'uv'
-                return 0
-            fi
-            if [[ -f "$target_dir/pyproject.toml" ]]; then
-                printf 'python'
-                return 0
-            fi
-            ;;
-        rust)
-            if [[ -f "$target_dir/Cargo.toml" ]]; then
-                printf 'cargo'
-                return 0
-            fi
-            ;;
-        go)
-            if [[ -f "$target_dir/go.mod" ]]; then
-                printf 'go'
-                return 0
-            fi
-            ;;
-        ruby)
-            if [[ -f "$target_dir/Gemfile" ]]; then
-                printf 'bundler'
-                return 0
-            fi
-            ;;
-        php)
-            if [[ -f "$target_dir/composer.json" ]]; then
-                printf 'composer'
-                return 0
-            fi
-            ;;
-    esac
-
-    if [[ -f "$target_dir/pnpm-lock.yaml" || -f "$target_dir/pnpm-workspace.yaml" ]]; then
-        printf 'pnpm'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/yarn.lock" ]]; then
-        printf 'yarn'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/bun.lock" || -f "$target_dir/bun.lockb" ]]; then
-        printf 'bun'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/package-lock.json" || -f "$target_dir/package.json" ]]; then
-        printf 'npm'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/poetry.lock" ]]; then
-        printf 'poetry'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/uv.lock" ]]; then
-        printf 'uv'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/pyproject.toml" ]]; then
-        printf 'python'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/Cargo.toml" ]]; then
-        printf 'cargo'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/go.mod" ]]; then
-        printf 'go'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/Gemfile" ]]; then
-        printf 'bundler'
-        return 0
-    fi
-
-    if [[ -f "$target_dir/composer.json" ]]; then
-        printf 'composer'
-        return 0
-    fi
-
-    return 1
-}
-
-evop_detect_workspace_mode() {
-    local target_dir="$1"
-    local package_json="$target_dir/package.json"
-
-    if [[ -f "$target_dir/pnpm-workspace.yaml" || -f "$target_dir/go.work" ]]; then
-        printf 'monorepo'
-        return 0
-    fi
-
-    if evop_file_contains_regex "$target_dir/Cargo.toml" "^\[workspace\]"; then
-        printf 'monorepo'
-        return 0
-    fi
-
-    if evop_file_contains_regex "$package_json" "\"workspaces\"[[:space:]]*:"; then
-        printf 'monorepo'
-        return 0
-    fi
-
-    if [[ -d "$target_dir/apps" || -d "$target_dir/packages" ]]; then
-        printf 'monorepo'
-        return 0
-    fi
-
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" ]]; then
-        printf 'single-package'
-        return 0
-    fi
-
-    printf 'single-repo'
-}
-
-evop_detect_command_hints() {
-    local target_dir="$1"
-    local package_manager="$2"
-    local language_profile="$3"
-    local package_json="$target_dir/package.json"
-    local pyproject="$target_dir/pyproject.toml"
-    local makefile=""
-    local script_name=""
-
-    if [[ -f "$target_dir/Makefile" ]]; then
-        makefile="$target_dir/Makefile"
-    elif [[ -f "$target_dir/makefile" ]]; then
-        makefile="$target_dir/makefile"
-    fi
-
-    if [[ -f "$package_json" ]]; then
-        for script_name in dev start; do
-            if evop_package_json_has_script "$package_json" "$script_name"; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_DEV_COMMAND "$(evop_package_manager_script_command "$package_manager" "$script_name")"
-                break
-            fi
-        done
-
-        if evop_package_json_has_script "$package_json" "build"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_BUILD_COMMAND "$(evop_package_manager_script_command "$package_manager" build)"
-        fi
-
-        if evop_package_json_has_script "$package_json" "test"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TEST_COMMAND "$(evop_package_manager_script_command "$package_manager" test)"
-        fi
-
-        if evop_package_json_has_script "$package_json" "lint"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_LINT_COMMAND "$(evop_package_manager_script_command "$package_manager" lint)"
-        fi
-
-        for script_name in typecheck check-types types:check; do
-            if evop_package_json_has_script "$package_json" "$script_name"; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND "$(evop_package_manager_script_command "$package_manager" "$script_name")"
-                break
-            fi
-        done
-    fi
-
-    if [[ -n "$makefile" ]]; then
-        if evop_makefile_has_target "$makefile" "dev"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_DEV_COMMAND "make dev"
-        fi
-        if evop_makefile_has_target "$makefile" "build"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_BUILD_COMMAND "make build"
-        fi
-        if evop_makefile_has_target "$makefile" "test"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TEST_COMMAND "make test"
-        fi
-        if evop_makefile_has_target "$makefile" "lint"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_LINT_COMMAND "make lint"
-        fi
-        if evop_makefile_has_target "$makefile" "typecheck"; then
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND "make typecheck"
-        fi
-    fi
-
-    case "$language_profile" in
-        rust)
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_DEV_COMMAND "cargo run"
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_BUILD_COMMAND "cargo build"
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TEST_COMMAND "cargo test"
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_LINT_COMMAND "cargo clippy --all-targets --all-features"
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND "cargo check"
-            ;;
-        go)
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_BUILD_COMMAND "go build ./..."
-            evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TEST_COMMAND "go test ./..."
-            ;;
-        python)
-            if [[ -d "$target_dir/tests" || -d "$target_dir/test" || -f "$target_dir/pytest.ini" ]] \
-                || evop_file_contains_literal "$pyproject" "pytest"; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TEST_COMMAND "pytest"
-            fi
-            if [[ -f "$target_dir/.ruff.toml" || -f "$target_dir/ruff.toml" ]] \
-                || evop_file_contains_literal "$pyproject" "ruff"; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_LINT_COMMAND "ruff check ."
-            fi
-            if [[ -f "$target_dir/mypy.ini" || -f "$target_dir/.mypy.ini" ]] \
-                || evop_file_contains_literal "$pyproject" "mypy"; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND "mypy ."
-            fi
-            ;;
-        typescript|javascript)
-            if [[ -f "$target_dir/tsconfig.json" ]]; then
-                evop_set_command_if_empty EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND "tsc --noEmit"
-            fi
-            ;;
-    esac
-}
-
 evop_add_structure_hint() {
     local target_dir="$1"
     local rel_path="$2"
@@ -438,19 +188,26 @@ evop_detect_risk_areas() {
 }
 
 evop_detect_validation_hints() {
-    if [[ -n "$EVOP_PROJECT_CONTEXT_LINT_COMMAND" ]]; then
-        evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run lint first: $EVOP_PROJECT_CONTEXT_LINT_COMMAND"
-    fi
+    local slot=""
+    local command=""
 
-    if [[ -n "$EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND" ]]; then
-        evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run type or compile checks next: $EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND"
-    fi
+    while IFS= read -r slot; do
+        command="$(evop_get_project_command "$slot")"
+        [[ -n "$command" ]] || continue
 
-    if [[ -n "$EVOP_PROJECT_CONTEXT_TEST_COMMAND" ]]; then
-        evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run focused automated tests: $EVOP_PROJECT_CONTEXT_TEST_COMMAND"
-    fi
-
-    if [[ -n "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND" ]]; then
-        evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Confirm the production build still passes: $EVOP_PROJECT_CONTEXT_BUILD_COMMAND"
-    fi
+        case "$slot" in
+            lint)
+                evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run lint first: $command"
+                ;;
+            typecheck)
+                evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run type or compile checks next: $command"
+                ;;
+            test)
+                evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Run focused automated tests: $command"
+                ;;
+            build)
+                evop_append_multiline EVOP_PROJECT_CONTEXT_VALIDATION "Confirm the production build still passes: $command"
+                ;;
+        esac
+    done < <(evop_project_verification_slots)
 }

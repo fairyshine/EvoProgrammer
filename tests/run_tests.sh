@@ -12,5 +12,6 @@ source "$ROOT_DIR/tests/cases/10_profiles.sh"
 source "$ROOT_DIR/tests/cases/20_loop.sh"
 source "$ROOT_DIR/tests/cases/30_main.sh"
 source "$ROOT_DIR/tests/cases/40_cli_doctor_install.sh"
+source "$ROOT_DIR/tests/cases/50_inspect_verify.sh"
 
 echo "All $PASS_COUNT tests passed."

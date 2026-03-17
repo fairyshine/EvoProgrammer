@@ -6,7 +6,11 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    evop_profile_match_directory_text 100 "$target_dir" "\"react\"" "package.json" && return 0
+    if evop_profile_match_directory_text 100 "$target_dir" "\"next\"" "package.json"; then
+        return 1
+    fi
+
+    evop_profile_match_directory_text 90 "$target_dir" "\"react\"" "package.json" && return 0
     evop_profile_match_prompt 40 "$prompt" "react" && return 0
     return 1
 }

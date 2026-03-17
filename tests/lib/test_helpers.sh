@@ -5,6 +5,8 @@ MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
 CLI_SCRIPT="$ROOT_DIR/bin/EvoProgrammer"
 INSTALL_SCRIPT="$ROOT_DIR/install.sh"
 DOCTOR_SCRIPT="$ROOT_DIR/DOCTOR.sh"
+INSPECT_SCRIPT="$ROOT_DIR/INSPECT.sh"
+VERIFY_SCRIPT="$ROOT_DIR/VERIFY.sh"
 
 source "$ROOT_DIR/lib/common.sh"
 source "$ROOT_DIR/lib/profile.sh"
@@ -189,4 +191,28 @@ setup_context_workspace() {
     printf 'export const session = {};\n' >"$TEST_CONTEXT_DIR/src/auth/session.ts"
     printf 'export type SharedUser = { id: string };\n' >"$TEST_CONTEXT_DIR/packages/shared/src/types/user.ts"
     printf 'NEXT_PUBLIC_API_URL=http://localhost:3000\n' >"$TEST_CONTEXT_DIR/.env.example"
+}
+
+setup_verify_workspace() {
+    if [[ -n "${TEST_VERIFY_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_VERIFY_DIR="$TEST_TMPDIR/verify-project"
+    TEST_VERIFY_LOG="$TEST_TMPDIR/verify-steps.log"
+    mkdir -p "$TEST_VERIFY_DIR"
+
+    cat >"$TEST_VERIFY_DIR/Makefile" <<EOF
+lint:
+	@printf 'lint\n' >>"$TEST_VERIFY_LOG"
+
+typecheck:
+	@printf 'typecheck\n' >>"$TEST_VERIFY_LOG"
+
+test:
+	@printf 'test\n' >>"$TEST_VERIFY_LOG"
+
+build:
+	@printf 'build\n' >>"$TEST_VERIFY_LOG"
+EOF
 }

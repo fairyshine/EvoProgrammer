@@ -93,6 +93,18 @@ evop_resolve_prompt() {
     printf '%s' "$prompt"
 }
 
+evop_resolve_optional_prompt() {
+    local prompt="$1"
+    local prompt_file="$2"
+
+    if [[ -n "$prompt_file" ]]; then
+        evop_require_regular_file "$prompt_file" "Prompt file"
+        prompt="$(<"$prompt_file")"
+    fi
+
+    printf '%s' "$prompt"
+}
+
 evop_print_command_preview() {
     local target_dir="$1"
     shift

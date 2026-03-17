@@ -77,17 +77,26 @@ evop_detect_task_kind_workflow() {
 }
 
 evop_finalize_workflow_strategy() {
+    local slot=""
+    local verification_summary=""
+
     if [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]]; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Start with these repository paths: $EVOP_PROJECT_CONTEXT_SEARCH_ROOTS"
     fi
 
-    if [[ -n "$EVOP_PROJECT_CONTEXT_LINT_COMMAND" || -n "$EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND" || -n "$EVOP_PROJECT_CONTEXT_TEST_COMMAND" || -n "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND" ]]; then
-        local verification_summary="Use the repository verification chain in this order:"
-        [[ -n "$EVOP_PROJECT_CONTEXT_LINT_COMMAND" ]] && verification_summary+=" lint"
-        [[ -n "$EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND" ]] && verification_summary+=" -> typecheck"
-        [[ -n "$EVOP_PROJECT_CONTEXT_TEST_COMMAND" ]] && verification_summary+=" -> test"
-        [[ -n "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND" ]] && verification_summary+=" -> build"
-        evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "$verification_summary"
+    if evop_project_has_any_command; then
+        verification_summary="Use the repository verification chain in this order:"
+        while IFS= read -r slot; do
+            [[ -n "$(evop_get_project_command "$slot")" ]] || continue
+            if [[ "$verification_summary" == *":" ]]; then
+                verification_summary+=" $slot"
+            else
+                verification_summary+=" -> $slot"
+            fi
+        done < <(evop_project_verification_slots)
+        if [[ "$verification_summary" != "Use the repository verification chain in this order:" ]]; then
+            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "$verification_summary"
+        fi
     fi
 }
 

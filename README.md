@@ -23,7 +23,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 ```bash
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
-chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh CLEAN.sh STATUS.sh
+chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh
 ./install.sh            # symlinks to ~/.local/bin/EvoProgrammer
 ```
 
@@ -82,6 +82,12 @@ EvoProgrammer --max-iterations 3 --dry-run "Refine the project structure and add
 # Check environment readiness
 EvoProgrammer doctor --target-dir /path/to/project
 
+# Inspect what EvoProgrammer detected in a repo
+EvoProgrammer inspect --target-dir /path/to/project
+
+# Run the detected verification chain
+EvoProgrammer verify --target-dir /path/to/project
+
 # Check version
 EvoProgrammer --version
 
@@ -104,6 +110,8 @@ EvoProgrammer status --last 5
 | `EvoProgrammer [prompt]` | Loop mode — keep iterating until stopped |
 | `EvoProgrammer once [prompt]` | Single iteration |
 | `EvoProgrammer doctor` | Validate local prerequisites |
+| `EvoProgrammer inspect` | Show detected repo context and command plan |
+| `EvoProgrammer verify` | Run detected lint/typecheck/test/build commands |
 | `EvoProgrammer clean` | Remove old artifact directories |
 | `EvoProgrammer status` | Show recent run history |
 | `EvoProgrammer --version` | Print version |
@@ -128,6 +136,29 @@ EvoProgrammer status --last 5
 | `-v, --verbose` | Show extra detail |
 | `--dry-run` | Print the command without running it |
 | `--agent-args JSON` | Extra agent arguments as a JSON string list |
+
+## Inspection And Verification
+
+Use `inspect` when you want to see exactly what EvoProgrammer inferred before it
+calls an agent:
+
+```bash
+EvoProgrammer inspect --target-dir /path/to/project --format summary
+EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
+```
+
+Use `verify` when you want EvoProgrammer to execute the detected command chain
+itself:
+
+```bash
+EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test
+EvoProgrammer verify --target-dir /path/to/project --dry-run
+```
+
+`verify` uses the same command-detection layer as prompt generation, so `doctor`,
+`inspect`, agent prompts, and verification all agree on the repo's runnable
+commands.
 
 ## Project Configuration
 
@@ -160,10 +191,16 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `LOOP.sh` | Single agent iteration |
 | `MAIN.sh` | Repeated iteration loop |
 | `DOCTOR.sh` | Environment validation |
+| `INSPECT.sh` | Human-readable repo inspection and prompt preview |
+| `VERIFY.sh` | Detected verification-chain runner |
 | `CLEAN.sh` | Artifact cleanup |
 | `STATUS.sh` | Run history viewer |
 | `lib/agents/definitions/` | Pluggable agent definitions |
 | `lib/profiles/definitions/` | Language, framework, and project-type profiles |
+| `lib/project-context/` | Repo inspection, command inference, and prompt rendering |
+
+See [`docs/architecture.md`](./docs/architecture.md) for the current architecture
+and layering model.
 
 ## Verification
 

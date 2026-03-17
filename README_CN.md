@@ -23,7 +23,7 @@
 ```bash
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
-chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh CLEAN.sh STATUS.sh
+chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh
 ./install.sh            # 创建符号链接到 ~/.local/bin/EvoProgrammer
 ```
 
@@ -82,6 +82,12 @@ EvoProgrammer --max-iterations 3 --dry-run "完善项目结构并补测试"
 # 检查运行环境
 EvoProgrammer doctor --target-dir /path/to/project
 
+# 查看仓库自动检测结果
+EvoProgrammer inspect --target-dir /path/to/project
+
+# 执行自动推导出的验证命令链
+EvoProgrammer verify --target-dir /path/to/project
+
 # 查看版本
 EvoProgrammer --version
 
@@ -104,6 +110,8 @@ EvoProgrammer status --last 5
 | `EvoProgrammer [prompt]` | 循环模式 — 持续迭代直到停止 |
 | `EvoProgrammer once [prompt]` | 单次迭代 |
 | `EvoProgrammer doctor` | 检查本地环境 |
+| `EvoProgrammer inspect` | 查看检测到的仓库上下文与命令计划 |
+| `EvoProgrammer verify` | 执行检测到的 lint/typecheck/test/build 命令 |
 | `EvoProgrammer clean` | 清理旧产物目录 |
 | `EvoProgrammer status` | 查看运行历史 |
 | `EvoProgrammer --version` | 打印版本号 |
@@ -128,6 +136,27 @@ EvoProgrammer status --last 5
 | `-v, --verbose` | 详细输出 |
 | `--dry-run` | 只打印命令不执行 |
 | `--agent-args JSON` | 额外 agent 参数（JSON 字符串列表） |
+
+## 检测与验证
+
+当你想先看清 EvoProgrammer 检测到了什么，再决定是否调用 agent，可以用
+`inspect`：
+
+```bash
+EvoProgrammer inspect --target-dir /path/to/project --format summary
+EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
+```
+
+当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：
+
+```bash
+EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test
+EvoProgrammer verify --target-dir /path/to/project --dry-run
+```
+
+`verify` 和 agent prompt、`doctor`、`inspect` 共用同一套命令检测层，因此各处
+看到的命令计划保持一致。
 
 ## 项目配置文件
 
@@ -160,10 +189,15 @@ verbosity=0
 | `LOOP.sh` | 单次 agent 迭代 |
 | `MAIN.sh` | 重复迭代循环 |
 | `DOCTOR.sh` | 环境检查 |
+| `INSPECT.sh` | 面向人的仓库检测与 prompt 预览 |
+| `VERIFY.sh` | 自动推导验证命令链并执行 |
 | `CLEAN.sh` | 产物清理 |
 | `STATUS.sh` | 运行历史查看 |
 | `lib/agents/definitions/` | 可插拔 agent 定义 |
 | `lib/profiles/definitions/` | 语言、框架和项目类型 profile |
+| `lib/project-context/` | 仓库检测、命令推导与 prompt 渲染 |
+
+当前架构分层说明见 [`docs/architecture.md`](./docs/architecture.md)。
 
 ## 验证
 

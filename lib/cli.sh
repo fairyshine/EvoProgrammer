@@ -144,3 +144,17 @@ evop_finalize_doctor_context() {
     evop_apply_resolved_profiles
     artifacts_root="$(evop_resolve_artifacts_root "$TARGET_DIR" "$ARTIFACTS_DIR")"
 }
+
+evop_finalize_analysis_context() {
+    evop_load_project_config "$TARGET_DIR"
+    evop_validate_agent "$AGENT"
+    evop_validate_language_profile "$LANGUAGE_PROFILE"
+    evop_validate_framework_profile "$FRAMEWORK_PROFILE"
+    evop_validate_project_type "$PROJECT_TYPE"
+    evop_require_directory "$TARGET_DIR"
+    target_dir_abs="$(evop_resolve_physical_dir "$TARGET_DIR")"
+    resolved_prompt="$(evop_resolve_optional_prompt "$PROMPT" "$PROMPT_FILE")"
+    evop_resolve_profiles "$target_dir_abs" "$resolved_prompt" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE"
+    evop_apply_resolved_profiles
+    artifacts_root="$(evop_resolve_artifacts_root "$TARGET_DIR" "$ARTIFACTS_DIR")"
+}
