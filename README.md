@@ -2,347 +2,170 @@
 
 [中文说明](./README_CN.md)
 
-EvoProgrammer is a small Bash CLI around coding-agent commands such as `codex` and `claude`. It can enter any project directory, run a natural-language instruction against that directory, and keep iterating until you stop it.
+**A self-evolving programmer that iterates on your codebase autonomously.**
 
-## What It Does
+Give it a natural-language goal, point it at a directory, and walk away — EvoProgrammer will keep calling a coding agent (Codex, Claude Code, or your own) in a loop, reading its own output, fixing its own mistakes, and pushing the project forward iteration after iteration until the job is done or you hit `Ctrl+C`.
 
-- `EvoProgrammer "your prompt"`: run the selected agent in the current directory and keep iterating.
-- `EvoProgrammer once "your prompt"`: run a single agent pass.
-- `--agent`: switch between built-in agent presets such as `codex` and `claude`.
-- `--language`: add language-specific implementation guidance for built-in profiles such as `python`, `rust`, `go`, `typescript`, `gdscript`, or `swift`, or let EvoProgrammer auto-detect it.
-- `--framework`: add framework-specific implementation guidance for built-in profiles such as `fastapi`, `django`, `react`, `nextjs`, `godot`, `bevy`, or `axum`, or let EvoProgrammer auto-detect it.
-- `--project-type`: add scenario-specific guidance for built-in profiles such as `single-player-game`, `online-game`, `paper`, `scientific-experiment`, `ppt`, `office`, `web-app`, or `backend-service`, or let EvoProgrammer auto-detect it.
-- After profile detection, EvoProgrammer also derives repository context such as package manager, workspace mode, likely dev/build/test/lint commands, architecture hotspots, validation hints, and a task-specific workflow.
-- The workflow layer now adapts search order, edit strategy, verification strategy, and risk focus using the detected language plus project type.
-- `EvoProgrammer doctor`: validate the local setup before a long autonomous run.
-- `--target-dir`: point the CLI at another directory when needed.
-- Default run artifacts under `TARGET_DIR/.evoprogrammer/runs` for later inspection.
-- When `TARGET_DIR` is a Git repository, EvoProgrammer adds `.evoprogrammer/` to the local `.git/info/exclude` file so later iterations do not read their own artifacts back into context.
-- `--artifacts-dir`: store run artifacts in a custom location.
-- `--prompt-file`: load large prompts from a file instead of the command line.
-- `--dry-run`: inspect the exact command and target directory without running the agent.
-- `--max-iterations`, `--delay-seconds`, `--continue-on-error`: control long-running autonomous loops.
-- Wrapper-level options can appear before `once` or `doctor`.
+## Why EvoProgrammer
 
-Internally:
+**Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterate this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
 
-- `bin/EvoProgrammer` is the user-facing CLI entrypoint.
-- `LOOP.sh` runs one agent iteration.
-- `MAIN.sh` runs repeated iterations.
-- `install.sh` installs the `EvoProgrammer` command into a local bin directory.
+**Broad language, framework, and project coverage** — 13 languages, 24 frameworks, 17 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Bevy multiplayer game, a FastAPI microservice, or a Godot single-player adventure, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
+
+| Languages (13) | Frameworks (24) | Project Types (17) |
+|---|---|---|
+| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Paper, Scientific Experiment, PPT, Office |
+
+## Quick Start
+
+### 1. Clone & install
+
+```bash
+git clone https://github.com/user/EvoProgrammer.git
+cd EvoProgrammer
+chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh CLEAN.sh STATUS.sh
+./install.sh            # symlinks to ~/.local/bin/EvoProgrammer
+```
+
+> **Note:** After cloning you may need to run `chmod +x` on the scripts above. The install script creates a symlink, so make sure `~/.local/bin` is on your `PATH`.
+
+### 2. Simplest possible run
+
+```bash
+mkdir my-project && cd my-project
+EvoProgrammer "Build a todo app with authentication and tests"
+```
+
+That's it. EvoProgrammer auto-detects everything and keeps iterating until you press `Ctrl+C`.
+
+### 3. One-shot mode
+
+```bash
+EvoProgrammer once "Initialize a Vite + React + TypeScript project"
+```
+
+### 4. Bounded iterations
+
+```bash
+EvoProgrammer --max-iterations 5 "Build a full-stack blog with comments and deploy scripts"
+```
+
+## More Examples
+
+```bash
+# Use Claude Code instead of Codex
+EvoProgrammer --agent claude "Implement a card-battle game loop"
+
+# Explicit language + framework + project type
+EvoProgrammer --language rust --framework bevy --project-type online-game \
+  "Build the dedicated server, client sync, and test scaffolding"
+
+# Godot single-player game
+EvoProgrammer --language gdscript --framework godot --project-type single-player-game \
+  "Build the first playable loop, scene transitions, and save checkpoints"
+
+# Auto-detect everything from repo + prompt
+EvoProgrammer "Build a multiplayer arena prototype with dedicated-server support"
+
+# Point at another directory
+EvoProgrammer --target-dir /path/to/project "Improve the README, tests, and CI"
+
+# Pass extra flags to the agent CLI
+EvoProgrammer --agent-args '["--model","gpt-5"]' "Generate the full project and keep fixing issues"
+
+# Load a long prompt from a file
+EvoProgrammer --prompt-file ./prompt.txt
+
+# Preview the command without running
+EvoProgrammer --max-iterations 3 --dry-run "Refine the project structure and add tests"
+
+# Check environment readiness
+EvoProgrammer doctor --target-dir /path/to/project
+
+# Check version
+EvoProgrammer --version
+
+# Clean old artifacts (older than 30 days by default)
+EvoProgrammer clean --dry-run
+
+# Show recent run history
+EvoProgrammer status --last 5
+```
 
 ## Requirements
 
-- Bash
-- At least one supported agent CLI on `PATH`, such as `codex` or `claude`
+- Bash 4.3+
+- At least one supported agent CLI on `PATH` (`codex` or `claude`)
 
-## Install
+## Subcommands
 
-Install the command into `~/.local/bin`:
+| Command | Description |
+|---|---|
+| `EvoProgrammer [prompt]` | Loop mode — keep iterating until stopped |
+| `EvoProgrammer once [prompt]` | Single iteration |
+| `EvoProgrammer doctor` | Validate local prerequisites |
+| `EvoProgrammer clean` | Remove old artifact directories |
+| `EvoProgrammer status` | Show recent run history |
+| `EvoProgrammer --version` | Print version |
+| `EvoProgrammer help` | Show help |
 
-```bash
-./install.sh
+## Common Options
+
+| Flag | Description |
+|---|---|
+| `-g, --agent NAME` | Agent to run: `codex` or `claude` |
+| `--language NAME` | Language profile (auto-detected if omitted) |
+| `--framework NAME` | Framework profile (auto-detected if omitted) |
+| `--project-type NAME` | Project-type profile (auto-detected if omitted) |
+| `-p, --prompt TEXT` | Prompt text |
+| `-f, --prompt-file FILE` | Read prompt from file |
+| `-t, --target-dir DIR` | Target repository directory |
+| `-o, --artifacts-dir DIR` | Custom artifact storage location |
+| `-n, --max-iterations N` | Stop after N iterations (0 = unlimited) |
+| `-d, --delay-seconds N` | Delay between iterations |
+| `-c, --continue-on-error` | Keep looping after a failed iteration |
+| `-q, --quiet` | Suppress informational output |
+| `-v, --verbose` | Show extra detail |
+| `--dry-run` | Print the command without running it |
+| `--agent-args JSON` | Extra agent arguments as a JSON string list |
+
+## Project Configuration
+
+Drop a `.evoprogrammer.conf` in your project root to set defaults:
+
+```ini
+agent=claude
+language=typescript
+framework=nextjs
+project_type=web-app
+verbosity=0
 ```
 
-Install into a custom directory:
+Priority: CLI flags > environment variables > `.evoprogrammer.conf` > built-in defaults.
 
-```bash
-./install.sh /custom/bin
-```
+## Lifecycle Hooks
 
-If you prefer not to run the installer, you can also add this repo's `bin/` directory to your `PATH`.
+Place executable scripts in `.evoprogrammer/hooks/`:
 
-## Usage
+- `pre-iteration` — runs before each agent call
+- `post-iteration` — runs after each agent call
 
-Enter the directory where you want code generated or evolved, then run:
+Hooks are advisory: a failure prints a warning but does not stop the run.
 
-```bash
-EvoProgrammer "Build a complete blog system with authentication, article management, comments, and deployment scripts."
-```
+## Internals
 
-That command uses the current directory as the target project directory and will keep iterating until you stop it with `Ctrl+C`.
-
-Run a bounded number of iterations:
-
-```bash
-EvoProgrammer --max-iterations 3 "Build a full-stack todo app with tests."
-```
-
-Run a single pass only:
-
-```bash
-EvoProgrammer once "Initialize a Vite + React + TypeScript project."
-```
-
-You can also place wrapper options before the subcommand:
-
-```bash
-EvoProgrammer --agent claude once "Scaffold a typed FastAPI service."
-```
-
-Point the CLI at another directory:
-
-```bash
-EvoProgrammer --target-dir /path/to/project "Improve the README, tests, and CI."
-```
-
-Run Claude Code instead of Codex:
-
-```bash
-EvoProgrammer --agent claude "Implement the first playable card-battle loop."
-```
-
-Adapt the run for a Rust Bevy online game:
-
-```bash
-EvoProgrammer --language rust --framework bevy --project-type online-game "Build the dedicated server, client sync, and test scaffolding."
-```
-
-Adapt the run for a Godot GDScript project:
-
-```bash
-EvoProgrammer --language gdscript --framework godot --project-type single-player-game "Build the first playable loop, scene transitions, and save checkpoints."
-```
-
-Let EvoProgrammer auto-detect both from the repository and prompt:
-
-```bash
-EvoProgrammer "Build a multiplayer arena prototype with dedicated-server support."
-```
-
-The analyzed context is surfaced in three places:
-
-- terminal output from `LOOP.sh`, `MAIN.sh`, and `doctor`
-- the prompt sent to the coding agent
-- `metadata.env` artifacts for later inspection or reuse
-
-Pass extra flags through to the selected agent CLI:
-
-```bash
-EvoProgrammer \
-  --agent-args '["--model","gpt-5"]' \
-  "Generate the full project and keep fixing issues."
-```
-
-`--codex-arg` still works as a backward-compatible alias for Codex-oriented scripts.
-
-Load a long prompt from a file:
-
-```bash
-EvoProgrammer --prompt-file ./prompt.txt
-```
-
-Preview the next command without running the agent:
-
-```bash
-EvoProgrammer --max-iterations 3 --dry-run "Refine the project structure and add tests."
-```
-
-Write artifacts to a dedicated directory:
-
-```bash
-EvoProgrammer --artifacts-dir /tmp/evop-runs "Refine the project structure and add tests."
-```
-
-Check whether the environment is ready:
-
-```bash
-EvoProgrammer doctor --target-dir /path/to/project
-```
-
-Run a prompt that starts with `-`:
-
-```bash
-EvoProgrammer -- --write a changelog
-```
-
-## Low-Level Scripts
-
-Run one iteration:
-
-```bash
-./LOOP.sh "improve this repo"
-```
-
-Run one iteration against another repository:
-
-```bash
-./LOOP.sh --target-dir /path/to/repo --prompt "improve test coverage"
-```
-
-Pass extra flags through to the selected agent CLI:
-
-```bash
-./LOOP.sh --agent-args '["--model","gpt-5"]' --prompt "improve this repo"
-```
-
-Run a prompt that starts with `-`:
-
-```bash
-./LOOP.sh -- --write a changelog
-```
-
-Run repeated iterations forever:
-
-```bash
-./MAIN.sh "improve this repo"
-```
-
-Run three iterations with a delay:
-
-```bash
-EVOPROGRAMMER_MAX_ITERATIONS=3 \
-EVOPROGRAMMER_DELAY_SECONDS=5 \
-./MAIN.sh "improve this repo"
-```
-
-Repeat iterations while forwarding extra agent flags:
-
-```bash
-./MAIN.sh --max-iterations 3 --agent claude --agent-args '["--model","sonnet"]' "improve this repo"
-```
-
-## Configuration
-
-By default, both scripts target the current working directory, use the `codex` agent, and auto-detect language/framework/project-type guidance when possible. You can override that with `EVOPROGRAMMER_TARGET_DIR`, `EVOPROGRAMMER_AGENT`, `--target-dir`, or `--agent`.
-
-Built-in language profiles:
-
-- `python`
-- `cpp`
-- `go`
-- `rust`
-- `typescript`
-- `javascript`
-- `java`
-- `csharp`
-- `kotlin`
-- `swift`
-- `php`
-- `ruby`
-- `gdscript`
-
-Built-in framework profiles:
-
-- `django`
-- `flask`
-- `fastapi`
-- `streamlit`
-- `pygame`
-- `qt`
-- `react`
-- `nextjs`
-- `vue`
-- `svelte`
-- `express`
-- `nestjs`
-- `electron`
-- `tauri`
-- `godot`
-- `unity`
-- `unreal`
-- `bevy`
-- `rails`
-- `laravel`
-- `spring`
-- `gin`
-- `actix-web`
-- `axum`
-
-Built-in project types:
-
-- `single-player-game`
-- `paper`
-- `scientific-experiment`
-- `mobile-game`
-- `online-game`
-- `ppt`
-- `office`
-- `web-app`
-- `backend-service`
-- `cli-tool`
-- `library`
-- `desktop-app`
-- `browser-game`
-- `ai-agent`
-- `data-pipeline`
-- `plugin`
-- `embedded-system`
-
-`LOOP.sh` supports:
-
-- `EVOPROGRAMMER_PROMPT` to set the prompt.
-- `EVOPROGRAMMER_PROMPT_FILE` to read the prompt from a file.
-- `EVOPROGRAMMER_AGENT` to choose which built-in agent preset to run.
-- `EVOPROGRAMMER_AGENT_ARGS` to provide extra agent arguments as a JSON-like string list.
-- `EVOPROGRAMMER_LANGUAGE_PROFILE` to inject language-specific guidance into the prompt.
-- `EVOPROGRAMMER_FRAMEWORK_PROFILE` to inject framework-specific guidance into the prompt.
-- `EVOPROGRAMMER_PROJECT_TYPE` to inject project-type guidance into the prompt.
-- `EVOPROGRAMMER_TARGET_DIR` to choose the working directory for the agent command.
-- `EVOPROGRAMMER_ARTIFACTS_DIR` to override where run artifacts are stored. Default: `TARGET_DIR/.evoprogrammer/runs`.
-- `--prompt`, `--prompt-file`, and `--target-dir` flags for one-off runs without exporting environment variables.
-- `--language` to apply a built-in language adaptation profile.
-- `--framework` to apply a built-in framework adaptation profile.
-- `--project-type` to apply a built-in project-type adaptation profile.
-- `--artifacts-dir` to store artifacts somewhere other than the target repository.
-- If the target directory is a Git repository and artifacts stay inside it, EvoProgrammer registers a local `.git/info/exclude` rule to keep `.evoprogrammer/` out of later iterations.
-- `--agent-args` to pass additional arguments directly to the selected agent CLI as a JSON-like string list.
-- `--agent-arg` as a repeatable flag when you prefer shell-style repetition.
-- `--codex-arg` as a backward-compatible alias for `--agent-arg`.
-- `--dry-run` to print the agent command without executing it.
-
-Each `LOOP.sh` run creates a timestamped directory containing:
-
-- `prompt.txt`
-- `command.txt`
-- `metadata.env`
-- `<agent>.log`
-
-`metadata.env` includes the selected profiles plus derived repository facts such as package manager, workspace mode, suggested verification commands, search roots, and task kind.
-
-`MAIN.sh` supports:
-
-- `EVOPROGRAMMER_PROMPT` to set the prompt.
-- `EVOPROGRAMMER_PROMPT_FILE` to read the prompt from a file before each iteration.
-- `EVOPROGRAMMER_AGENT` to choose which built-in agent preset to run.
-- `EVOPROGRAMMER_AGENT_ARGS` to provide extra agent arguments as a JSON-like string list.
-- `EVOPROGRAMMER_LANGUAGE_PROFILE` to inject language-specific guidance into every iteration.
-- `EVOPROGRAMMER_FRAMEWORK_PROFILE` to inject framework-specific guidance into every iteration.
-- `EVOPROGRAMMER_PROJECT_TYPE` to inject project-type guidance into every iteration.
-- `EVOPROGRAMMER_TARGET_DIR` to choose the working directory for each loop iteration.
-- `EVOPROGRAMMER_ARTIFACTS_DIR` to override where session and iteration artifacts are stored.
-- `EVOPROGRAMMER_MAX_ITERATIONS` to stop after a fixed number of runs. `0` means no limit.
-- `EVOPROGRAMMER_DELAY_SECONDS` to wait between runs.
-- `EVOPROGRAMMER_CONTINUE_ON_ERROR=1` to keep looping after a failed iteration.
-- `--max-iterations`, `--delay-seconds`, and `--continue-on-error` flags as CLI equivalents.
-- `--prompt-file` to reload the prompt from disk on every iteration.
-- `--language` to apply a built-in language adaptation profile on every iteration.
-- `--framework` to apply a built-in framework adaptation profile on every iteration.
-- `--project-type` to apply a built-in project-type adaptation profile on every iteration.
-- `--artifacts-dir` to store session artifacts outside the target repository.
-- `--agent-args` to forward extra agent arguments on every iteration as a JSON-like string list.
-- `--agent-arg` as a repeatable flag when you prefer shell-style repetition.
-- `--codex-arg` as a backward-compatible alias for `--agent-arg`.
-- `--dry-run` to preview the next loop command instead of running it.
-- When artifacts stay inside a Git-backed target directory, EvoProgrammer writes a local exclude rule so `.evoprogrammer/` does not get fed back into subsequent runs.
-
-Each `MAIN.sh` run creates a timestamped session directory with `session.env` plus an `iterations/` folder that contains the per-iteration artifacts produced by `LOOP.sh`.
-
-`DOCTOR.sh` supports:
-
-- `EVOPROGRAMMER_LANGUAGE_PROFILE` and `--language` to validate a selected language profile.
-- `EVOPROGRAMMER_FRAMEWORK_PROFILE` and `--framework` to validate a selected framework profile.
-- `EVOPROGRAMMER_PROJECT_TYPE` and `--project-type` to validate a selected project-type profile.
-- `EVOPROGRAMMER_TARGET_DIR` and `--target-dir` to validate a specific repository directory.
-- `EVOPROGRAMMER_ARTIFACTS_DIR` and `--artifacts-dir` to validate the artifact storage location.
-
-Use `./LOOP.sh --help` or `./MAIN.sh --help` for a quick summary.
-
-Use `--` before the prompt when the prompt itself starts with `-`.
+| File | Role |
+|---|---|
+| `bin/EvoProgrammer` | CLI entrypoint and subcommand dispatcher |
+| `LOOP.sh` | Single agent iteration |
+| `MAIN.sh` | Repeated iteration loop |
+| `DOCTOR.sh` | Environment validation |
+| `CLEAN.sh` | Artifact cleanup |
+| `STATUS.sh` | Run history viewer |
+| `lib/agents/definitions/` | Pluggable agent definitions |
+| `lib/profiles/definitions/` | Language, framework, and project-type profiles |
 
 ## Verification
-
-Run the lightweight shell test suite with:
 
 ```bash
 bash tests/run_tests.sh

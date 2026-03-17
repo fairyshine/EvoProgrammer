@@ -47,10 +47,10 @@ evop_append_multiline() {
 
     eval "current=\${$var_name}"
     if [[ -n "$current" ]]; then
-        current+=$'\n'
+        printf -v "$var_name" '%s\n%s' "$current" "$line"
+    else
+        printf -v "$var_name" '%s' "$line"
     fi
-    current+="$line"
-    printf -v "$var_name" '%s' "$current"
 }
 
 evop_append_csv_unique() {
@@ -70,10 +70,10 @@ evop_append_csv_unique() {
     esac
 
     if [[ -n "$current" ]]; then
-        current+=", "
+        printf -v "$var_name" '%s, %s' "$current" "$value"
+    else
+        printf -v "$var_name" '%s' "$value"
     fi
-    current+="$value"
-    printf -v "$var_name" '%s' "$current"
 }
 
 evop_set_command_if_empty() {

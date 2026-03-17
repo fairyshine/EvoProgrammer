@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
 EVOP_DETECT_FACTS_DIR=""
+EVOP_DETECT_MAX_DEPTH="${EVOP_DETECT_MAX_DEPTH:-4}"
 declare -a EVOP_DETECT_FILES_REL=()
 declare -a EVOP_DETECT_FILE_BASENAMES=()
 declare -a EVOP_DETECT_PATH_BASENAMES=()
+
+EVOP_DETECT_PRUNE_DIRS=(.git node_modules vendor target build dist __pycache__ .venv .next .tox .mypy_cache .pytest_cache .cargo .gradle .bundle)
 
 evop_reset_detection_facts() {
     EVOP_DETECT_FACTS_DIR=""
@@ -16,22 +19,30 @@ evop_collect_detection_facts() {
     local directory="$1"
     local path
     local rel
+    local prune_args=()
+    local dir_name
 
     evop_reset_detection_facts
     EVOP_DETECT_FACTS_DIR="$directory"
+
+    for dir_name in "${EVOP_DETECT_PRUNE_DIRS[@]}"; do
+        prune_args+=(-name "$dir_name" -o)
+    done
+    # remove trailing -o
+    unset 'prune_args[${#prune_args[@]}-1]'
 
     while IFS= read -r -d '' path; do
         rel="${path#"$directory"/}"
         EVOP_DETECT_FILES_REL+=("$rel")
         EVOP_DETECT_FILE_BASENAMES+=("$(basename "$path")")
-    done < <(find "$directory" -type f -print0 2>/dev/null)
+    done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o -type f -print0 2>/dev/null)
 
     while IFS= read -r -d '' path; do
         if [[ "$path" == "$directory" ]]; then
             continue
         fi
         EVOP_DETECT_PATH_BASENAMES+=("$(basename "$path")")
-    done < <(find "$directory" \( -type f -o -type d \) -print0 2>/dev/null)
+    done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o \( -type f -o -type d \) -print0 2>/dev/null)
 }
 
 evop_ensure_detection_facts() {
@@ -64,6 +75,10 @@ evop_directory_has_file_named() {
 
     evop_ensure_detection_facts "$directory"
 
+    if (( ${#EVOP_DETECT_FILE_BASENAMES[@]} == 0 )); then
+        return 1
+    fi
+
     local basename
     for basename in "${EVOP_DETECT_FILE_BASENAMES[@]}"; do
         if [[ "$basename" == "$filename" ]]; then
@@ -81,6 +96,10 @@ evop_directory_has_file_pattern() {
 
     evop_ensure_detection_facts "$directory"
 
+    if (( ${#EVOP_DETECT_FILE_BASENAMES[@]} == 0 )); then
+        return 1
+    fi
+
     for basename in "${EVOP_DETECT_FILE_BASENAMES[@]}"; do
         if evop_filename_matches_any_pattern "$basename" "$@"; then
             return 0
@@ -95,6 +114,10 @@ evop_directory_has_path_named() {
     local name="$2"
 
     evop_ensure_detection_facts "$directory"
+
+    if (( ${#EVOP_DETECT_PATH_BASENAMES[@]} == 0 )); then
+        return 1
+    fi
 
     local basename
     for basename in "${EVOP_DETECT_PATH_BASENAMES[@]}"; do
@@ -133,6 +156,10 @@ evop_directory_contains_text() {
     local filename
 
     evop_ensure_detection_facts "$directory"
+
+    if (( ${#EVOP_DETECT_FILES_REL[@]} == 0 )); then
+        return 1
+    fi
 
     for rel_path in "${EVOP_DETECT_FILES_REL[@]}"; do
         filename="$(basename "$rel_path")"

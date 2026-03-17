@@ -11,6 +11,7 @@ AGENT_LIB="$LIB_DIR/agent.sh"
 PROFILE_LIB="$LIB_DIR/profile.sh"
 CLI_LIB="$LIB_DIR/cli.sh"
 METADATA_LIB="$LIB_DIR/metadata.sh"
+CONFIG_LIB="$LIB_DIR/config.sh"
 
 source "$COMMON_LIB"
 source "$RUNTIME_LIB"
@@ -18,6 +19,7 @@ source "$AGENT_LIB"
 source "$PROFILE_LIB"
 source "$CLI_LIB"
 source "$METADATA_LIB"
+source "$CONFIG_LIB"
 
 evop_init_common_context
 MAX_ITERATIONS="${EVOPROGRAMMER_MAX_ITERATIONS:-0}"
@@ -193,7 +195,7 @@ mkdir -p "$session_dir/iterations"
 started_at="$(evop_timestamp_utc)"
 write_session_metadata "$session_metadata" "running" "$started_at" "" "$prompt_source" "$artifacts_root" "$session_dir" 0 ""
 
-printf 'Session artifacts directory: %s\n' "$session_dir"
+evop_log_info "Session artifacts directory: $session_dir"
 evop_print_current_profiles
 
 iteration=1
@@ -203,14 +205,14 @@ while (( MAX_ITERATIONS == 0 || iteration <= MAX_ITERATIONS )); do
     if (( stop_requested == 1 )); then
         finished_at="$(evop_timestamp_utc)"
         write_session_metadata "$session_metadata" "stopped" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$session_dir" "$last_iteration" "$final_status"
-        echo "Stop requested. Exiting before iteration $iteration."
+        evop_log_info "Stop requested. Exiting before iteration $iteration."
         exit 0
     fi
 
     if [[ -n "$PROMPT_FILE" ]]; then
-        echo "Starting iteration $iteration with prompt file: $PROMPT_FILE"
+        evop_log_info "Starting iteration $iteration with prompt file: $PROMPT_FILE"
     else
-        echo "Starting iteration $iteration with prompt: $resolved_prompt"
+        evop_log_info "Starting iteration $iteration with prompt: $resolved_prompt"
     fi
     build_loop_command "$session_dir/iterations"
 

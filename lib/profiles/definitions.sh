@@ -120,6 +120,7 @@ evop_reset_profile_definition() {
     EVOP_PROFILE_PROMPT=""
     EVOP_PROFILE_DETECT_SCORE=""
     unset -f evop_profile_detect 2>/dev/null || true
+    unset -f evop_profile_apply_project_context 2>/dev/null || true
 }
 
 evop_load_profile_definition() {
@@ -154,6 +155,23 @@ evop_print_profile_prompt() {
     fi
 
     printf '%s' "$EVOP_PROFILE_PROMPT"
+}
+
+evop_apply_profile_project_context_hooks() {
+    local category_dir="$1"
+    local profile_name="${2:-}"
+    local target_dir="$3"
+    local prompt="${4:-}"
+
+    [[ -n "$profile_name" ]] || return 0
+
+    evop_load_profile_definition "$category_dir" "$profile_name"
+
+    if declare -F evop_profile_apply_project_context >/dev/null 2>&1; then
+        evop_profile_apply_project_context "$target_dir" "$prompt"
+    fi
+
+    evop_reset_profile_definition
 }
 
 evop_detect_profile_via_hooks() {

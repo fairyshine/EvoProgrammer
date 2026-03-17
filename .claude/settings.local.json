@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(chmod:*)",
+      "Bash(bash tests/run_tests.sh 2>&1)",
+      "Bash(bash --version)",
+      "Bash(bash bin/EvoProgrammer --version 2>&1)",
+      "Bash(bash CLEAN.sh --help 2>&1)",
+      "Bash(bash STATUS.sh --help 2>&1)",
+      "Bash(bash CLEAN.sh --dry-run 2>&1)",
+      "Bash(bash STATUS.sh 2>&1)",
+      "Bash(bash bin/EvoProgrammer version)",
+      "Bash(bash bin/EvoProgrammer --version)"
+    ]
+  }
+}

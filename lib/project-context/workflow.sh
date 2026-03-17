@@ -31,78 +31,14 @@ evop_detect_task_workflow() {
     EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Find the nearest existing implementation first, extend types, data flow, and tests together, and avoid inventing a parallel pattern."
 }
 
-evop_detect_language_workflow() {
-    local language_profile="$1"
+evop_apply_profile_workflow() {
+    local category_dir="$1"
+    local profile_name="${2:-}"
+    local target_dir="$3"
+    local prompt="${4:-}"
 
-    case "$language_profile" in
-        python)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect package entrypoints, service modules, schemas, and tests before editing."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Keep framework glue thin and move changed behavior into importable, testable modules."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prefer static checks and targeted pytest coverage before broader integration validation."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Watch import-time side effects, environment-dependent behavior, and untyped data crossing module boundaries."
-            ;;
-        typescript|javascript)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect components, state modules, API adapters, and affected tests before editing."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Update public types, runtime guards, and UI or service behavior together to avoid drift."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Run lint, type checks when available, focused tests, and then the relevant build path."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Browser/server boundaries, shared types, and stale state transitions can create wide regressions."
-            ;;
-        rust)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect crate boundaries, public APIs, and the nearest tests or benches before editing."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Prefer explicit ownership and small changes over broad trait or lifetime rewrites."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Use check, clippy, and targeted tests before relying on a full build alone."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Public crate interfaces, async boundaries, and shared structs can cascade across the codebase."
-            ;;
-        go)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect package boundaries, handlers, and interface consumers before editing."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Prefer small packages, explicit errors, and simple concurrency over abstraction-heavy rewrites."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Use focused package tests first, then broader go test or vet style checks."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Interface drift, nil handling, and goroutine lifecycles can cause subtle regressions."
-            ;;
-    esac
-}
-
-evop_detect_project_type_workflow() {
-    local project_type="$1"
-
-    case "$project_type" in
-        web-app)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect user-facing routes, components, client state, and API integration paths first."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Change user flows end-to-end: types, data loading, loading or error states, and UI tests together."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prioritize user-flow regression checks and confirm the production build still works."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Routing, auth, caching, and shared frontend contracts deserve extra scrutiny."
-            ;;
-        backend-service)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect request handlers, schemas, service logic, persistence, and contract tests first."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Preserve API contracts, validation behavior, and error semantics while changing internals."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prioritize contract tests, integration tests, and schema or migration safety checks."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "API compatibility, idempotency, persistence changes, and background jobs are high-risk."
-            ;;
-        cli-tool)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect command parsing, config loading, and command-specific tests before editing."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Keep stdout, stderr, exit codes, and help text behavior consistent with existing commands."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prefer command-level regression tests plus manual checks for representative invocations."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Flag parsing changes, shell-facing output, and backward compatibility are the main risks."
-            ;;
-        library)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect exported interfaces, examples, and compatibility-sensitive tests first."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Minimize churn in public APIs and update docs or examples alongside behavior changes."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prioritize API-level tests, examples, and compatibility checks before release-oriented builds."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Public interfaces, semantic versioning expectations, and cross-package consumers deserve extra care."
-            ;;
-        data-pipeline)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect input parsing, transforms, output sinks, and retry or scheduling paths first."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Preserve data contracts, checkpoint semantics, and rerun safety while changing logic."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prefer fixture-based data regression tests and rerun or idempotency validation."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Schema drift, partial writes, duplicate processing, and observability gaps are high-risk."
-            ;;
-        single-player-game|online-game|mobile-game|browser-game)
-            evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect the gameplay loop, state transitions, scene or system wiring, and input handling first."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Change one gameplay boundary at a time and keep assets, state, and player feedback in sync."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Prefer play-loop validation, state transition checks, and performance-sensitive smoke tests."
-            evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "State desync, input regressions, save data, and resource loading are the primary risks."
-            ;;
-    esac
+    [[ -n "$profile_name" ]] || return 0
+    evop_apply_profile_project_context_hooks "$category_dir" "$profile_name" "$target_dir" "$prompt"
 }
 
 evop_detect_task_kind_workflow() {
@@ -181,8 +117,9 @@ evop_analyze_project_context() {
         fi
     fi
 
-    evop_detect_language_workflow "$language_profile"
-    evop_detect_project_type_workflow "$project_type"
+    evop_apply_profile_workflow "languages" "$language_profile" "$target_dir" "$prompt"
+    evop_apply_profile_workflow "frameworks" "$framework_profile" "$target_dir" "$prompt"
+    evop_apply_profile_workflow "project-types" "$project_type" "$target_dir" "$prompt"
     evop_detect_task_kind_workflow
     evop_finalize_workflow_strategy
 }

@@ -8,6 +8,7 @@ RUNTIME_LIB="$SCRIPT_DIR/lib/runtime.sh"
 AGENT_LIB="$SCRIPT_DIR/lib/agent.sh"
 PROFILE_LIB="$SCRIPT_DIR/lib/profile.sh"
 CLI_LIB="$SCRIPT_DIR/lib/cli.sh"
+CONFIG_LIB="$SCRIPT_DIR/lib/config.sh"
 MAIN_SCRIPT="$SCRIPT_DIR/MAIN.sh"
 LOOP_SCRIPT="$SCRIPT_DIR/LOOP.sh"
 
@@ -16,6 +17,7 @@ source "$RUNTIME_LIB"
 source "$AGENT_LIB"
 source "$PROFILE_LIB"
 source "$CLI_LIB"
+source "$CONFIG_LIB"
 
 evop_init_common_context
 

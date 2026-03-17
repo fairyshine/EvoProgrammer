@@ -2,43 +2,25 @@
 
 EVOPROGRAMMER_DEFAULT_AGENT="codex"
 EVOP_PARSED_LIST=()
+EVOP_AGENT_COMMAND=()
 
-evop_validate_agent() {
-    local agent="$1"
+EVOP_AGENT_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/agents" && pwd)"
 
-    case "$agent" in
-        codex|claude)
-            ;;
-        *)
-            evop_fail "Unsupported agent: $agent"
-            ;;
-    esac
-}
+source "$EVOP_AGENT_LIB_DIR/catalog.sh"
+source "$EVOP_AGENT_LIB_DIR/validate.sh"
 
 evop_agent_command_name() {
     local agent="$1"
 
-    case "$agent" in
-        codex)
-            printf 'codex'
-            ;;
-        claude)
-            printf 'claude'
-            ;;
-    esac
+    evop_load_agent_definition "$agent"
+    printf '%s' "$EVOP_AGENT_COMMAND_NAME"
 }
 
 evop_agent_display_name() {
     local agent="$1"
 
-    case "$agent" in
-        codex)
-            printf 'Codex'
-            ;;
-        claude)
-            printf 'Claude Code'
-            ;;
-    esac
+    evop_load_agent_definition "$agent"
+    printf '%s' "$EVOP_AGENT_DISPLAY_NAME"
 }
 
 evop_build_agent_command() {
@@ -47,22 +29,17 @@ evop_build_agent_command() {
     local prompt="$3"
     shift 3
 
-    EVOP_AGENT_COMMAND=()
+    evop_load_agent_definition "$agent"
 
-    case "$agent" in
-        codex)
-            EVOP_AGENT_COMMAND=(codex exec --dangerously-bypass-approvals-and-sandbox --cd "$target_dir" --add-dir "$target_dir")
-            ;;
-        claude)
-            EVOP_AGENT_COMMAND=(claude --print --dangerously-skip-permissions)
-            ;;
-    esac
-
-    if (($# > 0)); then
-        EVOP_AGENT_COMMAND+=("$@")
+    if ! declare -F evop_agent_build_command >/dev/null 2>&1; then
+        evop_fail "Agent definition for '$agent' does not define evop_agent_build_command."
     fi
 
-    EVOP_AGENT_COMMAND+=("$prompt")
+    if (($# > 0)); then
+        evop_agent_build_command "$target_dir" "$prompt" "$@"
+    else
+        evop_agent_build_command "$target_dir" "$prompt"
+    fi
 }
 
 evop_trim_whitespace() {

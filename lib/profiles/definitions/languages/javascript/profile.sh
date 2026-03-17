@@ -2,6 +2,13 @@
 
 EVOP_PROFILE_PROMPT=$'- Keep runtime and tooling choices explicit and lightweight.\n- Use consistent scripts, module boundaries, and dependency management.\n- Avoid unnecessary build complexity and document local development clearly.\n- Keep browser/server assumptions obvious in the project layout.'
 
+evop_profile_apply_project_context() {
+    evop_append_multiline EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY "Inspect components, state modules, API adapters, and affected tests before editing."
+    evop_append_multiline EVOP_PROJECT_CONTEXT_EDIT_STRATEGY "Update public types, runtime guards, and UI or service behavior together to avoid drift."
+    evop_append_multiline EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY "Run lint, type checks when available, focused tests, and then the relevant build path."
+    evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_FOCUS "Browser/server boundaries, shared types, and stale state transitions can create wide regressions."
+}
+
 evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"

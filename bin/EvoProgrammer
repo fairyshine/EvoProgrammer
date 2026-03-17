@@ -7,9 +7,13 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 MAIN_SCRIPT="$ROOT_DIR/MAIN.sh"
 LOOP_SCRIPT="$ROOT_DIR/LOOP.sh"
 DOCTOR_SCRIPT="$ROOT_DIR/DOCTOR.sh"
+CLEAN_SCRIPT="$ROOT_DIR/CLEAN.sh"
+STATUS_SCRIPT="$ROOT_DIR/STATUS.sh"
 COMMON_LIB="$ROOT_DIR/lib/common.sh"
+VERSION_LIB="$ROOT_DIR/lib/version.sh"
 
 source "$COMMON_LIB"
+source "$VERSION_LIB"
 
 usage() {
     cat <<'EOF'
@@ -66,12 +70,20 @@ find_subcommand() {
             -g|--agent|--language|--framework|--project-type|-p|--prompt|-f|--prompt-file|-t|--target-dir|-o|--artifacts-dir|-n|--max-iterations|-d|--delay-seconds|--agent-args|-a|--agent-arg|--codex-arg)
                 expecting_value=1
                 ;;
+            -c|--continue-on-error|--dry-run|-q|--quiet|-v|--verbose)
+                # flags without values
+                ;;
             help|-h|--help)
                 EVOP_CLI_SUBCOMMAND="help"
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
                 ;;
-            once|doctor)
+            version|--version)
+                EVOP_CLI_SUBCOMMAND="version"
+                EVOP_CLI_SUBCOMMAND_INDEX="$index"
+                return 0
+                ;;
+            once|doctor|clean|status)
                 EVOP_CLI_SUBCOMMAND="$arg"
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
@@ -114,6 +126,9 @@ case "${EVOP_CLI_SUBCOMMAND:-}" in
     help)
         usage
         ;;
+    version)
+        printf 'EvoProgrammer %s\n' "$EVOPROGRAMMER_VERSION"
+        ;;
     once)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
         exec "$LOOP_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
@@ -121,6 +136,14 @@ case "${EVOP_CLI_SUBCOMMAND:-}" in
     doctor)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
         exec "$DOCTOR_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    clean)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$CLEAN_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    status)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$STATUS_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     *)
         exec "$MAIN_SCRIPT" "$@"

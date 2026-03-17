@@ -79,6 +79,14 @@ evop_parse_common_option() {
             DRY_RUN=1
             EVOP_CLI_OPTION_SHIFT=1
             ;;
+        -q|--quiet)
+            EVOP_VERBOSITY=0
+            EVOP_CLI_OPTION_SHIFT=1
+            ;;
+        -v|--verbose)
+            EVOP_VERBOSITY=2
+            EVOP_CLI_OPTION_SHIFT=1
+            ;;
         *)
             EVOP_CLI_OPTION_HANDLED=0
             ;;
@@ -106,6 +114,8 @@ evop_parse_doctor_option() {
 }
 
 evop_finalize_common_context() {
+    evop_load_project_config "$TARGET_DIR"
+
     if [[ -z "$PROMPT" && -z "$PROMPT_FILE" ]]; then
         PROMPT="$EVOPROGRAMMER_DEFAULT_PROMPT"
     fi
@@ -123,6 +133,7 @@ evop_finalize_common_context() {
 }
 
 evop_finalize_doctor_context() {
+    evop_load_project_config "$TARGET_DIR"
     evop_validate_agent "$AGENT"
     evop_validate_language_profile "$LANGUAGE_PROFILE"
     evop_validate_framework_profile "$FRAMEWORK_PROFILE"

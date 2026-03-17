@@ -10,6 +10,8 @@ AGENT_LIB="$LIB_DIR/agent.sh"
 PROFILE_LIB="$LIB_DIR/profile.sh"
 CLI_LIB="$LIB_DIR/cli.sh"
 METADATA_LIB="$LIB_DIR/metadata.sh"
+CONFIG_LIB="$LIB_DIR/config.sh"
+HOOKS_LIB="$LIB_DIR/hooks.sh"
 
 # Shared helpers keep validation and command preview logic consistent.
 source "$COMMON_LIB"
@@ -18,6 +20,8 @@ source "$AGENT_LIB"
 source "$PROFILE_LIB"
 source "$CLI_LIB"
 source "$METADATA_LIB"
+source "$CONFIG_LIB"
+source "$HOOKS_LIB"
 
 evop_init_common_context
 declare -a AGENT_ARGS=()
@@ -165,15 +169,19 @@ printf '%s' "$final_prompt" >"$prompt_file_path"
 evop_write_command_file "$command_file" "${agent_cmd[@]}"
 write_run_metadata "$metadata_file" "running" "$started_at" "" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"
 
-printf 'Agent: %s\n' "$agent_display_name"
+evop_log_info "Agent: $agent_display_name"
 evop_print_current_profiles
-printf 'Artifacts directory: %s\n' "$run_dir"
+evop_log_info "Artifacts directory: $run_dir"
+
+evop_run_hook "$TARGET_DIR" "pre-iteration"
 
 if evop_run_and_capture "$TARGET_DIR" "$output_file" "${agent_cmd[@]}"; then
     status=0
 else
     status=$?
 fi
+
+evop_run_hook "$TARGET_DIR" "post-iteration"
 
 finished_at="$(evop_timestamp_utc)"
 write_run_metadata "$metadata_file" "$status" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"

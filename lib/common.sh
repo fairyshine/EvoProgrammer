@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 
 EVOPROGRAMMER_DEFAULT_PROMPT="improve this repo"
+EVOP_VERBOSITY="${EVOP_VERBOSITY:-1}"
 
 evop_print_stderr() {
     printf '%s\n' "$*" >&2
+}
+
+evop_log_info() {
+    if (( EVOP_VERBOSITY >= 1 )); then
+        printf '%s\n' "$*"
+    fi
+}
+
+evop_log_verbose() {
+    if (( EVOP_VERBOSITY >= 2 )); then
+        printf '%s\n' "$*"
+    fi
 }
 
 evop_fail() {
