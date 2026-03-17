@@ -131,6 +131,18 @@ evop_append_project_command_lines() {
     printf '%s' "$output"
 }
 
+evop_print_project_command_report() {
+    [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
+    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    printf 'Suggested commands:\n'
+    if evop_project_has_any_command; then
+        printf '%s\n' "$(evop_append_project_command_lines "- " 1)"
+    else
+        printf -- '- none\n'
+    fi
+}
+
 evop_render_profile_detection_category_json() {
     local category_dir="$1"
     local output="["

@@ -17,6 +17,12 @@ assert_contains "$inspect_prompt_output" "[Recommended Workflow]" "INSPECT promp
 assert_contains "$inspect_prompt_output" "Operational surfaces:" "INSPECT prompt mode should render operational surfaces"
 pass "INSPECT prompt"
 
+inspect_commands_output="$(run_expect_success "INSPECT should render a focused command report" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format commands)"
+assert_contains "$inspect_commands_output" "Suggested commands:" "INSPECT commands mode should print the command heading"
+assert_contains "$inspect_commands_output" "Lint: pnpm lint [package.json script]" "INSPECT commands mode should include command sources"
+assert_not_contains "$inspect_commands_output" "Architecture hints:" "INSPECT commands mode should stay focused on commands"
+pass "INSPECT commands"
+
 inspect_json_output="$(run_expect_success "INSPECT should render machine-readable json context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format json)"
 inspect_json_summary="$(INSPECT_JSON="$inspect_json_output" python3 - <<'PY'
 import json
@@ -135,6 +141,40 @@ assert_contains "$verify_output" "Running build: make build" "VERIFY should incl
 assert_contains "$verify_log" $'lint\ntypecheck\ntest\nbuild' "VERIFY should run the steps in the expected order"
 pass "VERIFY execution"
 
+verify_list_json_output="$(run_expect_success "VERIFY should render the selected verification plan as json" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps lint,test --list --list-format json)"
+verify_list_json_summary="$(VERIFY_LIST_JSON="$verify_list_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["VERIFY_LIST_JSON"])
+print(data["target_dir"])
+print(data["steps"]["lint"]["command"])
+print(data["steps"]["test"]["source"])
+print(f"lint_ok={data['steps']['lint']['runnable']}")
+PY
+)"
+assert_contains "$verify_list_json_summary" "$TEST_VERIFY_DIR" "VERIFY list json should include the target directory"
+assert_contains "$verify_list_json_summary" "make lint" "VERIFY list json should include the lint command"
+assert_contains "$verify_list_json_summary" "make target" "VERIFY list json should include command sources"
+assert_contains "$verify_list_json_summary" "lint_ok=True" "VERIFY list json should report runnable steps"
+pass "VERIFY list json"
+
+verify_list_env_summary="$(
+    VERIFY_SCRIPT="$VERIFY_SCRIPT" TEST_VERIFY_DIR="$TEST_VERIFY_DIR" bash <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps lint,test --list --list-format env)"
+printf '%s\n' "$EVOP_VERIFY_PLAN_TARGET_DIR"
+printf '%s\n' "$EVOP_VERIFY_PLAN_SELECTED_STEPS"
+printf '%s\n' "$EVOP_VERIFY_PLAN_LINT_COMMAND"
+printf 'test_ok=%s\n' "$([[ "$EVOP_VERIFY_PLAN_TEST_RUNNABLE" == "1" ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$verify_list_env_summary" "$TEST_VERIFY_DIR" "VERIFY list env should export the target directory"
+assert_contains "$verify_list_env_summary" "lint" "VERIFY list env should export the selected steps"
+assert_contains "$verify_list_env_summary" "make lint" "VERIFY list env should export selected commands"
+assert_contains "$verify_list_env_summary" "test_ok=true" "VERIFY list env should export runnable flags"
+pass "VERIFY list env"
+
 verify_report_json="$TEST_TMPDIR/verify-report.json"
 run_expect_success "VERIFY should write a json report" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps lint,test --report-file "$verify_report_json" --report-format json >/dev/null
 verify_report_json_summary="$(VERIFY_REPORT_JSON="$(cat "$verify_report_json")" python3 - <<'PY'
@@ -168,6 +208,16 @@ verify_dry_run_output="$(run_expect_success "VERIFY dry-run should print command
 assert_contains "$verify_dry_run_output" "Running test: make test" "VERIFY dry-run should print the selected test command"
 assert_contains "$verify_dry_run_output" "Running build: make build" "VERIFY dry-run should print the selected build command"
 pass "VERIFY dry-run"
+
+verify_partial_dir="$TEST_TMPDIR/verify-partial-project"
+mkdir -p "$verify_partial_dir"
+cat >"$verify_partial_dir/Makefile" <<'EOF'
+lint:
+	@true
+EOF
+verify_require_all_output="$(run_expect_failure "VERIFY should fail when require-all is set and a step is missing" "$VERIFY_SCRIPT" --target-dir "$verify_partial_dir" --steps lint,test --require-all --list)"
+assert_contains "$verify_require_all_output" "Missing verification commands for selected steps: test" "VERIFY require-all should identify missing commands"
+pass "VERIFY require-all"
 
 verify_report_env="$TEST_TMPDIR/verify-report.env"
 run_expect_success "VERIFY dry-run should write an env report" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps test,build --dry-run --report-file "$verify_report_env" --report-format env >/dev/null

@@ -28,6 +28,8 @@ evop_init_common_context
 VERIFY_STEPS=""
 CONTINUE_ON_ERROR=0
 LIST_ONLY=0
+LIST_FORMAT="summary"
+REQUIRE_ALL=0
 REPORT_FILE=""
 REPORT_FORMAT="json"
 
@@ -107,8 +109,10 @@ Options:
   -o, --artifacts-dir DIR  Root directory used to store verification logs.
       --context-file FILE  Reuse an `inspect --format env` context snapshot.
       --steps CSV          Comma-separated subset of: lint,typecheck,test,build.
-      --list               Print the detected verification commands and exit.
+      --list               Print the selected verification plan and exit.
+      --list-format NAME   List output format: summary, json, or env. Default: summary.
   -c, --continue-on-error  Keep going after a failed verification step.
+      --require-all        Fail if any selected verification step has no detected command.
       --report-file FILE   Write a machine-readable verification summary file.
       --report-format NAME Report format: json or env. Default: json.
       --dry-run            Print the selected commands without running them.
@@ -131,6 +135,11 @@ while (($# > 0)); do
             LIST_ONLY=1
             shift
             ;;
+        --list-format)
+            evop_require_option_value "$1" "$#"
+            LIST_FORMAT="$2"
+            shift 2
+            ;;
         --report-file)
             evop_require_option_value "$1" "$#"
             REPORT_FILE="$2"
@@ -143,6 +152,10 @@ while (($# > 0)); do
             ;;
         -c|--continue-on-error)
             CONTINUE_ON_ERROR=1
+            shift
+            ;;
+        --require-all)
+            REQUIRE_ALL=1
             shift
             ;;
         --)
@@ -173,6 +186,7 @@ fi
 evop_finalize_analysis_context
 
 selected_steps="$(evop_parse_verify_steps "$VERIFY_STEPS")"
+evop_validate_verify_list_format "$LIST_FORMAT"
 case "$REPORT_FORMAT" in
     json|env)
         ;;
@@ -181,14 +195,12 @@ case "$REPORT_FORMAT" in
         ;;
 esac
 
+if (( REQUIRE_ALL == 1 )); then
+    evop_require_verify_commands "$selected_steps"
+fi
+
 if (( LIST_ONLY == 1 )); then
-    printf 'Target directory: %s\n' "$TARGET_DIR"
-    while IFS= read -r slot; do
-        [[ -n "$slot" ]] || continue
-        command="$(evop_get_project_command "$slot")"
-        [[ -n "$command" ]] || continue
-        printf '%s: %s\n' "$slot" "$command"
-    done <<<"$selected_steps"
+    evop_print_verify_plan "$TARGET_DIR" "$selected_steps" "$LIST_FORMAT"
     exit 0
 fi
 

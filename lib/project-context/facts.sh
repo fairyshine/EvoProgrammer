@@ -14,6 +14,7 @@ EVOP_PROJECT_CONTEXT_FACTS_CACHE_FILE_TEXT_ENTRIES=0
 EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
 EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=0
 EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
+EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT=""
 
 if [[ -n "${ZSH_VERSION:-}" ]]; then
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="associative-array"
@@ -22,6 +23,7 @@ if [[ -n "${ZSH_VERSION:-}" ]]; then
     typeset -A EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE
     typeset -A EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE
     typeset -A EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE
+    typeset -A EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE
 elif [[ -n "${BASH_VERSION:-}" && ${BASH_VERSINFO[0]:-0} -ge 4 ]]; then
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="associative-array"
     EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=1
@@ -29,11 +31,13 @@ elif [[ -n "${BASH_VERSION:-}" && ${BASH_VERSINFO[0]:-0} -ge 4 ]]; then
     declare -A EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
     declare -A EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
     declare -A EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
+    declare -A EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=()
 else
     EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=""
     EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=""
     EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=""
     EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=""
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=""
 fi
 
 evop_reset_project_context_facts() {
@@ -47,17 +51,20 @@ evop_reset_project_context_facts() {
     EVOP_PROJECT_CONTEXT_FACTS_CACHE_FILE_TEXT_ENTRIES=0
     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
     EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT=""
 
     if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; then
         EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=()
         EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
         EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
         EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=()
     else
         EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=""
         EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=""
         EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=""
         EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=""
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=""
     fi
 }
 
@@ -126,6 +133,10 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     [[ -n ${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]+set} ]] || return 1
                     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]}"
                     ;;
+                EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+                    [[ -n ${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]+set} ]] || return 1
+                    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]}"
+                    ;;
                 *)
                     return 1
                     ;;
@@ -149,6 +160,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     ;;
                 EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
                     EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]="$cached_value"
+                    ;;
+                EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+                    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]="$cached_value"
                     ;;
             esac
         }
@@ -174,6 +188,10 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     [[ -n "${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]+set}" ]] || return 1
                     EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]}"
                     ;;
+                EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+                    [[ -n "${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]+set}" ]] || return 1
+                    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]}"
+                    ;;
                 *)
                     return 1
                     ;;
@@ -197,6 +215,9 @@ if [[ "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND" == "associative-array" ]]; the
                     ;;
                 EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
                     EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE["$cache_key"]="$cached_value"
+                    ;;
+                EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+                    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE["$cache_key"]="$cached_value"
                     ;;
             esac
         }
@@ -412,4 +433,77 @@ evop_project_file_contains_regex_cached() {
 
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE "$cache_key" "0"
     return 1
+}
+
+evop_project_file_text_contains_regex_cached() {
+    local file_path="$1"
+    local regex="$2"
+    local cache_key="$file_path|text:$regex"
+    local cached_value=""
+    local file_text=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE "$cache_key"; then
+        cached_value="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        [[ "$cached_value" == "1" ]]
+        return $?
+    fi
+
+    if (( EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED == 1 )); then
+        evop_project_file_text_cached "$file_path" >/dev/null
+        file_text="$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        if [[ -n "$file_text" && "$file_text" =~ $regex ]]; then
+            evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE "$cache_key" "1"
+            return 0
+        fi
+    elif [[ -f "$file_path" ]] && grep -Eq "$regex" "$file_path"; then
+        evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE "$cache_key" "1"
+        return 0
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE "$cache_key" "0"
+    return 1
+}
+
+evop_project_makefile_targets_cached() {
+    local file_path="$1"
+    local file_text=""
+    local line=""
+    local targets=""
+    local target_name=""
+
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        evop_project_file_text_cached "$file_path" >/dev/null
+        file_text="$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        while IFS= read -r line; do
+            case "$line" in
+                [![:space:]#]*:*)
+                    target_name="${line%%:*}"
+                    ;;
+                *)
+                    continue
+                    ;;
+            esac
+            [[ "$target_name" =~ ^[[:alnum:]_.-]+$ ]] || continue
+            case $'\n'"$targets"$'\n' in
+                *$'\n'"$target_name"$'\n'*)
+                    ;;
+                *)
+                    [[ -n "$targets" ]] && targets+=$'\n'
+                    targets+="$target_name"
+                    ;;
+            esac
+        done <<<"$file_text"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE "$file_path" "$targets"
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT="$targets"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT"
 }

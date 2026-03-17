@@ -50,14 +50,14 @@ This layer answers: "What kind of repo is this?"
 ### 4. Project inspection
 
 - `lib/project-context/commands.sh`: package manager and command-slot inference
-- `lib/project-context/facts.sh`: cached filesystem, file-match, and manifest-text facts for repo inspection, plus cache diagnostics
+- `lib/project-context/facts.sh`: cached filesystem, file-match, manifest-text, and command-manifest facts for repo inspection, plus cache diagnostics
 - `lib/project-context/timings.sh`: phase timing capture for profile resolution and inspection diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/snapshot.sh`: reusable inspect-env snapshot loading and workflow refresh
 - `lib/project-context/render.sh`: prompt and human-readable rendering
 - `lib/project-context/state.sh`: shared inspection state
-- `lib/verify.sh`: reusable verification-report state and JSON/env rendering
+- `lib/verify.sh`: reusable verification-plan/report state and summary/json/env rendering
 
 This layer answers: "How should this repo be searched, changed, verified, and
 operated?"
@@ -70,6 +70,11 @@ for repeated literal lookups so repo analysis can avoid re-reading the same
 files dozens of times in one inspection pass. Cache entry counts are also
 tracked as first-class diagnostics now, so rendering diagnostics or replaying a
 saved inspection snapshot does not need to recount cache contents.
+
+That facts layer now also caches Makefile target extraction and reuses cached
+manifest text for repeated package.json script checks. This trims repeated
+external `grep` work from the command-detection path shared by `inspect`,
+prompt rendering, and `verify`.
 
 The snapshot sub-layer lets other entrypoints reuse an earlier
 `inspect --format env` report. That keeps profile resolution and repo analysis
@@ -118,6 +123,10 @@ Verification execution also records first-class step results, durations, and log
 paths. `VERIFY.sh` can emit that report as JSON or shell-safe env assignments so
 CI and helper scripts can consume the same execution state without scraping the
 human-readable log stream.
+
+Verification planning follows the same pattern now: `verify --list` can emit the
+selected step plan as summary, JSON, or env output, and `--require-all` lets CI
+fail early when a required verification command is missing.
 
 Status reporting now follows the same model: `STATUS.sh` can filter runs versus
 sessions, narrow by recorded status or agent, and emit the selected history as

@@ -2,7 +2,7 @@
 
 evop_validate_inspect_format() {
     case "$1" in
-        summary|diagnostics|profiles|doctor|prompt|timings|json|env)
+        summary|commands|diagnostics|profiles|doctor|prompt|timings|json|env)
             return 0
             ;;
         *)
@@ -17,6 +17,9 @@ evop_print_project_inspection_output() {
     case "$output_format" in
         summary)
             evop_print_project_inspection_report
+            ;;
+        commands)
+            evop_print_project_command_report
             ;;
         diagnostics)
             evop_print_project_inspection_diagnostics

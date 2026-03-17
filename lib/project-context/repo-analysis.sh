@@ -18,7 +18,7 @@ evop_package_json_has_script() {
     local package_json="$1"
     local script_name="$2"
 
-    evop_file_contains_regex "$package_json" "\"$script_name\"[[:space:]]*:"
+    evop_project_file_text_contains_regex_cached "$package_json" "\"$script_name\"[[:space:]]*:"
 }
 
 evop_package_json_mentions() {
@@ -32,7 +32,14 @@ evop_makefile_has_target() {
     local makefile="$1"
     local target="$2"
 
-    evop_file_contains_regex "$makefile" "^$target:"
+    evop_project_makefile_targets_cached "$makefile" >/dev/null
+    case $'\n'"$EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT"$'\n' in
+        *$'\n'"$target"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    return 1
 }
 
 evop_existing_relative_path() {

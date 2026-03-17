@@ -90,6 +90,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 
 # 查看仓库自动检测结果
 EvoProgrammer inspect --target-dir /path/to/project
+EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
@@ -99,6 +100,8 @@ EvoProgrammer inspect --target-dir /path/to/project \
 
 # 执行自动推导出的验证命令链
 EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format json
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --require-all
 EvoProgrammer verify --target-dir /path/to/project \
   --report-file ./verify-report.json --report-format json
 
@@ -167,6 +170,7 @@ EvoProgrammer profiles --category frameworks --format json
 
 ```bash
 EvoProgrammer inspect --target-dir /path/to/project --format summary
+EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
@@ -180,6 +184,8 @@ EvoProgrammer inspect --target-dir /path/to/project --report-file ./inspect-repo
 ```bash
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format env
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --require-all
 EvoProgrammer verify --target-dir /path/to/project --dry-run
 EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report.env --report-format env
 ```
@@ -189,6 +195,9 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --format profiles` 会输出命中的语言、框架、项目类型候选项及其检测分数，
 方便理解和排查自动检测的决策过程。
+
+`inspect --format commands` 会输出一个更聚焦的命令视图，适合只看
+dev/build/test/lint/typecheck 计划而不关心完整仓库分析的时候使用。
 
 `inspect --format env` 会把同一份检测上下文导出为可直接 `source` 的
 `EVOP_INSPECT_*` 环境变量，方便 CI 和脚本复用，而不必再解析面向人的文本输出。
@@ -206,6 +215,12 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 `verify --report-file` 会把实际执行过的步骤结果、退出码、耗时和日志路径输出成
 JSON 或可 `source` 的 `EVOP_VERIFY_*` 环境变量，方便在 CI 或外层脚本里复用，
 不用再解析标准输出。
+
+`verify --list --list-format json|env` 会在不执行命令的情况下输出当前选中的验证计划，
+方便 CI 包装脚本先检查解析出的命令。
+
+`verify --require-all` 会在所选步骤里存在未检测到命令时直接失败，方便把自动化流程
+收紧成可复现的契约。
 
 `status` 现在支持 `--kind`、`--status`、`--agent` 筛选，以及 `--format json|env`
 和 `--report-file`，方便把运行历史导出给 CI 或包装脚本消费。

@@ -90,6 +90,7 @@ EvoProgrammer doctor --target-dir /path/to/project
 
 # Inspect what EvoProgrammer detected in a repo
 EvoProgrammer inspect --target-dir /path/to/project
+EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
@@ -99,6 +100,8 @@ EvoProgrammer inspect --target-dir /path/to/project \
 
 # Run the detected verification chain
 EvoProgrammer verify --target-dir /path/to/project
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format json
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --require-all
 EvoProgrammer verify --target-dir /path/to/project \
   --report-file ./verify-report.json --report-format json
 
@@ -167,6 +170,7 @@ calls an agent:
 
 ```bash
 EvoProgrammer inspect --target-dir /path/to/project --format summary
+EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
@@ -181,6 +185,8 @@ itself:
 ```bash
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format env
+EvoProgrammer verify --target-dir /path/to/project --steps lint,test --require-all
 EvoProgrammer verify --target-dir /path/to/project --dry-run
 EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report.env --report-format env
 ```
@@ -191,6 +197,10 @@ you can see cache lookups, hit rate, and entry counts when profiling detection.
 `inspect --format profiles` shows the matched language, framework, and
 project-type candidates with their detection scores, which is useful when you
 want to understand or debug auto-detection decisions.
+
+`inspect --format commands` prints a tighter command-only view when you just
+want the inferred dev/build/test/lint/typecheck plan without the rest of the
+repository analysis.
 
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, so CI jobs and helper scripts can `source` the
@@ -212,6 +222,13 @@ commands.
 and log paths as either JSON or shell-safe `EVOP_VERIFY_*` assignments. That
 makes it easier to chain EvoProgrammer verification into CI or wrapper scripts
 without parsing stdout.
+
+`verify --list --list-format json|env` prints the selected verification plan
+without executing it, which is useful for CI wrappers that want to inspect the
+resolved commands first.
+
+`verify --require-all` makes verification fail early when any selected step has
+no detected command, which helps keep automation reproducible.
 
 `status` now supports `--kind`, `--status`, and `--agent` filters, plus
 `--format json|env` and `--report-file` for machine-readable run history export.
