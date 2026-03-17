@@ -119,6 +119,7 @@ evop_collect_detection_facts() {
     local rel
     local prune_args=()
     local dir_name
+    local entry_basename=""
 
     evop_reset_detection_facts
     EVOP_DETECT_FACTS_DIR="$directory"
@@ -131,13 +132,11 @@ evop_collect_detection_facts() {
     done
 
     while IFS= read -r -d '' entry_path; do
-        local entry_basename=""
-
         if [[ "$entry_path" == "$directory" ]]; then
             continue
         fi
         rel="${entry_path#"$directory"/}"
-        entry_basename="$(basename "$entry_path")"
+        entry_basename="${entry_path##*/}"
         EVOP_DETECT_PATH_BASENAMES+=("$entry_basename")
         evop_detection_record_path_basename "$entry_basename"
         if [[ -f "$entry_path" ]]; then

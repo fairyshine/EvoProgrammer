@@ -104,6 +104,8 @@ EvoProgrammer clean --dry-run
 
 # 查看最近运行记录
 EvoProgrammer status --last 5
+EvoProgrammer status --kind session --status completed
+EvoProgrammer status --format json --report-file ./status-report.json --report-format json
 ```
 
 ## 环境要求
@@ -121,7 +123,7 @@ EvoProgrammer status --last 5
 | `EvoProgrammer inspect` | 查看检测到的仓库上下文与命令计划 |
 | `EvoProgrammer verify` | 执行检测到的 lint/typecheck/test/build 命令 |
 | `EvoProgrammer clean` | 清理旧产物目录 |
-| `EvoProgrammer status` | 查看运行历史 |
+| `EvoProgrammer status` | 查看运行历史、筛选结果和机器可读报告 |
 | `EvoProgrammer --version` | 打印版本号 |
 | `EvoProgrammer help` | 显示帮助 |
 
@@ -188,6 +190,9 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 JSON 或可 `source` 的 `EVOP_VERIFY_*` 环境变量，方便在 CI 或外层脚本里复用，
 不用再解析标准输出。
 
+`status` 现在支持 `--kind`、`--status`、`--agent` 筛选，以及 `--format json|env`
+和 `--report-file`，方便把运行历史导出给 CI 或包装脚本消费。
+
 ## 项目配置文件
 
 在项目根目录放一个 `.evoprogrammer.conf` 来设置默认值：
@@ -224,6 +229,7 @@ verbosity=0
 | `CLEAN.sh` | 产物清理 |
 | `STATUS.sh` | 运行历史查看 |
 | `lib/inspect.sh` | inspect 格式校验，以及 stdout/report-file 输出分发 |
+| `lib/status.sh` | status 的筛选、元数据解析和 summary/json/env 渲染 |
 | `lib/agents/definitions/` | 可插拔 agent 定义 |
 | `lib/profiles/diagnostics.sh` | 命中的 profile 候选项和检测分数 |
 | `lib/profiles/candidates.sh` | 在执行 profile hook 前先做廉价候选筛选，减少不必要的加载 |

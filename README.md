@@ -104,6 +104,8 @@ EvoProgrammer clean --dry-run
 
 # Show recent run history
 EvoProgrammer status --last 5
+EvoProgrammer status --kind session --status completed
+EvoProgrammer status --format json --report-file ./status-report.json --report-format json
 ```
 
 ## Requirements
@@ -121,7 +123,7 @@ EvoProgrammer status --last 5
 | `EvoProgrammer inspect` | Show detected repo context and command plan |
 | `EvoProgrammer verify` | Run detected lint/typecheck/test/build commands |
 | `EvoProgrammer clean` | Remove old artifact directories |
-| `EvoProgrammer status` | Show recent run history |
+| `EvoProgrammer status` | Show recent run history, filters, and machine-readable reports |
 | `EvoProgrammer --version` | Print version |
 | `EvoProgrammer help` | Show help |
 
@@ -193,6 +195,9 @@ and log paths as either JSON or shell-safe `EVOP_VERIFY_*` assignments. That
 makes it easier to chain EvoProgrammer verification into CI or wrapper scripts
 without parsing stdout.
 
+`status` now supports `--kind`, `--status`, and `--agent` filters, plus
+`--format json|env` and `--report-file` for machine-readable run history export.
+
 ## Project Configuration
 
 Drop a `.evoprogrammer.conf` in your project root to set defaults:
@@ -229,6 +234,7 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `CLEAN.sh` | Artifact cleanup |
 | `STATUS.sh` | Run history viewer |
 | `lib/inspect.sh` | Inspect-format validation plus stdout/report-file dispatch |
+| `lib/status.sh` | Status filtering, metadata parsing, and summary/json/env rendering |
 | `lib/agents/definitions/` | Pluggable agent definitions |
 | `lib/profiles/diagnostics.sh` | Matched profile candidates and detection-score reporting |
 | `lib/profiles/candidates.sh` | Cheap candidate planning that narrows profile loading before hook execution |

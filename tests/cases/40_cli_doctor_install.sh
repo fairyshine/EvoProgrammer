@@ -34,6 +34,62 @@ assert_contains "$cli_status_output" "session-" "CLI status should show recorded
 assert_contains "$cli_status_output" "1 of" "CLI status should support sh invocation via bootstrap"
 pass "CLI status behavior"
 
+status_filtered_output="$(run_expect_success "STATUS should filter session entries" "$STATUS_SCRIPT" --target-dir "$TEST_TARGET_DIR" --kind session --status completed --last 1)"
+assert_contains "$status_filtered_output" "session-" "STATUS should keep matching session entries"
+assert_contains "$status_filtered_output" "final_status=0" "STATUS should include final status for sessions"
+assert_not_contains "$status_filtered_output" "run-" "STATUS session filtering should exclude run entries"
+pass "STATUS filtering"
+
+status_json_output="$(run_expect_success "STATUS should render json output" "$STATUS_SCRIPT" --target-dir "$TEST_TARGET_DIR" --kind run --format json)"
+status_json_summary="$(STATUS_JSON="$status_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["STATUS_JSON"])
+print(f"kind={data['filters']['kind']}")
+print(f"matched_ok={data['matched_count'] >= 1}")
+print(f"kinds_ok={all(item['kind'] == 'run' for item in data['entries'])}")
+print(f"status_ok={any(item['status'] == '0' for item in data['entries'])}")
+PY
+)"
+assert_contains "$status_json_summary" "kind=run" "STATUS json should report applied filters"
+assert_contains "$status_json_summary" "matched_ok=True" "STATUS json should report matched entries"
+assert_contains "$status_json_summary" "kinds_ok=True" "STATUS json should keep only the selected kind"
+assert_contains "$status_json_summary" "status_ok=True" "STATUS json should include run status values"
+pass "STATUS json"
+
+status_env_summary="$(
+    STATUS_SCRIPT="$STATUS_SCRIPT" TEST_TARGET_DIR="$TEST_TARGET_DIR" bash <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$STATUS_SCRIPT" --target-dir "$TEST_TARGET_DIR" --kind session --status completed --last 1 --format env)"
+
+printf '%s\n' "$EVOP_STATUS_FILTER_KIND"
+printf 'count_ok=%s\n' "$([[ "$EVOP_STATUS_MATCHED_COUNT" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
+printf 'name_ok=%s\n' "$([[ "$EVOP_STATUS_ENTRY_1_NAME" == session-* ]] && printf true || printf false)"
+printf 'status_ok=%s\n' "$([[ "$EVOP_STATUS_ENTRY_1_STATUS" == "completed" ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$status_env_summary" "session" "STATUS env should export filters"
+assert_contains "$status_env_summary" "count_ok=true" "STATUS env should export matched counts"
+assert_contains "$status_env_summary" "name_ok=true" "STATUS env should export entry names"
+assert_contains "$status_env_summary" "status_ok=true" "STATUS env should export entry status values"
+pass "STATUS env"
+
+status_report_json="$TEST_TMPDIR/status-report.json"
+run_expect_success "STATUS should write a json report file" "$STATUS_SCRIPT" --target-dir "$TEST_TARGET_DIR" --kind run --format summary --report-file "$status_report_json" --report-format json >/dev/null
+status_report_json_summary="$(STATUS_REPORT_JSON="$(cat "$status_report_json")" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["STATUS_REPORT_JSON"])
+print(f"shown_ok={data['shown_count'] >= 1}")
+print(f"entries_ok={all(item['kind'] == 'run' for item in data['entries'])}")
+PY
+)"
+assert_contains "$status_report_json_summary" "shown_ok=True" "STATUS json report should include shown counts"
+assert_contains "$status_report_json_summary" "entries_ok=True" "STATUS json report should preserve filters"
+pass "STATUS json report"
+
 cli_clean_output="$(run_expect_success "CLI clean should dispatch to CLEAN" sh "$CLI_SCRIPT" clean --target-dir "$TEST_TARGET_DIR" --dry-run)"
 assert_contains "$cli_clean_output" "No artifacts to clean." "CLI clean should support sh invocation via bootstrap"
 pass "CLI clean behavior"

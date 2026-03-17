@@ -23,6 +23,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `DOCTOR.sh`: environment readiness check
 - `INSPECT.sh`: repository inspection and prompt preview
 - `VERIFY.sh`: command-chain execution for lint/typecheck/test/build
+- `STATUS.sh`: run-history filtering and report export
 
 ### 2. CLI and runtime
 
@@ -30,6 +31,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/runtime.sh`: filesystem, artifacts, command capture, and path helpers
 - `lib/config.sh`: `.evoprogrammer.conf` loading
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
+- `lib/status.sh`: status filtering, metadata parsing, and summary/json/env rendering
 
 ### 3. Profile system
 
@@ -99,6 +101,10 @@ Verification execution also records first-class step results, durations, and log
 paths. `VERIFY.sh` can emit that report as JSON or shell-safe env assignments so
 CI and helper scripts can consume the same execution state without scraping the
 human-readable log stream.
+
+Status reporting now follows the same model: `STATUS.sh` can filter runs versus
+sessions, narrow by recorded status or agent, and emit the selected history as
+human-readable text, JSON, or shell-safe env assignments for wrappers and CI.
 
 ## Detection Strategy
 
