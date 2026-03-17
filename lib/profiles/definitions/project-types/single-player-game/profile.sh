@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for offline play, clear progression, save/load behavior, and moment-to-moment responsiveness.\n- Keep game loops, assets, controls, and content pipelines understandable for a solo codebase.\n- Prefer simple deployment and playtesting workflows over backend complexity.'
 

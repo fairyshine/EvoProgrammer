@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer Composer-based dependency management and clear application structure.\n- Keep framework glue, domain logic, and templates or views clearly separated.\n- Make runtime assumptions explicit and document setup for a clean machine.\n- Favor maintainable conventions over one-off scripts.'
 

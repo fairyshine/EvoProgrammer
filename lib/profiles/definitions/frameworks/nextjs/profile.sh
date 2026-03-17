@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Make routing, App Router or Pages Router choices, and server/client boundaries explicit.\n- Keep data fetching, mutations, and cache or revalidation behavior aligned with Next.js conventions.\n- Avoid leaking server-only logic into client bundles, and keep route structure predictable for deployment.'
 

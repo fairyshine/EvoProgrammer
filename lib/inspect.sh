@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_validate_inspect_format() {
     case "$1" in

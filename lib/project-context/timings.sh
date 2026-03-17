@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 if [[ -n "${ZSH_VERSION:-}" ]]; then
     zmodload zsh/datetime 2>/dev/null || true

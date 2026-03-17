@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for practical business workflows, maintainable documents, and low-friction handoff.\n- Favor clarity, templates, automation where useful, and outputs that non-engineers can use.\n- Keep setup simple and document how to run or update office deliverables.'
 

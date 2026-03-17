@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # shellcheck disable=SC2034
 
@@ -11,6 +11,9 @@ evop_clear_named_array() {
             ;;
         EVOP_SHELLCHECK_TARGETS)
             EVOP_SHELLCHECK_TARGETS=()
+            ;;
+        EVOP_ZSH_SYNTAX_TARGETS)
+            EVOP_ZSH_SYNTAX_TARGETS=()
             ;;
         *)
             printf 'Unsupported array name: %s\n' "$output_name" >&2
@@ -29,6 +32,9 @@ evop_append_named_array() {
             ;;
         EVOP_SHELLCHECK_TARGETS)
             EVOP_SHELLCHECK_TARGETS+=("$value")
+            ;;
+        EVOP_ZSH_SYNTAX_TARGETS)
+            EVOP_ZSH_SYNTAX_TARGETS+=("$value")
             ;;
         *)
             printf 'Unsupported array name: %s\n' "$output_name" >&2
@@ -72,6 +78,15 @@ evop_sort_named_array() {
                 sorted_values+=("$value")
             done < <(printf '%s\n' "${EVOP_SHELLCHECK_TARGETS[@]}" | LC_ALL=C sort)
             EVOP_SHELLCHECK_TARGETS=("${sorted_values[@]}")
+            ;;
+        EVOP_ZSH_SYNTAX_TARGETS)
+            if ((${#EVOP_ZSH_SYNTAX_TARGETS[@]} == 0)); then
+                return 0
+            fi
+            while IFS= read -r value; do
+                sorted_values+=("$value")
+            done < <(printf '%s\n' "${EVOP_ZSH_SYNTAX_TARGETS[@]}" | LC_ALL=C sort)
+            EVOP_ZSH_SYNTAX_TARGETS=("${sorted_values[@]}")
             ;;
         *)
             printf 'Unsupported array name: %s\n' "$output_name" >&2
@@ -158,8 +173,14 @@ evop_collect_shellcheck_targets() {
     local root_dir="$1"
 
     EVOP_SHELLCHECK_TARGETS=()
-
-    evop_read_lines_into_array EVOP_SHELLCHECK_TARGETS find "$root_dir/tests" -type f -name '*.sh'
-    EVOP_SHELLCHECK_TARGETS+=("$root_dir/install.sh")
+    EVOP_SHELLCHECK_TARGETS+=("$root_dir/lib/bootstrap.sh")
     evop_sort_named_array EVOP_SHELLCHECK_TARGETS
+}
+
+evop_collect_zsh_syntax_targets() {
+    local root_dir="$1"
+
+    EVOP_ZSH_SYNTAX_TARGETS=()
+    evop_read_lines_into_array EVOP_ZSH_SYNTAX_TARGETS find "$root_dir" -type f -name '*.sh'
+    evop_sort_named_array EVOP_ZSH_SYNTAX_TARGETS
 }

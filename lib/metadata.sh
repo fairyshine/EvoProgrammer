@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_COMMON_METADATA_ARGS=()
 

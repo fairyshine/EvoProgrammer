@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow standard Go project layout and module conventions.\n- Keep packages small, explicit, and easy to test with `go test`.\n- Prefer simple concurrency patterns and clear error handling.\n- Minimize unnecessary abstraction and keep tooling reproducible.'
 

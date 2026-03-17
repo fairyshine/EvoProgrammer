@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow Godot scene and script conventions so nodes, scenes, and autoloads stay understandable.\n- Keep GDScript typed where practical, with clear signals, exported properties, and editor-friendly organization.\n- Prefer simple scene boundaries and reusable gameplay scripts over one giant root script.\n- Make local run, input, and asset assumptions explicit for fast playtesting.'
 

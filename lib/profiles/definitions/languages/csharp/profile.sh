@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer maintainable solution/project structure and explicit SDK targeting.\n- Keep domain logic testable and separate from UI or engine-specific glue.\n- Use consistent naming, project references, and build commands.\n- Favor predictable tooling and clear local run instructions.'
 

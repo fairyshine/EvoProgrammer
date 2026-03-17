@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_supported_profiles_as_string() {
     local category_dir="$1"

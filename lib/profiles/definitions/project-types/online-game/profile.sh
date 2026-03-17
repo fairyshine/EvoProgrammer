@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for client/server boundaries, latency tolerance, synchronization, and operational safety.\n- Be explicit about networking assumptions, state authority, and failure handling.\n- Prefer observability, testability, and incremental rollout of multiplayer features.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_DIAGNOSTICS_LANGUAGES=""
 EVOP_PROFILE_DIAGNOSTICS_FRAMEWORKS=""
@@ -69,7 +69,7 @@ evop_record_profile_detection_candidate() {
     local current=""
 
     var_name="$(evop_profile_diagnostics_var_name "$category_dir")" || return 1
-    eval "current=\${$var_name}"
+    current="${(P)var_name}"
 
     if [[ -n "$current" ]]; then
         printf -v "$var_name" '%s\n%s\t%s' "$current" "$profile_name" "$score"
@@ -83,7 +83,7 @@ evop_profile_detection_candidates() {
     local var_name=""
 
     var_name="$(evop_profile_diagnostics_var_name "$category_dir")" || return 1
-    eval "printf '%s' \"\${$var_name}\""
+    printf '%s' "${(P)var_name}"
 }
 
 evop_profile_detection_candidates_sorted() {

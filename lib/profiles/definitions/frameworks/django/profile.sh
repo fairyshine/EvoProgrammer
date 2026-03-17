@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Use Django conventions for apps, settings, models, migrations, and admin integration.\n- Keep business logic out of views where practical and structure reusable apps cleanly.'
 

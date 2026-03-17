@@ -20,7 +20,7 @@
 
 ### 1. 克隆 & 安装
 
-```bash
+```zsh
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
 chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh PROFILES.sh
@@ -31,7 +31,7 @@ chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIF
 
 ### 2. 最简单的用法
 
-```bash
+```zsh
 mkdir my-project && cd my-project
 EvoProgrammer "做一个带登录和测试的待办应用"
 ```
@@ -40,19 +40,19 @@ EvoProgrammer "做一个带登录和测试的待办应用"
 
 ### 3. 单次模式
 
-```bash
+```zsh
 EvoProgrammer once "初始化一个 Vite + React + TypeScript 项目"
 ```
 
 ### 4. 限定迭代次数
 
-```bash
+```zsh
 EvoProgrammer --max-iterations 5 "构建一个带评论和部署脚本的全栈博客"
 ```
 
 ## 更多示例
 
-```bash
+```zsh
 # 使用 Claude Code 而不是 Codex
 EvoProgrammer --agent claude "实现一个卡牌对战主循环"
 
@@ -124,8 +124,19 @@ EvoProgrammer profiles --category frameworks --format json
 
 ## 环境要求
 
-- Bash 4.3+
+- zsh 4.3+
 - `PATH` 中至少有一个受支持的 agent CLI（`codex` 或 `claude`）
+
+## 开发校验
+
+```zsh
+zsh tests/run_tests.sh
+zsh tests/run_lint.sh
+zsh tests/run_extended_tests.sh
+```
+
+`tests/run_lint.sh` 与当前 zsh-only 运行时模型保持一致：它只对 POSIX
+bootstrap shim 运行 `shellcheck`，其余脚本统一使用 `zsh -n` 做语法校验。
 
 ## 子命令
 
@@ -168,7 +179,7 @@ EvoProgrammer profiles --category frameworks --format json
 当你想先看清 EvoProgrammer 检测到了什么，再决定是否调用 agent，可以用
 `inspect`：
 
-```bash
+```zsh
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
@@ -181,7 +192,7 @@ EvoProgrammer inspect --target-dir /path/to/project --report-file ./inspect-repo
 
 当你想让 EvoProgrammer 自己去执行仓库里的验证命令链时，可以用 `verify`：
 
-```bash
+```zsh
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format env
@@ -278,6 +289,6 @@ verbosity=0
 
 ## 验证
 
-```bash
+```zsh
 zsh tests/run_tests.sh
 ```

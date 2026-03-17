@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 profile_catalog_output="$(
-    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail
 source "$ROOT_DIR/lib/common.sh"
 source "$ROOT_DIR/lib/profile.sh"
@@ -17,7 +17,7 @@ assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile cata
 pass "Profile catalog"
 
 profile_hook_output="$(
-    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail
 source "$ROOT_DIR/lib/common.sh"
 source "$ROOT_DIR/lib/profile.sh"
@@ -50,14 +50,14 @@ assert_contains "$profile_catalog_zsh_output" "languages=cpp" "Profile catalog s
 pass "Profile catalog zsh compatibility"
 
 profile_candidate_output="$(
-    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail
 source "$ROOT_DIR/lib/common.sh"
 source "$ROOT_DIR/lib/profile.sh"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
-printf '#!/usr/bin/env bash\n' >"$tmpdir/tool.sh"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/tool.sh"
 
 evop_prepare_profile_detection_candidates "languages" "$tmpdir" ""
 
@@ -77,7 +77,7 @@ source "$ROOT_DIR/lib/profile.sh"
 
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
-printf '#!/usr/bin/env bash\n' >"$tmpdir/tool.sh"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/tool.sh"
 
 if evop_detect_language_profile "$tmpdir" ""; then
     printf 'detected=%s\n' "$EVOP_DETECTED_PROFILE"
@@ -90,7 +90,7 @@ assert_contains "$profile_detect_zsh_output" "detected=shell" "Profile detection
 pass "Profile detect zsh patterns"
 
 shell_cli_candidate_output="$(
-    ROOT_DIR="$ROOT_DIR" bash <<'EOF'
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail
 source "$ROOT_DIR/lib/common.sh"
 source "$ROOT_DIR/lib/profile.sh"
@@ -98,8 +98,8 @@ source "$ROOT_DIR/lib/profile.sh"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 mkdir -p "$tmpdir/bin" "$tmpdir/lib" "$tmpdir/tests"
-printf '#!/usr/bin/env bash\n' >"$tmpdir/bin/tool"
-printf '#!/usr/bin/env bash\n' >"$tmpdir/MAIN.sh"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/bin/tool"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/MAIN.sh"
 
 for category in languages frameworks project-types; do
     evop_prepare_profile_detection_candidates "$category" "$tmpdir" ""
@@ -131,8 +131,8 @@ source "$ROOT_DIR/lib/profile.sh"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 mkdir -p "$tmpdir/bin" "$tmpdir/lib" "$tmpdir/tests"
-printf '#!/usr/bin/env bash\n' >"$tmpdir/bin/tool"
-printf '#!/usr/bin/env bash\n' >"$tmpdir/MAIN.sh"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/bin/tool"
+printf '#!/usr/bin/env zsh\n' >"$tmpdir/MAIN.sh"
 
 evop_prepare_profile_detection_candidates "frameworks" "$tmpdir" ""
 printf 'frameworks_mode=%s\n' "$EVOP_PROFILE_CANDIDATE_MODE"
@@ -176,7 +176,7 @@ pass "PROFILES json"
 profiles_report_env="$TEST_TMPDIR/profiles-report.env"
 run_expect_success "PROFILES should write an env report file" "$PROFILES_SCRIPT" --category frameworks --report-file "$profiles_report_env" --report-format env >/dev/null
 profiles_report_env_summary="$(
-    PROFILES_REPORT_ENV="$profiles_report_env" bash <<'EOF'
+    PROFILES_REPORT_ENV="$profiles_report_env" zsh <<'EOF'
 set -euo pipefail
 source "$PROFILES_REPORT_ENV"
 printf '%s\n' "$EVOP_PROFILES_CATEGORY"

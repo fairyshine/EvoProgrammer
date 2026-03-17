@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_CONFIG_FILENAME=".evoprogrammer.conf"
 

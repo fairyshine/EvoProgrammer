@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Separate UI widgets from core logic and keep signal-slot wiring understandable.\n- Make cross-platform build and packaging steps explicit.'
 

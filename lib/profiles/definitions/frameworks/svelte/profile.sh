@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep components small, stores intentional, and data flow explicit.\n- Favor simple reactive patterns and clear build/runtime assumptions.'
 

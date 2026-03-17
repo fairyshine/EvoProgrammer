@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for local installation, usability, state persistence, and platform-specific packaging.\n- Keep app shell concerns separate from domain logic.'
 

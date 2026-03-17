@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # shellcheck disable=SC2034
 # shellcheck source=lib/common.sh
@@ -118,7 +118,7 @@ setup_fake_codex() {
     local bin_dir="$TEST_TMPDIR/bin"
     mkdir -p "$bin_dir"
     cat >"$bin_dir/codex" <<'EOF'
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 printf 'fake codex output for %s\n' "$*"
 printf 'cwd=%s\n' "$PWD" >>"${FAKE_CODEX_LOG:?}"
@@ -138,7 +138,7 @@ setup_fake_claude() {
     local bin_dir="$TEST_TMPDIR/bin"
     mkdir -p "$bin_dir"
     cat >"$bin_dir/claude" <<'EOF'
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 printf 'fake claude output for %s\n' "$*"
 printf 'cwd=%s\n' "$PWD" >>"${FAKE_CLAUDE_LOG:?}"
@@ -258,7 +258,7 @@ lint:
 EOF
 
     cat >"$TEST_VERIFY_SHELL_BIN/make" <<EOF
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 set -euo pipefail
 printf '%s\n' "\${EVOP_PREFERRED_SHELL:-unknown}" >"$TEST_VERIFY_SHELL_LOG"
 EOF

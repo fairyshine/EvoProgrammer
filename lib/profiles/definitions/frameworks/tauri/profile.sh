@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep the Rust backend and frontend boundary explicit and security-conscious.\n- Favor small, auditable command surfaces and reproducible packaging.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow Laravel conventions for routing, services, migrations, queues, and config.\n- Keep application logic structured beyond controllers and facades.'
 

@@ -1,5 +1,4 @@
 #!/bin/sh
-# shellcheck shell=bash
 
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)/lib/bootstrap.sh"
 evop_exec_with_preferred_shell "$0" "$@"
@@ -30,7 +29,8 @@ usage() {
     cat <<'EOF'
 Usage: ./DOCTOR.sh [options]
 
-Checks whether EvoProgrammer can run in the requested target directory.
+Checks whether EvoProgrammer can run in the requested target directory using the
+required zsh runtime.
 
 Options:
   -g, --agent NAME       Agent to validate: codex or claude.
@@ -95,11 +95,13 @@ fi
 
 evop_require_executable_file "$MAIN_SCRIPT" "Main script"
 evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
+evop_require_command "zsh"
 evop_finalize_doctor_context
 agent_command_name="$(evop_agent_command_name "$AGENT")"
 evop_require_command "$agent_command_name"
 mkdir -p "$artifacts_root"
 
+printf 'OK runtime-shell %s\n' "$(command -v zsh)"
 printf 'OK main-script %s\n' "$MAIN_SCRIPT"
 printf 'OK loop-script %s\n' "$LOOP_SCRIPT"
 printf 'OK agent %s\n' "$AGENT"

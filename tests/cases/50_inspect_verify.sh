@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 setup_context_workspace
 
@@ -54,7 +54,7 @@ assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT jso
 pass "INSPECT json"
 
 inspect_env_summary="$(
-    ROOT_DIR="$ROOT_DIR" INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" bash <<'EOF'
+    ROOT_DIR="$ROOT_DIR" INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
 set -euo pipefail
 source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format env)"
 
@@ -120,7 +120,7 @@ pass "INSPECT json report file"
 inspect_report_env="$TEST_TMPDIR/inspect-report.env"
 run_expect_success "INSPECT should write an env report file" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format summary --report-file "$inspect_report_env" --report-format env >/dev/null
 inspect_report_env_summary="$(
-    INSPECT_REPORT_ENV="$inspect_report_env" bash <<'EOF'
+    INSPECT_REPORT_ENV="$inspect_report_env" zsh <<'EOF'
 set -euo pipefail
 source "$INSPECT_REPORT_ENV"
 printf '%s\n' "$EVOP_INSPECT_FRAMEWORK_PROFILE"
@@ -160,7 +160,7 @@ assert_contains "$verify_list_json_summary" "lint_ok=True" "VERIFY list json sho
 pass "VERIFY list json"
 
 verify_list_env_summary="$(
-    VERIFY_SCRIPT="$VERIFY_SCRIPT" TEST_VERIFY_DIR="$TEST_VERIFY_DIR" bash <<'EOF'
+    VERIFY_SCRIPT="$VERIFY_SCRIPT" TEST_VERIFY_DIR="$TEST_VERIFY_DIR" zsh <<'EOF'
 set -euo pipefail
 source /dev/stdin <<<"$("$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps lint,test --list --list-format env)"
 printf '%s\n' "$EVOP_VERIFY_PLAN_TARGET_DIR"
@@ -222,7 +222,7 @@ pass "VERIFY require-all"
 verify_report_env="$TEST_TMPDIR/verify-report.env"
 run_expect_success "VERIFY dry-run should write an env report" "$VERIFY_SCRIPT" --target-dir "$TEST_VERIFY_DIR" --steps test,build --dry-run --report-file "$verify_report_env" --report-format env >/dev/null
 verify_report_env_summary="$(
-    VERIFY_REPORT_ENV="$verify_report_env" bash <<'EOF'
+    VERIFY_REPORT_ENV="$verify_report_env" zsh <<'EOF'
 set -euo pipefail
 source "$VERIFY_REPORT_ENV"
 printf '%s\n' "$EVOP_VERIFY_FINAL_STATUS"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep routing, middleware, validation, and service logic separate.\n- Avoid an unstructured pile of request handlers and implicit middleware coupling.'
 

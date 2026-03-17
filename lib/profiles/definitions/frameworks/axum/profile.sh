@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep routers, extractors, shared state, and application services modular and typed clearly.\n- Favor composable middleware and maintainable request handling.'
 

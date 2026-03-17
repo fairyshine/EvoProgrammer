@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep the Flask app modular with explicit app factory or blueprint structure where appropriate.\n- Avoid turning a small service into a monolith of globals and implicit side effects.'
 

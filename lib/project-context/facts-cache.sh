@@ -1,0 +1,163 @@
+#!/usr/bin/env zsh
+
+# shellcheck disable=SC2034
+
+EVOP_PROJECT_CONTEXT_FACTS_DIR=""
+EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="associative-array"
+EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS=0
+EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS=0
+EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=0
+EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
+EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED=1
+EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
+EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT=""
+
+typeset -A EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=()
+typeset -A EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
+typeset -A EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
+typeset -A EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
+typeset -A EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=()
+
+evop_reset_project_context_facts() {
+    EVOP_PROJECT_CONTEXT_FACTS_DIR=""
+    EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS=0
+    EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS=0
+    EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=0
+    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT=""
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT=""
+    EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE=()
+    EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE=()
+    EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE=()
+    EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE=()
+    EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE=()
+}
+
+evop_use_project_context_facts_dir() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_PROJECT_CONTEXT_FACTS_DIR" != "$target_dir" ]]; then
+        evop_reset_project_context_facts
+        EVOP_PROJECT_CONTEXT_FACTS_DIR="$target_dir"
+    fi
+}
+
+evop_project_context_cache_entry_count() {
+    case "$1" in
+        EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)
+            printf '%s' "${#EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE}"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)
+            printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE}"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
+            printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE}"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+            printf '%s' "${#EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE}"
+            ;;
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+            printf '%s' "${#EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE}"
+            ;;
+        *)
+            printf '0'
+            ;;
+    esac
+}
+
+evop_project_context_cache_lookup() {
+    local cache_name="$1"
+    local cache_key="$2"
+    local found=0
+
+    EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT=""
+    EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS + 1))
+
+    case "$cache_name" in
+        EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)
+            [[ -n ${EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE[$cache_key]+set} ]] || {
+                EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+                return 1
+            }
+            EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE[$cache_key]}"
+            found=1
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)
+            [[ -n ${EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE[$cache_key]+set} ]] || {
+                EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+                return 1
+            }
+            EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE[$cache_key]}"
+            found=1
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
+            [[ -n ${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]+set} ]] || {
+                EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+                return 1
+            }
+            EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]}"
+            found=1
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+            [[ -n ${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]+set} ]] || {
+                EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+                return 1
+            }
+            EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]}"
+            found=1
+            ;;
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+            [[ -n ${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]+set} ]] || {
+                EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+                return 1
+            }
+            EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT="${EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]}"
+            found=1
+            ;;
+        *)
+            EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+            return 1
+            ;;
+    esac
+
+    if (( found == 1 )); then
+        EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS + 1))
+        return 0
+    fi
+
+    EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES=$((EVOP_PROJECT_CONTEXT_FACTS_CACHE_MISSES + 1))
+    return 1
+}
+
+evop_project_context_cache_store() {
+    local cache_name="$1"
+    local cache_key="$2"
+    local cached_value="$3"
+
+    case "$cache_name" in
+        EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE)
+            EVOP_PROJECT_CONTEXT_RELATIVE_EXISTS_CACHE[$cache_key]="$cached_value"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)
+            EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE[$cache_key]="$cached_value"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)
+            EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE[$cache_key]="$cached_value"
+            ;;
+        EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)
+            EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE[$cache_key]="$cached_value"
+            ;;
+        EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE)
+            EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_CACHE[$cache_key]="$cached_value"
+            ;;
+    esac
+}
+
+evop_project_context_cache_hit_rate_percent() {
+    if (( EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS == 0 )); then
+        printf '0'
+        return 0
+    fi
+
+    printf '%s' $((EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS * 100 / EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS))
+}

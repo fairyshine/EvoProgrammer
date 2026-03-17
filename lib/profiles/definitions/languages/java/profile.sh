@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer reproducible builds with Maven or Gradle and document the entrypoints clearly.\n- Organize packages by domain and execution boundary rather than dumping everything into one layer.\n- Keep test structure maintainable and be explicit about runtime and JVM requirements.\n- Favor straightforward dependency wiring and operational clarity.'
 

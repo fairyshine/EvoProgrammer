@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer Bundler-managed dependencies and standard Ruby project conventions.\n- Keep business logic, app wiring, and background jobs or scripts clearly separated.\n- Make the local development and test workflow straightforward.\n- Favor readable, idiomatic Ruby over clever abstractions.'
 

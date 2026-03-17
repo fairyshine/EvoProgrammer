@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep scenes, nodes, autoloads, resources, and gameplay scripts organized around clear responsibilities.\n- Respect Godot editor workflows, signal patterns, and project settings instead of fighting the engine.\n- Separate reusable gameplay logic from scene-specific glue so iteration stays fast.\n- Make export templates, input mappings, and asset pipeline assumptions explicit when they matter.'
 

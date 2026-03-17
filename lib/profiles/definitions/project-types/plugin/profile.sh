@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for host integration boundaries, version compatibility, and packaging clarity.\n- Keep plugin code isolated from host-specific glue as much as possible.'
 

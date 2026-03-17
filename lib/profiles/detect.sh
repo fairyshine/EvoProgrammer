@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 if [[ -z "${PROFILE_DETECT_DIR:-}" ]]; then
     if [[ -n "${PROFILE_LIB_DIR:-}" ]]; then

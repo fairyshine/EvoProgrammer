@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for hardware constraints, deterministic behavior, build reproducibility, and testability.\n- Be explicit about platform assumptions, memory limits, and deployment steps.'
 

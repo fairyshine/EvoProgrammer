@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER=""
 EVOP_PROJECT_CONTEXT_WORKSPACE_MODE=""
@@ -55,9 +55,7 @@ evop_reset_project_context() {
 evop_append_multiline() {
     local var_name="$1"
     local line="$2"
-    local current=""
-
-    eval "current=\${$var_name}"
+    local current="${(P)var_name}"
     if [[ -n "$current" ]]; then
         printf -v "$var_name" '%s\n%s' "$current" "$line"
     else
@@ -68,13 +66,12 @@ evop_append_multiline() {
 evop_append_csv_unique() {
     local var_name="$1"
     local value="$2"
-    local current=""
+    local current="${(P)var_name}"
 
     if [[ -z "$value" ]]; then
         return 0
     fi
 
-    eval "current=\${$var_name}"
     case ",$current," in
         *,"$value",*)
             return 0
@@ -91,86 +88,12 @@ evop_append_csv_unique() {
 evop_set_command_if_empty() {
     local var_name="$1"
     local value="$2"
-    local current=""
+    local current="${(P)var_name}"
 
     [[ -n "$value" ]] || return 0
-    eval "current=\${$var_name}"
     if [[ -z "$current" ]]; then
         printf -v "$var_name" '%s' "$value"
     fi
-}
-
-evop_project_command_slots() {
-    printf '%s\n' dev build test lint typecheck
-}
-
-evop_project_command_value_var() {
-    case "$1" in
-        dev)
-            printf 'EVOP_PROJECT_CONTEXT_DEV_COMMAND'
-            ;;
-        build)
-            printf 'EVOP_PROJECT_CONTEXT_BUILD_COMMAND'
-            ;;
-        test)
-            printf 'EVOP_PROJECT_CONTEXT_TEST_COMMAND'
-            ;;
-        lint)
-            printf 'EVOP_PROJECT_CONTEXT_LINT_COMMAND'
-            ;;
-        typecheck)
-            printf 'EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND'
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
-evop_project_command_source_var() {
-    case "$1" in
-        dev)
-            printf 'EVOP_PROJECT_CONTEXT_DEV_COMMAND_SOURCE'
-            ;;
-        build)
-            printf 'EVOP_PROJECT_CONTEXT_BUILD_COMMAND_SOURCE'
-            ;;
-        test)
-            printf 'EVOP_PROJECT_CONTEXT_TEST_COMMAND_SOURCE'
-            ;;
-        lint)
-            printf 'EVOP_PROJECT_CONTEXT_LINT_COMMAND_SOURCE'
-            ;;
-        typecheck)
-            printf 'EVOP_PROJECT_CONTEXT_TYPECHECK_COMMAND_SOURCE'
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
-evop_project_command_label() {
-    case "$1" in
-        dev)
-            printf 'Dev'
-            ;;
-        build)
-            printf 'Build'
-            ;;
-        test)
-            printf 'Test'
-            ;;
-        lint)
-            printf 'Lint'
-            ;;
-        typecheck)
-            printf 'Typecheck'
-            ;;
-        *)
-            return 1
-            ;;
-    esac
 }
 
 evop_get_project_command() {
@@ -178,7 +101,7 @@ evop_get_project_command() {
     local var_name=""
 
     var_name="$(evop_project_command_value_var "$slot")" || return 1
-    eval "printf '%s' \"\${$var_name}\""
+    printf '%s' "${(P)var_name}"
 }
 
 evop_get_project_command_source() {
@@ -186,7 +109,7 @@ evop_get_project_command_source() {
     local var_name=""
 
     var_name="$(evop_project_command_source_var "$slot")" || return 1
-    eval "printf '%s' \"\${$var_name}\""
+    printf '%s' "${(P)var_name}"
 }
 
 evop_set_project_command_if_empty() {
@@ -201,7 +124,7 @@ evop_set_project_command_if_empty() {
 
     value_var="$(evop_project_command_value_var "$slot")" || return 1
     source_var="$(evop_project_command_source_var "$slot")" || return 1
-    eval "current=\${$value_var}"
+    current="${(P)value_var}"
 
     if [[ -z "$current" ]]; then
         printf -v "$value_var" '%s' "$value"

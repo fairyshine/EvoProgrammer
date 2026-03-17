@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep ECS systems, resources, and plugins modular and easy to reason about.\n- Prefer explicit scheduling and data flow over hidden coupling.'
 

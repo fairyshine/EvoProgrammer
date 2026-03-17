@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for argument structure, citations, reproducibility notes, and publication-ready organization.\n- Separate source materials, generated figures/tables, and final deliverables cleanly.\n- Prefer workflows that make revision tracking and review straightforward.'
 

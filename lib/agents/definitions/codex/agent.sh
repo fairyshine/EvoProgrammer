@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_AGENT_COMMAND_NAME="codex"
 EVOP_AGENT_DISPLAY_NAME="Codex"

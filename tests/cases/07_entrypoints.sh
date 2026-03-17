@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 for rel_path in \
     bin/EvoProgrammer \

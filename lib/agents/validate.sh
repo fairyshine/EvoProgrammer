@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_agent_is_supported() {
     local requested_agent="$1"

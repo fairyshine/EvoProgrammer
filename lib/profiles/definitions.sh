@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # shellcheck disable=SC2034
 
@@ -43,7 +43,7 @@ evop_supported_profiles_for_category() {
             ;;
     esac
 
-    eval "cached_profiles=\${$cache_var_name-}"
+    cached_profiles="${(P)cache_var_name}"
     if [[ -n "$cached_profiles" ]]; then
         printf '%s\n' "$cached_profiles"
         return 0

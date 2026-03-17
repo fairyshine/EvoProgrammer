@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep gameplay scripts, prefabs, scenes, and data assets organized for team iteration.\n- Separate engine glue from reusable gameplay logic where possible.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_load_project_context_snapshot_file() {
     local file_path="$1"
@@ -58,15 +58,17 @@ evop_project_context_snapshot_source() {
 
 evop_apply_project_context_snapshot_command() {
     local slot="$1"
-    local slot_key=""
     local command=""
     local source=""
     local command_var_name=""
     local source_var_name=""
+    local inspect_command_var_name=""
+    local inspect_source_var_name=""
 
-    slot_key="$(printf '%s' "$slot" | tr '[:lower:]-' '[:upper:]_')"
-    eval "command=\${EVOP_INSPECT_${slot_key}_COMMAND:-}"
-    eval "source=\${EVOP_INSPECT_${slot_key}_COMMAND_SOURCE:-none}"
+    inspect_command_var_name="EVOP_INSPECT_$(evop_project_command_env_key "$slot")_COMMAND"
+    inspect_source_var_name="EVOP_INSPECT_$(evop_project_command_env_key "$slot")_COMMAND_SOURCE"
+    command="${(P)inspect_command_var_name}"
+    source="${(P)inspect_source_var_name:-none}"
     command_var_name="$(evop_project_command_value_var "$slot")" || return 1
     source_var_name="$(evop_project_command_source_var "$slot")" || return 1
     printf -v "$command_var_name" '%s' "$command"

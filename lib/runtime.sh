@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOPROGRAMMER_ARTIFACTS_SUBDIR=".evoprogrammer/runs"
 

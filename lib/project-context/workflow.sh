@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_detect_task_workflow() {
     local prompt="${1:-}"
@@ -137,7 +137,7 @@ evop_analyze_project_context() {
     EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER="$(evop_choose_package_manager "$target_dir" "$language_profile" || true)"
     EVOP_PROJECT_CONTEXT_WORKSPACE_MODE="$(evop_detect_workspace_mode "$target_dir")"
 
-    evop_detect_command_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile"
+    evop_detect_command_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile" "$project_type"
     evop_detect_structure_hints "$target_dir"
     evop_detect_conventions "$target_dir" "$language_profile"
     evop_detect_automation_hints "$target_dir"

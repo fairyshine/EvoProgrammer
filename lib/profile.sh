@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 if [[ -z "${PROFILE_LIB_DIR:-}" ]]; then
     if [[ -n "${EVOP_LIB_DIR:-}" ]]; then

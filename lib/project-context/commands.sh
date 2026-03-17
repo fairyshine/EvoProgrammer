@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_package_manager_script_command() {
     local package_manager="$1"
@@ -279,10 +279,31 @@ evop_detect_language_default_commands() {
     esac
 }
 
+evop_detect_shell_project_commands() {
+    local target_dir="$1"
+    local language_profile="$2"
+    local project_type="${3:-}"
+
+    if [[ "$language_profile" != "shell" && "$project_type" != "cli-tool" ]]; then
+        return 0
+    fi
+
+    if [[ -f "$target_dir/tests/run_tests.sh" ]]; then
+        evop_set_project_command_if_empty test "zsh tests/run_tests.sh" "shell project conventions"
+    fi
+
+    if [[ -f "$target_dir/tests/run_lint.sh" ]]; then
+        evop_set_project_command_if_empty lint "zsh tests/run_lint.sh" "shell project conventions"
+    elif [[ -f "$target_dir/tests/run_extended_tests.sh" ]]; then
+        evop_set_project_command_if_empty lint "zsh tests/run_extended_tests.sh" "shell project conventions"
+    fi
+}
+
 evop_detect_command_hints() {
     local target_dir="$1"
     local package_manager="$2"
     local language_profile="$3"
+    local project_type="${4:-}"
     local package_json="$target_dir/package.json"
     local makefile=""
 
@@ -295,8 +316,5 @@ evop_detect_command_hints() {
     evop_detect_package_json_commands "$package_json" "$package_manager"
     evop_detect_makefile_commands "$makefile"
     evop_detect_language_default_commands "$target_dir" "$package_manager" "$language_profile"
-}
-
-evop_project_verification_slots() {
-    printf '%s\n' lint typecheck test build
+    evop_detect_shell_project_commands "$target_dir" "$language_profile" "$project_type"
 }

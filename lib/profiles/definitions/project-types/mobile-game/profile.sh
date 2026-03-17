@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for touch-first interaction, low-friction onboarding, and mobile performance constraints.\n- Account for battery, memory, varying screen sizes, and mobile asset handling.\n- Prefer iteration speed, simple packaging, and testable gameplay slices.'
 

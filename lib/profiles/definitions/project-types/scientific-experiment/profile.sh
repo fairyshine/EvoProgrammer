@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for reproducibility, parameter tracking, logging, and experimental rigor.\n- Make datasets, scripts, outputs, and analysis steps traceable end-to-end.\n- Prefer deterministic runs, explicit assumptions, and result summaries that can be audited later.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 if [[ -z "${EVOP_AGENT_DEFINITIONS_DIR:-}" ]]; then
     if [[ -n "${EVOP_AGENT_LIB_DIR:-}" ]]; then

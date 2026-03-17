@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow POSIX-compatible patterns where practical and prefer portable shell idioms.\n- Use `set -euo pipefail` and explicit error handling to keep scripts robust.\n- Keep functions small, source-able, and testable in isolation.\n- Quote variables consistently and avoid unnecessary subshells or external processes.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer a reproducible build setup such as CMake.\n- Be explicit about compiler requirements, include paths, and third-party dependencies.\n- Keep headers and source files organized for maintainability and build speed.\n- Prioritize memory safety, deterministic behavior, and practical testability.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 setup_agent_test_workspace
 
@@ -60,7 +60,7 @@ assert_contains "$status_json_summary" "status_ok=True" "STATUS json should incl
 pass "STATUS json"
 
 status_env_summary="$(
-    STATUS_SCRIPT="$STATUS_SCRIPT" TEST_TARGET_DIR="$TEST_TARGET_DIR" bash <<'EOF'
+    STATUS_SCRIPT="$STATUS_SCRIPT" TEST_TARGET_DIR="$TEST_TARGET_DIR" zsh <<'EOF'
 set -euo pipefail
 source /dev/stdin <<<"$("$STATUS_SCRIPT" --target-dir "$TEST_TARGET_DIR" --kind session --status completed --last 1 --format env)"
 

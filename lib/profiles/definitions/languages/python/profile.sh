@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer `pyproject.toml`-based project structure and explicit dependency management.\n- Use virtual-environment-friendly commands and keep setup reproducible on a clean machine.\n- Favor typed Python, small modules, and testable packages over logic hidden in scripts.\n- Keep framework or CLI entrypoints thin, and add `pytest`-style tests around changed behavior when relevant.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow Rails conventions for app structure, migrations, jobs, and environment config.\n- Keep domain logic from leaking entirely into controllers and views.'
 

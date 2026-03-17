@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Follow NestJS module/controller/provider boundaries and keep dependency injection manageable.\n- Prefer clear module ownership over sprawling shared utilities.'
 

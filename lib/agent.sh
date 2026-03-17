@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 # shellcheck disable=SC1003,SC1091,SC2034
 

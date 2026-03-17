@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for clear slide narrative, audience readability, and presentation-ready output.\n- Structure source content so charts, visuals, notes, and exported deliverables stay maintainable.\n- Prefer repeatable generation workflows over one-off manual edits when automation is involved.'
 

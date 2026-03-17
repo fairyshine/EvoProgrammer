@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep engine module boundaries, gameplay classes, and assets organized for scale.\n- Make build assumptions and editor/runtime dependencies explicit.'
 

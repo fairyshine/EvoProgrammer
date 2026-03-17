@@ -20,7 +20,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 
 ### 1. Clone & install
 
-```bash
+```zsh
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
 chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh PROFILES.sh
@@ -31,7 +31,7 @@ chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIF
 
 ### 2. Simplest possible run
 
-```bash
+```zsh
 mkdir my-project && cd my-project
 EvoProgrammer "Build a todo app with authentication and tests"
 ```
@@ -40,19 +40,19 @@ That's it. EvoProgrammer auto-detects everything and keeps iterating until you p
 
 ### 3. One-shot mode
 
-```bash
+```zsh
 EvoProgrammer once "Initialize a Vite + React + TypeScript project"
 ```
 
 ### 4. Bounded iterations
 
-```bash
+```zsh
 EvoProgrammer --max-iterations 5 "Build a full-stack blog with comments and deploy scripts"
 ```
 
 ## More Examples
 
-```bash
+```zsh
 # Use Claude Code instead of Codex
 EvoProgrammer --agent claude "Implement a card-battle game loop"
 
@@ -124,8 +124,20 @@ EvoProgrammer profiles --category frameworks --format json
 
 ## Requirements
 
-- Bash 4.3+
+- zsh 4.3+
 - At least one supported agent CLI on `PATH` (`codex` or `claude`)
+
+## Development Checks
+
+```zsh
+zsh tests/run_tests.sh
+zsh tests/run_lint.sh
+zsh tests/run_extended_tests.sh
+```
+
+`tests/run_lint.sh` matches the repository's zsh-only runtime model: it limits
+`shellcheck` to the POSIX bootstrap shim and validates the remaining scripts
+with `zsh -n`.
 
 ## Subcommands
 
@@ -168,7 +180,7 @@ EvoProgrammer profiles --category frameworks --format json
 Use `inspect` when you want to see exactly what EvoProgrammer inferred before it
 calls an agent:
 
-```bash
+```zsh
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --format commands
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
@@ -182,7 +194,7 @@ EvoProgrammer inspect --target-dir /path/to/project --report-file ./inspect-repo
 Use `verify` when you want EvoProgrammer to execute the detected command chain
 itself:
 
-```bash
+```zsh
 EvoProgrammer verify --target-dir /path/to/project
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test
 EvoProgrammer verify --target-dir /path/to/project --steps lint,test --list --list-format env
@@ -288,6 +300,6 @@ and layering model.
 
 ## Verification
 
-```bash
+```zsh
 zsh tests/run_tests.sh
 ```

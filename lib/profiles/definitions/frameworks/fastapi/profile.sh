@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Use clear request and response schemas, dependency injection, and async boundaries only where they actually help.\n- Keep routers thin and separate domain logic, persistence, and background work for maintainability.\n- Preserve predictable validation, error handling, and test coverage around API contracts.'
 

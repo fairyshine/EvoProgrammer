@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep component structure, composables, and state boundaries coherent and idiomatic to Vue.\n- Prefer maintainable single-file component organization over overly dense files.'
 

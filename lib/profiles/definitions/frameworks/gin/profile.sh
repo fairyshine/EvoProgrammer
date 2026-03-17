@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep Gin routing, middleware, request validation, and domain logic cleanly separated.\n- Favor simple service boundaries and testable handlers.'
 

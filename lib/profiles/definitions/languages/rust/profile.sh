@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Use idiomatic Cargo project structure and document crate usage clearly.\n- Favor safe Rust, explicit error handling, and strong type modeling.\n- Keep modules cohesive and write tests that fit Rust workflows.\n- Avoid unnecessary `unsafe` and explain it if it is truly required.'
 

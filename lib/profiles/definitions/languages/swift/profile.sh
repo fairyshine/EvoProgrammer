@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer idiomatic Swift structure with explicit package or app targets.\n- Keep Apple-platform assumptions clear and document toolchain requirements.\n- Separate UI, state, and domain logic so the codebase stays testable.\n- Favor maintainable project organization over ad hoc file growth.'
 

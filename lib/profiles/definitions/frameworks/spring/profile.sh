@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep Spring modules, configuration, controllers, services, and persistence layers clearly separated.\n- Avoid magic-heavy configuration when explicit wiring is clearer.'
 

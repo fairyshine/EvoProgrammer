@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep runtime and tooling choices explicit and lightweight.\n- Use consistent scripts, module boundaries, and dependency management.\n- Avoid unnecessary build complexity and document local development clearly.\n- Keep browser/server assumptions obvious in the project layout.'
 

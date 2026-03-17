@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for API clarity, operational safety, observability, and maintainable service boundaries.\n- Be explicit about configuration, storage, and deployment assumptions.'
 

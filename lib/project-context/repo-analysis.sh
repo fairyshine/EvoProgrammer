@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 evop_file_contains_regex() {
     local file_path="$1"
@@ -70,6 +70,7 @@ evop_add_structure_hint() {
 evop_detect_structure_hints() {
     local target_dir="$1"
 
+    evop_add_structure_hint "$target_dir" "bin" "CLI entrypoints or executable wrappers"
     evop_add_structure_hint "$target_dir" "apps" "runnable applications in the workspace"
     evop_add_structure_hint "$target_dir" "packages" "shared packages or libraries"
     evop_add_structure_hint "$target_dir" "app" "application routes or screens"
@@ -102,6 +103,11 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "prisma" "database schema and generated client configuration"
     evop_add_structure_hint "$target_dir" "db" "database access or persistence logic"
     evop_add_structure_hint "$target_dir" "migrations" "schema migrations"
+
+    if evop_directory_has_file_pattern "$target_dir" "*.sh"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_STRUCTURE ".: top-level automation or command entry scripts"
+        evop_append_csv_unique EVOP_PROJECT_CONTEXT_SEARCH_ROOTS "."
+    fi
 }
 
 evop_detect_conventions() {
@@ -230,6 +236,16 @@ evop_detect_risk_areas() {
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "CI, container, or developer-environment automation may need updates when workflows or runtime contracts change."
+    fi
+
+    if evop_directory_has_file_pattern "$target_dir" "*.sh" \
+        && evop_directory_has_path_named "$target_dir" "lib" "bin"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Shell entrypoints often share sourced helpers, so changing common libraries can break multiple commands at once."
+    fi
+
+    if evop_directory_contains_text "$target_dir" "#!/usr/bin/env zsh" "*.sh" \
+        && evop_directory_contains_text "$target_dir" "#!/bin/sh" "*.sh"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Mixed shebangs are present; bootstrap shims and zsh-backed scripts must stay aligned on runtime expectations."
     fi
 }
 

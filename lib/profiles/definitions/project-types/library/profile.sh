@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for API clarity, versionability, documentation, and test coverage.\n- Keep public interfaces intentional and avoid leaking internal assumptions.'
 

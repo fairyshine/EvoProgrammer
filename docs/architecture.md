@@ -5,7 +5,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 
 ## Core Flow
 
-1. `bin/EvoProgrammer` dispatches to a subcommand through a POSIX bootstrap shim and then re-execs into the preferred interactive shell.
+1. `bin/EvoProgrammer` dispatches to a subcommand through a POSIX bootstrap shim and then re-execs into `zsh`.
 2. CLI context resolution loads config, validates flags, and resolves the target directory.
 3. Profile detection identifies language, framework, and project type.
 4. Project inspection derives package manager, workspace mode, command plan, structure hints, conventions, and risk areas.
@@ -33,31 +33,54 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/runtime.sh`: filesystem, artifacts, command capture, and path helpers
 - `lib/config.sh`: `.evoprogrammer.conf` loading
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
-- `lib/status.sh`: status filtering, metadata parsing, and summary/json/env rendering
+- `lib/status-collect.sh`: status filtering and metadata collection
+- `lib/status-render.sh`: summary/json/env rendering for status output
+- `lib/status.sh`: aggregator for status helpers
 - `lib/profiles/report.sh`: profile-catalog validation and summary/json/env rendering
+- `lib/verify-state.sh`: reusable verification report state
+- `lib/verify-render.sh`: JSON/env rendering for verification reports
+- `lib/verify-plan.sh`: plan printing and missing-command enforcement
+- `lib/verify.sh`: aggregator for verification helpers
 
 ### 3. Profile system
 
 - `lib/profiles/detect.sh`: profile entrypoints
-- `lib/profiles/candidates.sh`: cheap candidate planning that narrows which profiles need to be loaded for a given repo and prompt
+- `lib/profiles/candidates-common.sh`: shared candidate state and shell-CLI prefilters
+- `lib/profiles/candidates-languages.sh`: language candidate planning
+- `lib/profiles/candidates-frameworks.sh`: framework candidate planning
+- `lib/profiles/candidates-project-types.sh`: project-type candidate planning
+- `lib/profiles/candidates.sh`: aggregator for candidate planning
 - `lib/profiles/diagnostics.sh`: matched-candidate and score tracking for profile auto-detection
 - `lib/profiles/definitions/`: language/framework/project-type definitions
 - `lib/profiles/report.sh`: reusable catalog rendering for the `profiles` command
 - `lib/profiles/resolve.sh`: merges explicit flags and auto-detection results
+- `lib/profiles/facts-cache.sh`: cached repo facts for profile detection
+- `lib/profiles/facts-files.sh`: file/path/pattern helpers for profile detection
+- `lib/profiles/facts-text.sh`: lowercased file-text and prompt matching helpers
+- `lib/profiles/detect-helpers.sh`: aggregator for profile-detection fact helpers
 
 This layer answers: "What kind of repo is this?"
 
 ### 4. Project inspection
 
+- `lib/project-context/slots.sh`: centralized command-slot metadata
 - `lib/project-context/commands.sh`: package manager and command-slot inference
-- `lib/project-context/facts.sh`: cached filesystem, file-match, manifest-text, and command-manifest facts for repo inspection, plus cache diagnostics
+- `lib/project-context/facts-cache.sh`: cached filesystem and manifest lookup state
+- `lib/project-context/facts-files.sh`: cached file, regex, literal, and Makefile queries
+- `lib/project-context/facts-diagnostics.sh`: facts-cache diagnostics rendering
+- `lib/project-context/facts.sh`: aggregator for repo-inspection facts helpers
 - `lib/project-context/timings.sh`: phase timing capture for profile resolution and inspection diagnostics
 - `lib/project-context/repo-analysis.sh`: structure, conventions, and risk hints
 - `lib/project-context/workflow.sh`: task-kind workflow guidance
 - `lib/project-context/snapshot.sh`: reusable inspect-env snapshot loading and workflow refresh
-- `lib/project-context/render.sh`: prompt and human-readable rendering
+- `lib/project-context/render-base.sh`: shared text and JSON rendering primitives
+- `lib/project-context/render-json.sh`: JSON inspection rendering
+- `lib/project-context/render-env.sh`: shell-safe env export rendering
+- `lib/project-context/render-prompt.sh`: prompt-context rendering
+- `lib/project-context/render-summary.sh`: summary and human-readable rendering
+- `lib/project-context/render-diagnostics.sh`: diagnostics and timings rendering
+- `lib/project-context/render.sh`: aggregator for render helpers
 - `lib/project-context/state.sh`: shared inspection state
-- `lib/verify.sh`: reusable verification-plan/report state and summary/json/env rendering
 
 This layer answers: "How should this repo be searched, changed, verified, and
 operated?"
@@ -72,9 +95,9 @@ tracked as first-class diagnostics now, so rendering diagnostics or replaying a
 saved inspection snapshot does not need to recount cache contents.
 
 That facts layer now also caches Makefile target extraction and reuses cached
-manifest text for repeated package.json script checks. This trims repeated
-external `grep` work from the command-detection path shared by `inspect`,
-prompt rendering, and `verify`.
+manifest text for repeated package.json script checks. The implementation is
+now zsh-only and uses associative arrays directly rather than carrying a second
+fallback cache backend for shells the project no longer targets.
 
 The snapshot sub-layer lets other entrypoints reuse an earlier
 `inspect --format env` report. That keeps profile resolution and repo analysis
@@ -146,3 +169,12 @@ The architecture intentionally uses a hybrid approach.
 
 This keeps detection deterministic while still allowing the agent to reason about
 ambiguous repos and task intent.
+
+## Runtime Baseline
+
+EvoProgrammer now targets `zsh` as its single runtime baseline.
+
+- User-facing entrypoints still use `#!/bin/sh` shims where needed.
+- Those shims immediately re-exec into `zsh`.
+- The library layer, test harness, and static syntax validation all assume `zsh`.
+- `shellcheck` is limited to the true POSIX bootstrap shim; the rest of the repository is syntax-checked with `zsh -n`.

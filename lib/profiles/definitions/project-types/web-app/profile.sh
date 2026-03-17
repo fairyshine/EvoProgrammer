@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for user flows, deployment clarity, frontend/backend boundaries, and maintainable page or route structure.\n- Prefer production-ready structure over a one-off prototype dump.'
 

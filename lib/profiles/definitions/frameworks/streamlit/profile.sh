@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for interactive iteration speed, clear controls, and readable experiment or dashboard flows.\n- Keep data loading, app state, and presentation logic separated where possible.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep the game loop, input handling, rendering, and asset loading separated and easy to extend.\n- Prefer practical performance and quick playtesting over heavyweight abstraction.'
 

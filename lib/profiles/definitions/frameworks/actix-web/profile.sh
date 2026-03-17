@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Keep Actix handlers, extractors, state, and service logic clearly separated.\n- Be explicit about async boundaries and operational behavior.'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for responsive rendering, asset loading, input handling, and browser deployment constraints.\n- Prefer quick playtesting and maintainable gameplay slices.'
 

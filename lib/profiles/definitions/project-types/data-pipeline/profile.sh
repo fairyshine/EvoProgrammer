@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for reproducibility, scheduling clarity, data lineage, and recoverable failure handling.\n- Keep ingestion, transformation, validation, and output stages easy to inspect.'
 

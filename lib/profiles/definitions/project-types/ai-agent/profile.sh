@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Optimize for tool boundaries, prompt/system behavior clarity, observability, and reproducible workflows.\n- Be explicit about model assumptions, safety constraints, and execution traces.'
 

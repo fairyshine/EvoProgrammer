@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Be explicit about main/renderer boundaries, IPC contracts, and packaging assumptions.\n- Keep desktop integration isolated from app business logic.'
 

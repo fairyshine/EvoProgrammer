@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
 EVOP_PROFILE_PROMPT=$'- Prefer Gradle-based structure with clear source sets and explicit toolchain requirements.\n- Keep the code idiomatic, null-safe, and organized around cohesive modules.\n- Separate platform-specific integration from reusable domain logic.\n- Make testing and developer workflows easy to run locally.'
 
