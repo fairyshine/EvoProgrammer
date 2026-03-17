@@ -13,6 +13,7 @@ mixing detection, prompt rendering, and command execution in the same path.
    - `LOOP.sh` / `MAIN.sh` inject it into the agent prompt.
    - `INSPECT.sh` prints it for humans or writes machine-readable report files.
    - `VERIFY.sh` executes the detected verification chain.
+   - `PROFILES.sh` exposes the built-in profile catalog for humans and wrappers.
 
 ## Layers
 
@@ -24,6 +25,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `INSPECT.sh`: repository inspection and prompt preview
 - `VERIFY.sh`: command-chain execution for lint/typecheck/test/build
 - `STATUS.sh`: run-history filtering and report export
+- `PROFILES.sh`: built-in profile catalog reporting
 
 ### 2. CLI and runtime
 
@@ -32,6 +34,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/config.sh`: `.evoprogrammer.conf` loading
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
 - `lib/status.sh`: status filtering, metadata parsing, and summary/json/env rendering
+- `lib/profiles/report.sh`: profile-catalog validation and summary/json/env rendering
 
 ### 3. Profile system
 
@@ -39,6 +42,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/profiles/candidates.sh`: cheap candidate planning that narrows which profiles need to be loaded for a given repo and prompt
 - `lib/profiles/diagnostics.sh`: matched-candidate and score tracking for profile auto-detection
 - `lib/profiles/definitions/`: language/framework/project-type definitions
+- `lib/profiles/report.sh`: reusable catalog rendering for the `profiles` command
 - `lib/profiles/resolve.sh`: merges explicit flags and auto-detection results
 
 This layer answers: "What kind of repo is this?"
@@ -81,7 +85,10 @@ without re-running detection logic in presentation code. That keeps
 `inspect --format profiles`, `inspect --format env`, diagnostics output, and
 JSON rendering aligned on the same detection state. The candidate layer now also
 short-circuits obvious shell/CLI repositories so framework and project-type
-detection do not source unrelated profile definitions.
+detection do not source unrelated profile definitions. Repository-shape checks
+are cached as first-class candidate facts now, which avoids recomputing the
+same shell-CLI classification across language, framework, and project-type
+detection passes in one inspection run.
 
 ## Command Model
 
@@ -115,6 +122,10 @@ human-readable log stream.
 Status reporting now follows the same model: `STATUS.sh` can filter runs versus
 sessions, narrow by recorded status or agent, and emit the selected history as
 human-readable text, JSON, or shell-safe env assignments for wrappers and CI.
+
+Profile catalog reporting follows the same pattern too: `PROFILES.sh` can emit
+human-readable summaries, JSON, or shell-safe env assignments so wrappers can
+discover supported built-in profiles without scraping the README.
 
 ## Detection Strategy
 

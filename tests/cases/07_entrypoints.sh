@@ -8,6 +8,7 @@ for rel_path in \
     LOOP.sh \
     MAIN.sh \
     STATUS.sh \
+    PROFILES.sh \
     VERIFY.sh \
     install.sh
 do

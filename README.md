@@ -23,7 +23,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 ```bash
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
-chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh
+chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh PROFILES.sh
 ./install.sh            # symlinks to ~/.local/bin/EvoProgrammer
 ```
 
@@ -112,6 +112,11 @@ EvoProgrammer clean --dry-run
 EvoProgrammer status --last 5
 EvoProgrammer status --kind session --status completed
 EvoProgrammer status --format json --report-file ./status-report.json --report-format json
+
+# Browse built-in profiles
+EvoProgrammer profiles
+EvoProgrammer profiles --category languages
+EvoProgrammer profiles --category frameworks --format json
 ```
 
 ## Requirements
@@ -130,6 +135,7 @@ EvoProgrammer status --format json --report-file ./status-report.json --report-f
 | `EvoProgrammer verify` | Run detected lint/typecheck/test/build commands |
 | `EvoProgrammer clean` | Remove old artifact directories |
 | `EvoProgrammer status` | Show recent run history, filters, and machine-readable reports |
+| `EvoProgrammer profiles` | List built-in language, framework, and project-type profiles |
 | `EvoProgrammer --version` | Print version |
 | `EvoProgrammer help` | Show help |
 
@@ -210,6 +216,11 @@ without parsing stdout.
 `status` now supports `--kind`, `--status`, and `--agent` filters, plus
 `--format json|env` and `--report-file` for machine-readable run history export.
 
+`profiles` lists the built-in language, framework, and project-type profiles,
+including a short summary derived from prompt guidance plus the definition file
+path. It supports `--category`, `--format summary|json|env`, and `--report-file`
+for wrapper scripts and CI diagnostics.
+
 ## Project Configuration
 
 Drop a `.evoprogrammer.conf` in your project root to set defaults:
@@ -245,10 +256,12 @@ Hooks are advisory: a failure prints a warning but does not stop the run.
 | `VERIFY.sh` | Detected verification-chain runner |
 | `CLEAN.sh` | Artifact cleanup |
 | `STATUS.sh` | Run history viewer |
+| `PROFILES.sh` | Built-in profile catalog reporting |
 | `lib/inspect.sh` | Inspect-format validation plus stdout/report-file dispatch |
 | `lib/status.sh` | Status filtering, metadata parsing, and summary/json/env rendering |
 | `lib/agents/definitions/` | Pluggable agent definitions |
 | `lib/profiles/diagnostics.sh` | Matched profile candidates and detection-score reporting |
+| `lib/profiles/report.sh` | Profile catalog summary/json/env rendering |
 | `lib/profiles/candidates.sh` | Cheap candidate planning that narrows profile loading before hook execution |
 | `lib/profiles/definitions/` | Language, framework, and project-type profiles |
 | `lib/project-context/` | Repo inspection, command inference, and prompt rendering |

@@ -6,6 +6,7 @@ cli_help_output="$(run_expect_success "CLI help should succeed" "$CLI_SCRIPT" --
 assert_contains "$cli_help_output" "Usage:" "CLI help should show usage"
 assert_contains "$cli_help_output" "EvoProgrammer [global-options] clean [options]" "CLI help should mention the clean subcommand"
 assert_contains "$cli_help_output" "EvoProgrammer [global-options] status [options]" "CLI help should mention the status subcommand"
+assert_contains "$cli_help_output" "EvoProgrammer [global-options] profiles [options]" "CLI help should mention the profiles subcommand"
 pass "CLI help"
 
 FAKE_CODEX_LOG="$TEST_TMPDIR/cli-once.log"
@@ -93,6 +94,11 @@ pass "STATUS json report"
 cli_clean_output="$(run_expect_success "CLI clean should dispatch to CLEAN" sh "$CLI_SCRIPT" clean --target-dir "$TEST_TARGET_DIR" --dry-run)"
 assert_contains "$cli_clean_output" "No artifacts to clean." "CLI clean should support sh invocation via bootstrap"
 pass "CLI clean behavior"
+
+cli_profiles_output="$(run_expect_success "CLI profiles should dispatch to PROFILES" sh "$CLI_SCRIPT" profiles --category project-types)"
+assert_contains "$cli_profiles_output" "Supported profiles (Project types):" "CLI profiles should dispatch to the profile catalog command"
+assert_contains "$cli_profiles_output" "cli-tool:" "CLI profiles should render profile entries"
+pass "CLI profiles behavior"
 
 install_dir="$TEST_TMPDIR/install-bin"
 install_home="$TEST_TMPDIR/install-home"

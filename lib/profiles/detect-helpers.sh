@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC2178
+# shellcheck disable=SC2178,SC2296
 
 EVOP_DETECT_FACTS_DIR=""
 EVOP_DETECT_MAX_DEPTH="${EVOP_DETECT_MAX_DEPTH:-4}"
@@ -419,6 +419,17 @@ evop_directory_matching_files() {
 }
 
 evop_lowercase() {
+    if [[ -n "${BASH_VERSION:-}" ]]; then
+        printf '%s' "${1,,}"
+        return 0
+    fi
+
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        local lowered_text="${(L)1}"
+        printf '%s' "$lowered_text"
+        return 0
+    fi
+
     printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
 }
 
@@ -449,7 +460,8 @@ evop_detection_file_text() {
     fi
 
     if [[ -f "$file_path" ]]; then
-        file_text="$(tr '[:upper:]' '[:lower:]' <"$file_path")"
+        file_text="$(<"$file_path")"
+        file_text="$(evop_lowercase "$file_text")"
     fi
 
     evop_detection_cache_store EVOP_DETECT_FILE_TEXT_CACHE "$file_path" "$file_text"

@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC1090,SC1091,SC2034
 
 . "$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)/lib/bootstrap.sh"
 evop_exec_with_preferred_shell "$0" "$@"
@@ -16,6 +16,7 @@ INSPECT_SCRIPT="$ROOT_DIR/INSPECT.sh"
 VERIFY_SCRIPT="$ROOT_DIR/VERIFY.sh"
 CLEAN_SCRIPT="$ROOT_DIR/CLEAN.sh"
 STATUS_SCRIPT="$ROOT_DIR/STATUS.sh"
+PROFILES_SCRIPT="$ROOT_DIR/PROFILES.sh"
 COMMON_LIB="$ROOT_DIR/lib/common.sh"
 VERSION_LIB="$ROOT_DIR/lib/version.sh"
 
@@ -32,6 +33,7 @@ Usage:
   EvoProgrammer [global-options] verify [options]
   EvoProgrammer [global-options] clean [options]
   EvoProgrammer [global-options] status [options]
+  EvoProgrammer [global-options] profiles [options]
   EvoProgrammer help
 
 Default behavior:
@@ -44,6 +46,7 @@ Subcommands:
   verify  Run the detected verification commands for the target repo.
   clean   Remove old run artifacts from the target directory.
   status  Show recent run and session history from the target directory.
+  profiles  List supported language, framework, and project-type profiles.
   help    Show this help text.
 
 Examples:
@@ -59,12 +62,14 @@ Examples:
   EvoProgrammer verify --target-dir /path/to/project --steps lint,test
   EvoProgrammer clean --target-dir /path/to/project --older-than 7 --dry-run
   EvoProgrammer status --target-dir /path/to/project --last 5
+  EvoProgrammer profiles --category frameworks
 
 Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
  './LOOP.sh --help' for single-run options, './DOCTOR.sh --help'
 for environment checks, './INSPECT.sh --help' for repo inspection, and
  './VERIFY.sh --help' for command verification, './CLEAN.sh --help' for
-artifact cleanup, and './STATUS.sh --help' for run history.
+artifact cleanup, './STATUS.sh --help' for run history, and
+ './PROFILES.sh --help' for profile catalog output.
 EOF
 }
 
@@ -104,7 +109,7 @@ find_subcommand() {
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
                 ;;
-            once|doctor|inspect|verify|clean|status)
+            once|doctor|inspect|verify|clean|status|profiles)
                 EVOP_CLI_SUBCOMMAND="$arg"
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
@@ -144,6 +149,7 @@ evop_require_executable_file "$INSPECT_SCRIPT" "Inspect script"
 evop_require_executable_file "$VERIFY_SCRIPT" "Verify script"
 evop_require_executable_file "$CLEAN_SCRIPT" "Clean script"
 evop_require_executable_file "$STATUS_SCRIPT" "Status script"
+evop_require_executable_file "$PROFILES_SCRIPT" "Profiles script"
 
 find_subcommand "$@" || true
 
@@ -177,6 +183,10 @@ case "${EVOP_CLI_SUBCOMMAND:-}" in
     status)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
         exec "$STATUS_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    profiles)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$PROFILES_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     *)
         exec "$MAIN_SCRIPT" "$@"

@@ -150,3 +150,43 @@ assert_contains "$shell_cli_candidate_zsh_output" "frameworks_mode=none" "Shell 
 assert_contains "$shell_cli_candidate_zsh_output" "project-types_candidates=cli-tool" "Shell CLI repos should keep cli-tool candidates under zsh"
 assert_contains "$shell_cli_candidate_zsh_output" "project_type=cli-tool" "Shell CLI repos should auto-detect cli-tool under zsh"
 pass "Shell CLI project detection zsh"
+
+profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
+assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"
+assert_contains "$profiles_summary_output" "shell:" "PROFILES summary should include language entries"
+assert_contains "$profiles_summary_output" "lib/profiles/definitions/languages/shell/profile.sh" "PROFILES summary should include definition paths"
+pass "PROFILES summary"
+
+profiles_json_output="$(run_expect_success "PROFILES should render json output" "$PROFILES_SCRIPT" --category project-types --format json)"
+profiles_json_summary="$(PROFILES_JSON="$profiles_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["PROFILES_JSON"])
+print(data["category"])
+print(f"cli_tool_ok={any(item['name'] == 'cli-tool' for item in data['categories']['project-types'])}")
+print(f"summary_ok={all(item['summary'] for item in data['categories']['project-types'])}")
+PY
+)"
+assert_contains "$profiles_json_summary" "project-types" "PROFILES json should report the selected category"
+assert_contains "$profiles_json_summary" "cli_tool_ok=True" "PROFILES json should include project type entries"
+assert_contains "$profiles_json_summary" "summary_ok=True" "PROFILES json should include summaries"
+pass "PROFILES json"
+
+profiles_report_env="$TEST_TMPDIR/profiles-report.env"
+run_expect_success "PROFILES should write an env report file" "$PROFILES_SCRIPT" --category frameworks --report-file "$profiles_report_env" --report-format env >/dev/null
+profiles_report_env_summary="$(
+    PROFILES_REPORT_ENV="$profiles_report_env" bash <<'EOF'
+set -euo pipefail
+source "$PROFILES_REPORT_ENV"
+printf '%s\n' "$EVOP_PROFILES_CATEGORY"
+printf 'count_ok=%s\n' "$([[ "$EVOP_PROFILES_FRAMEWORK_COUNT" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
+printf 'name_ok=%s\n' "$([[ -n "${EVOP_PROFILES_FRAMEWORK_1_NAME:-}" ]] && printf true || printf false)"
+printf 'summary_ok=%s\n' "$([[ -n "${EVOP_PROFILES_FRAMEWORK_1_SUMMARY:-}" ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$profiles_report_env_summary" "frameworks" "PROFILES env should export the selected category"
+assert_contains "$profiles_report_env_summary" "count_ok=true" "PROFILES env should export category counts"
+assert_contains "$profiles_report_env_summary" "name_ok=true" "PROFILES env should export entry names"
+assert_contains "$profiles_report_env_summary" "summary_ok=true" "PROFILES env should export entry summaries"
+pass "PROFILES env report"

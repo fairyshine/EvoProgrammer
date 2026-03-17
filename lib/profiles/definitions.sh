@@ -26,6 +26,7 @@ evop_supported_profiles_for_category() {
     local cache_var_name=""
     local cached_profiles=""
     local discovered_profiles=""
+    local profile_dir=""
 
     evop_validate_profile_category "$category_dir"
     category_path="$PROFILE_DEFINITIONS_DIR/$category_dir"
@@ -52,13 +53,11 @@ evop_supported_profiles_for_category() {
         return 0
     fi
 
-    while IFS= read -r profile_dir; do
+    for profile_dir in "$category_path"/*; do
+        [[ -d "$profile_dir" && -f "$profile_dir/profile.sh" ]] || continue
         [[ -n "$discovered_profiles" ]] && discovered_profiles+=$'\n'
-        discovered_profiles+="$(basename "$profile_dir")"
-    done < <(
-        find "$category_path" -mindepth 1 -maxdepth 1 -type d -exec test -f '{}/profile.sh' ';' -print 2>/dev/null \
-            | LC_ALL=C sort
-    )
+        discovered_profiles+="${profile_dir##*/}"
+    done
 
     printf -v "$cache_var_name" '%s' "$discovered_profiles"
 
@@ -168,7 +167,7 @@ evop_load_profile_definition() {
         evop_fail "Profile definition is missing: $definition_path"
     fi
 
-    profile_dir="$(cd "$(dirname "$definition_path")" && pwd)"
+    profile_dir="${definition_path%/profile.sh}"
     EVOP_PROFILE_DIR="$profile_dir"
     EVOP_PROFILE_SCRIPTS_DIR="$profile_dir/scripts"
     EVOP_PROFILE_PROMPT=""

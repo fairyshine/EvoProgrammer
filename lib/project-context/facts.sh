@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC2178
+# shellcheck disable=SC2178,SC2034
 
 EVOP_PROJECT_CONTEXT_FACTS_DIR=""
 EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND="line-table"
@@ -343,7 +343,7 @@ evop_project_file_text_cached() {
 
     if (( EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE_ENABLED != 1 )); then
         if [[ -f "$file_path" ]]; then
-            EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT="$(cat -- "$file_path")"
+            EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT="$(<"$file_path")"
             printf '%s' "$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
         fi
         return 0
@@ -356,7 +356,7 @@ evop_project_file_text_cached() {
     fi
 
     if [[ -f "$file_path" ]]; then
-        file_text="$(cat -- "$file_path")"
+        file_text="$(<"$file_path")"
     fi
 
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE "$file_path" "$file_text"

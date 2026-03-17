@@ -85,26 +85,29 @@ evop_status_entry_matches_filters() {
 }
 
 evop_status_collect_entry() {
-    local dir_path="$1"
-    local metadata_path=""
+    local metadata_path="$1"
+    local dir_path=""
     local line=""
     local key=""
     local encoded_value=""
     local decoded_value=""
 
     evop_reset_status_entry
+    dir_path="${metadata_path%/*}"
     EVOP_STATUS_ENTRY_NAME="${dir_path##*/}"
     EVOP_STATUS_ENTRY_PATH="$dir_path"
 
-    if [[ -f "$dir_path/session.env" ]]; then
-        metadata_path="$dir_path/session.env"
+    case "${metadata_path##*/}" in
+        session.env)
         EVOP_STATUS_ENTRY_KIND="session"
-    elif [[ -f "$dir_path/metadata.env" ]]; then
-        metadata_path="$dir_path/metadata.env"
+            ;;
+        metadata.env)
         EVOP_STATUS_ENTRY_KIND="run"
-    else
-        return 1
-    fi
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 
     while IFS= read -r line; do
         [[ -n "$line" ]] || continue
@@ -175,15 +178,15 @@ evop_collect_status_entries() {
     local agent_filter="$4"
     local show_all="$5"
     local limit="$6"
-    local dir_path=""
+    local metadata_path=""
 
     evop_reset_status_entries
 
-    while IFS= read -r dir_path; do
-        [[ -n "$dir_path" ]] || continue
+    while IFS= read -r metadata_path; do
+        [[ -n "$metadata_path" ]] || continue
         EVOP_STATUS_TOTAL_DISCOVERED=$((EVOP_STATUS_TOTAL_DISCOVERED + 1))
 
-        evop_status_collect_entry "$dir_path" || continue
+        evop_status_collect_entry "$metadata_path" || continue
         if ! evop_status_entry_matches_filters "$kind_filter" "$status_filter" "$agent_filter"; then
             continue
         fi
@@ -194,7 +197,10 @@ evop_collect_status_entries() {
         fi
 
         evop_status_append_entry "$(evop_status_serialize_current_entry)"
-    done < <(find "$artifacts_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | LC_ALL=C sort -r)
+    done < <(
+        find "$artifacts_root" -type f \( -name 'session.env' -o -name 'metadata.env' \) 2>/dev/null \
+            | LC_ALL=C sort -r
+    )
 }
 
 evop_status_json_escape() {
