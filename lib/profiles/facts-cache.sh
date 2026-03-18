@@ -13,6 +13,7 @@ EVOP_DETECT_MATCHING_FILES_RESULT=""
 EVOP_DETECT_FILE_TEXT_RESULT=""
 
 typeset -A EVOP_DETECT_MATCHING_FILES_CACHE=()
+typeset -A EVOP_DETECT_FILE_PATTERN_CACHE=()
 typeset -A EVOP_DETECT_DIRECTORY_TEXT_CACHE=()
 typeset -A EVOP_DETECT_FILE_TEXT_CACHE=()
 typeset -A EVOP_DETECT_FILE_BASENAME_SET=()
@@ -31,6 +32,7 @@ evop_reset_detection_facts() {
     EVOP_DETECT_MATCHING_FILES_RESULT=""
     EVOP_DETECT_FILE_TEXT_RESULT=""
     EVOP_DETECT_MATCHING_FILES_CACHE=()
+    EVOP_DETECT_FILE_PATTERN_CACHE=()
     EVOP_DETECT_DIRECTORY_TEXT_CACHE=()
     EVOP_DETECT_FILE_TEXT_CACHE=()
     EVOP_DETECT_FILE_BASENAME_SET=()
@@ -61,6 +63,10 @@ evop_detection_cache_lookup() {
             [[ -n ${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]+set} ]] || return 1
             EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]}"
             ;;
+        EVOP_DETECT_FILE_PATTERN_CACHE)
+            [[ -n ${EVOP_DETECT_FILE_PATTERN_CACHE[$cache_key]+set} ]] || return 1
+            EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_FILE_PATTERN_CACHE[$cache_key]}"
+            ;;
         EVOP_DETECT_DIRECTORY_TEXT_CACHE)
             [[ -n ${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]+set} ]] || return 1
             EVOP_DETECT_CACHE_RESULT="${EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]}"
@@ -85,6 +91,9 @@ evop_detection_cache_store() {
     case "$cache_name" in
         EVOP_DETECT_MATCHING_FILES_CACHE)
             EVOP_DETECT_MATCHING_FILES_CACHE[$cache_key]="$cache_value"
+            ;;
+        EVOP_DETECT_FILE_PATTERN_CACHE)
+            EVOP_DETECT_FILE_PATTERN_CACHE[$cache_key]="$cache_value"
             ;;
         EVOP_DETECT_DIRECTORY_TEXT_CACHE)
             EVOP_DETECT_DIRECTORY_TEXT_CACHE[$cache_key]="$cache_value"

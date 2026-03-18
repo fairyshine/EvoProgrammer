@@ -149,6 +149,38 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        clojure)
+            if [[ -f "$target_dir/project.clj" ]]; then
+                printf 'leiningen'
+                return 0
+            fi
+            if [[ -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" ]]; then
+                printf 'clojure'
+                return 0
+            fi
+            ;;
+        haskell)
+            if [[ -f "$target_dir/stack.yaml" ]]; then
+                printf 'stack'
+                return 0
+            fi
+            if [[ -f "$target_dir/cabal.project" ]] || evop_directory_has_file_pattern "$target_dir" "*.cabal"; then
+                printf 'cabal'
+                return 0
+            fi
+            ;;
+        julia)
+            if [[ -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" ]]; then
+                printf 'julia'
+                return 0
+            fi
+            ;;
+        zig)
+            if [[ -f "$target_dir/build.zig" ]]; then
+                printf 'zig'
+                return 0
+            fi
+            ;;
         dart)
             if [[ -f "$target_dir/pubspec.yaml" ]]; then
                 if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
@@ -247,6 +279,36 @@ evop_choose_package_manager() {
         return 0
     fi
 
+    if [[ -f "$target_dir/project.clj" ]]; then
+        printf 'leiningen'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" ]]; then
+        printf 'clojure'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/stack.yaml" ]]; then
+        printf 'stack'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/cabal.project" ]] || evop_directory_has_file_pattern "$target_dir" "*.cabal"; then
+        printf 'cabal'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" ]]; then
+        printf 'julia'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/build.zig" ]]; then
+        printf 'zig'
+        return 0
+    fi
+
     if [[ -f "$target_dir/pubspec.yaml" ]]; then
         if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
             || evop_file_contains_literal "$target_dir/pubspec.yaml" "sdk: flutter"; then
@@ -290,7 +352,8 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
+    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
+        || evop_directory_has_file_pattern "$target_dir" "*.cabal" \
         || evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
         printf 'single-package'
         return 0
@@ -437,6 +500,39 @@ evop_detect_language_default_commands() {
             evop_set_project_command_if_empty lint "mix format --check-formatted" "Mix defaults"
             if evop_file_contains_literal "$target_dir/mix.exs" "dialyxir"; then
                 evop_set_project_command_if_empty typecheck "mix dialyzer" "Mix defaults"
+            fi
+            ;;
+        clojure)
+            if [[ "$package_manager" == "leiningen" ]]; then
+                evop_set_project_command_if_empty test "lein test" "Leiningen defaults"
+                evop_set_project_command_if_empty build "lein uberjar" "Leiningen defaults"
+            elif [[ "$package_manager" == "clojure" ]]; then
+                if [[ -d "$target_dir/test" ]] && evop_file_contains_literal "$target_dir/deps.edn" ":test"; then
+                    evop_set_project_command_if_empty test "clojure -M:test" "Clojure CLI defaults"
+                fi
+                if [[ -f "$target_dir/build.clj" ]] && evop_file_contains_literal "$target_dir/deps.edn" ":build"; then
+                    evop_set_project_command_if_empty build "clojure -T:build uber" "Clojure CLI defaults"
+                fi
+            fi
+            ;;
+        haskell)
+            if [[ "$package_manager" == "stack" ]]; then
+                evop_set_project_command_if_empty build "stack build" "Stack defaults"
+                evop_set_project_command_if_empty test "stack test" "Stack defaults"
+            elif [[ "$package_manager" == "cabal" ]]; then
+                evop_set_project_command_if_empty build "cabal build" "Cabal defaults"
+                evop_set_project_command_if_empty test "cabal test" "Cabal defaults"
+            fi
+            ;;
+        julia)
+            if [[ "$package_manager" == "julia" ]] && [[ -d "$target_dir/test" || -f "$target_dir/test/runtests.jl" ]]; then
+                evop_set_project_command_if_empty test 'julia --project=. --startup-file=no -e "using Pkg; Pkg.test()"' "Julia defaults"
+            fi
+            ;;
+        zig)
+            if [[ "$package_manager" == "zig" ]]; then
+                evop_set_project_command_if_empty build "zig build" "Zig defaults"
+                evop_set_project_command_if_empty test "zig build test" "Zig defaults"
             fi
             ;;
     esac

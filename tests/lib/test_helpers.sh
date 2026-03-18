@@ -417,3 +417,208 @@ EOF
 extends Node
 EOF
 }
+
+setup_zig_workspace() {
+    if [[ -n "${TEST_ZIG_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_ZIG_DIR="$TEST_TMPDIR/zig-app"
+    mkdir -p "$TEST_ZIG_DIR/src" "$TEST_ZIG_DIR/test"
+
+    cat >"$TEST_ZIG_DIR/build.zig" <<'EOF'
+const std = @import("std");
+
+pub fn build(_: *std.Build) void {}
+EOF
+
+    cat >"$TEST_ZIG_DIR/src/main.zig" <<'EOF'
+pub fn main() void {}
+EOF
+
+    cat >"$TEST_ZIG_DIR/test/basic.zig" <<'EOF'
+test "basic" {}
+EOF
+}
+
+setup_haskell_workspace() {
+    if [[ -n "${TEST_HASKELL_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_HASKELL_DIR="$TEST_TMPDIR/haskell-app"
+    mkdir -p "$TEST_HASKELL_DIR/app" "$TEST_HASKELL_DIR/src" "$TEST_HASKELL_DIR/test"
+
+    cat >"$TEST_HASKELL_DIR/stack.yaml" <<'EOF'
+resolver: lts-22.0
+packages:
+  - .
+EOF
+
+    cat >"$TEST_HASKELL_DIR/demo.cabal" <<'EOF'
+cabal-version: 2.4
+name: demo
+version: 0.1.0.0
+
+library
+  exposed-modules: Demo
+  hs-source-dirs: src
+  build-depends: base
+  default-language: Haskell2010
+
+test-suite demo-test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Spec.hs
+  build-depends: base, demo
+  default-language: Haskell2010
+EOF
+
+    cat >"$TEST_HASKELL_DIR/src/Demo.hs" <<'EOF'
+module Demo where
+demo :: String
+demo = "demo"
+EOF
+
+    cat >"$TEST_HASKELL_DIR/test/Spec.hs" <<'EOF'
+main :: IO ()
+main = pure ()
+EOF
+}
+
+setup_clojure_workspace() {
+    if [[ -n "${TEST_CLOJURE_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_CLOJURE_DIR="$TEST_TMPDIR/clojure-app"
+    mkdir -p "$TEST_CLOJURE_DIR/src/demo" "$TEST_CLOJURE_DIR/test/demo"
+
+    cat >"$TEST_CLOJURE_DIR/deps.edn" <<'EOF'
+{:paths ["src"]
+ :aliases {:test {:extra-paths ["test"]}}}
+EOF
+
+    cat >"$TEST_CLOJURE_DIR/src/demo/core.clj" <<'EOF'
+(ns demo.core)
+
+(defn answer [] 42)
+EOF
+
+    cat >"$TEST_CLOJURE_DIR/test/demo/core_test.clj" <<'EOF'
+(ns demo.core-test)
+EOF
+}
+
+setup_julia_workspace() {
+    if [[ -n "${TEST_JULIA_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_JULIA_DIR="$TEST_TMPDIR/julia-app"
+    mkdir -p "$TEST_JULIA_DIR/src" "$TEST_JULIA_DIR/test"
+
+    cat >"$TEST_JULIA_DIR/Project.toml" <<'EOF'
+name = "Demo"
+uuid = "00000000-0000-0000-0000-000000000000"
+version = "0.1.0"
+EOF
+
+    cat >"$TEST_JULIA_DIR/src/Demo.jl" <<'EOF'
+module Demo
+end
+EOF
+
+    cat >"$TEST_JULIA_DIR/test/runtests.jl" <<'EOF'
+using Test
+EOF
+}
+
+setup_data_pipeline_workspace() {
+    if [[ -n "${TEST_DATA_PIPELINE_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_DATA_PIPELINE_DIR="$TEST_TMPDIR/data-pipeline"
+    mkdir -p "$TEST_DATA_PIPELINE_DIR/dags" "$TEST_DATA_PIPELINE_DIR/jobs" "$TEST_DATA_PIPELINE_DIR/tests"
+
+    cat >"$TEST_DATA_PIPELINE_DIR/pyproject.toml" <<'EOF'
+[project]
+name = "demo-pipeline"
+version = "0.1.0"
+dependencies = ["prefect", "pytest"]
+EOF
+
+    cat >"$TEST_DATA_PIPELINE_DIR/dags/ingest.py" <<'EOF'
+def build_flow():
+    return None
+EOF
+
+    cat >"$TEST_DATA_PIPELINE_DIR/tests/test_ingest.py" <<'EOF'
+def test_ingest():
+    assert True
+EOF
+}
+
+setup_plugin_workspace() {
+    if [[ -n "${TEST_PLUGIN_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_PLUGIN_DIR="$TEST_TMPDIR/plugin-project"
+    mkdir -p "$TEST_PLUGIN_DIR/src"
+
+    cat >"$TEST_PLUGIN_DIR/package.json" <<'EOF'
+{
+  "name": "vite-plugin-demo",
+  "keywords": ["plugin", "vite-plugin"],
+  "exports": "./src/index.js"
+}
+EOF
+
+    cat >"$TEST_PLUGIN_DIR/src/index.js" <<'EOF'
+export default function demoPlugin() {}
+EOF
+}
+
+setup_embedded_workspace() {
+    if [[ -n "${TEST_EMBEDDED_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_EMBEDDED_DIR="$TEST_TMPDIR/embedded-fw"
+    mkdir -p "$TEST_EMBEDDED_DIR/firmware" "$TEST_EMBEDDED_DIR/boards"
+
+    cat >"$TEST_EMBEDDED_DIR/platformio.ini" <<'EOF'
+[env:test]
+platform = espressif32
+board = esp32dev
+framework = arduino
+EOF
+
+    cat >"$TEST_EMBEDDED_DIR/firmware/main.cpp" <<'EOF'
+int main() { return 0; }
+EOF
+}
+
+setup_library_workspace() {
+    if [[ -n "${TEST_LIBRARY_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_LIBRARY_DIR="$TEST_TMPDIR/library-project"
+    mkdir -p "$TEST_LIBRARY_DIR/src"
+
+    cat >"$TEST_LIBRARY_DIR/Cargo.toml" <<'EOF'
+[package]
+name = "demo-lib"
+version = "0.1.0"
+edition = "2021"
+EOF
+
+    cat >"$TEST_LIBRARY_DIR/src/lib.rs" <<'EOF'
+pub fn demo() -> &'static str {
+    "demo"
+}
+EOF
+}

@@ -276,6 +276,29 @@ node_cli_inspect_output="$(run_expect_success "INSPECT should summarize non-shel
 assert_contains "$node_cli_inspect_output" "Project type: cli-tool (auto-detected)" "INSPECT should detect non-shell CLI repos"
 pass "INSPECT Node CLI summary"
 
+setup_zig_workspace
+zig_inspect_output="$(run_expect_success "INSPECT should summarize Zig projects" "$INSPECT_SCRIPT" --target-dir "$TEST_ZIG_DIR")"
+assert_contains "$zig_inspect_output" "Language profile: zig (auto-detected)" "INSPECT should detect Zig projects"
+assert_contains "$zig_inspect_output" "Package manager: zig" "INSPECT should surface the Zig package manager"
+assert_contains "$zig_inspect_output" "Build: zig build" "INSPECT should infer Zig build commands"
+assert_contains "$zig_inspect_output" "Test: zig build test" "INSPECT should infer Zig test commands"
+pass "INSPECT Zig summary"
+
+setup_haskell_workspace
+haskell_inspect_output="$(run_expect_success "INSPECT should summarize Haskell projects" "$INSPECT_SCRIPT" --target-dir "$TEST_HASKELL_DIR")"
+assert_contains "$haskell_inspect_output" "Language profile: haskell (auto-detected)" "INSPECT should detect Haskell projects"
+assert_contains "$haskell_inspect_output" "Package manager: stack" "INSPECT should surface the Stack package manager"
+assert_contains "$haskell_inspect_output" "Build: stack build" "INSPECT should infer Stack build commands"
+assert_contains "$haskell_inspect_output" "Test: stack test" "INSPECT should infer Stack test commands"
+pass "INSPECT Haskell summary"
+
+setup_data_pipeline_workspace
+data_pipeline_inspect_output="$(run_expect_success "INSPECT should summarize data pipeline projects" "$INSPECT_SCRIPT" --target-dir "$TEST_DATA_PIPELINE_DIR")"
+assert_contains "$data_pipeline_inspect_output" "Project type: data-pipeline (auto-detected)" "INSPECT should detect pipeline-oriented repos"
+assert_contains "$data_pipeline_inspect_output" "dags: scheduled DAG definitions or orchestration entrypoints" "INSPECT should expose pipeline structure hints"
+assert_contains "$data_pipeline_inspect_output" "Scheduling, idempotency, backfill behavior, and data contracts can fail long after a code change lands." "INSPECT should surface pipeline risk areas"
+pass "INSPECT data pipeline summary"
+
 setup_agent_test_workspace
 mkdir -p "$TEST_TARGET_DIR/.evoprogrammer/hooks"
 cat >"$TEST_TARGET_DIR/.evoprogrammer/hooks/post-iteration" <<'EOF'

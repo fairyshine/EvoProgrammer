@@ -17,6 +17,10 @@ assert_contains "$profile_catalog_output" "dart" "Profile catalog should expose 
 assert_contains "$profile_catalog_output" "elixir" "Profile catalog should expose the Elixir language profile"
 assert_contains "$profile_catalog_output" "scala" "Profile catalog should expose the Scala language profile"
 assert_contains "$profile_catalog_output" "lua" "Profile catalog should expose the Lua language profile"
+assert_contains "$profile_catalog_output" "clojure" "Profile catalog should expose the Clojure language profile"
+assert_contains "$profile_catalog_output" "haskell" "Profile catalog should expose the Haskell language profile"
+assert_contains "$profile_catalog_output" "julia" "Profile catalog should expose the Julia language profile"
+assert_contains "$profile_catalog_output" "zig" "Profile catalog should expose the Zig language profile"
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
 assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
 assert_contains "$profile_catalog_output" "astro" "Profile catalog should expose the Astro framework profile"
@@ -439,6 +443,82 @@ EOF
 )"
 assert_contains "$infrastructure_profile_output" "project_type=infrastructure" "Terraform repos should detect the infrastructure project type"
 pass "Infrastructure profile detection"
+
+expanded_language_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/clojure" "$tmpdir/haskell" "$tmpdir/julia" "$tmpdir/zig"
+
+printf '{:paths ["src"]}\n' >"$tmpdir/clojure/deps.edn"
+printf '(ns demo.core)\n' >"$tmpdir/clojure/core.clj"
+
+printf 'resolver: lts-22.0\npackages:\n  - .\n' >"$tmpdir/haskell/stack.yaml"
+printf 'cabal-version: 2.4\nname: demo\nversion: 0.1.0.0\n' >"$tmpdir/haskell/demo.cabal"
+printf 'module Demo where\n' >"$tmpdir/haskell/Demo.hs"
+
+printf 'name = "Demo"\n' >"$tmpdir/julia/Project.toml"
+printf 'module Demo\nend\n' >"$tmpdir/julia/Demo.jl"
+
+printf 'const std = @import("std");\n\npub fn build(_: *std.Build) void {}\n' >"$tmpdir/zig/build.zig"
+printf 'pub fn main() void {}\n' >"$tmpdir/zig/main.zig"
+
+for language_dir in clojure haskell julia zig; do
+    if evop_detect_language_profile "$tmpdir/$language_dir" ""; then
+        printf '%s=%s\n' "$language_dir" "$EVOP_DETECTED_PROFILE"
+    fi
+done
+EOF
+)"
+assert_contains "$expanded_language_profile_output" "clojure=clojure" "Clojure repos should detect the Clojure language profile"
+assert_contains "$expanded_language_profile_output" "haskell=haskell" "Haskell repos should detect the Haskell language profile"
+assert_contains "$expanded_language_profile_output" "julia=julia" "Julia repos should detect the Julia language profile"
+assert_contains "$expanded_language_profile_output" "zig=zig" "Zig repos should detect the Zig language profile"
+pass "Expanded language profile detection"
+
+expanded_project_type_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/library/src" "$tmpdir/plugin/src" "$tmpdir/pipeline/dags" "$tmpdir/embedded/firmware"
+
+printf '[package]\nname = "demo-lib"\nversion = "0.1.0"\n' >"$tmpdir/library/Cargo.toml"
+printf 'pub fn demo() {}\n' >"$tmpdir/library/src/lib.rs"
+
+cat >"$tmpdir/plugin/package.json" <<'JSON'
+{
+  "name": "vite-plugin-demo",
+  "exports": "./src/index.js"
+}
+JSON
+printf 'export default function demoPlugin() {}\n' >"$tmpdir/plugin/src/index.js"
+
+printf '[project]\nname = "demo-pipeline"\ndependencies = ["prefect"]\n' >"$tmpdir/pipeline/pyproject.toml"
+printf 'def run_flow():\n    return None\n' >"$tmpdir/pipeline/dags/flow.py"
+
+printf '[env:test]\nplatform = espressif32\nboard = esp32dev\nframework = arduino\n' >"$tmpdir/embedded/platformio.ini"
+printf 'int main() { return 0; }\n' >"$tmpdir/embedded/firmware/main.cpp"
+
+for project_dir in library plugin pipeline embedded; do
+    if evop_detect_project_type "$tmpdir/$project_dir" ""; then
+        printf '%s=%s\n' "$project_dir" "$EVOP_DETECTED_PROFILE"
+    fi
+done
+EOF
+)"
+assert_contains "$expanded_project_type_output" "library=library" "Library repos should detect the library project type"
+assert_contains "$expanded_project_type_output" "plugin=plugin" "Plugin repos should detect the plugin project type"
+assert_contains "$expanded_project_type_output" "pipeline=data-pipeline" "Pipeline repos should detect the data-pipeline project type"
+assert_contains "$expanded_project_type_output" "embedded=embedded-system" "Embedded repos should detect the embedded-system project type"
+pass "Expanded project-type detection"
 
 profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
 assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"

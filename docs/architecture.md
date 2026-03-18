@@ -73,7 +73,9 @@ Repository-shape heuristics now live in a shared helper layer instead of being
 duplicated across project-type candidate planning and individual detect hooks.
 That keeps CLI-tool, backend-service, desktop-app, and game-project
 classification aligned while still allowing prompt-driven overrides when the
-repo shape is ambiguous.
+repo shape is ambiguous. The same layer now also centralizes higher-signal
+library, plugin, data-pipeline, and embedded-system heuristics so those
+project types no longer depend on prompt keywords alone.
 
 Manifest-level ecosystem probes now also live in their own helper layer. That
 keeps Node, Python, Cargo, Go, Composer, Gem, Mix, and JVM dependency checks
@@ -141,7 +143,9 @@ detection passes in one inspection run.
 The detection facts layer now also indexes file extensions directly. That keeps
 common candidate checks such as `.kt`, `.csproj`, `.ipynb`, `.tex`, and similar
 signals on top of set lookups instead of repeatedly scanning every collected
-basename for glob matches.
+basename for glob matches. Repeated glob-style filename checks are now cached
+too, which trims redundant `*.cabal`, `*.ino`, `*.zig`, and similar scans across
+language, framework, and project-type detection passes in one inspection run.
 
 ## Command Model
 

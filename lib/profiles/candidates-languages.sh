@@ -101,6 +101,27 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "elixir"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "deps.edn" "project.clj" "build.boot" \
+        || evop_directory_has_file_extension "$target_dir" "clj" "cljs" "cljc"; then
+        evop_profile_candidate_append_unique candidates "clojure"
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "stack.yaml" "cabal.project" \
+        || evop_directory_has_file_pattern "$target_dir" "*.cabal" \
+        || evop_directory_has_file_extension "$target_dir" "hs" "lhs"; then
+        evop_profile_candidate_append_unique candidates "haskell"
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "Project.toml" "Manifest.toml" \
+        || evop_directory_has_file_extension "$target_dir" "jl"; then
+        evop_profile_candidate_append_unique candidates "julia"
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "build.zig" \
+        || evop_directory_has_file_extension "$target_dir" "zig"; then
+        evop_profile_candidate_append_unique candidates "zig"
+    fi
+
     if evop_directory_has_file_extension "$target_dir" "sh" \
         || evop_directory_has_file_named "$target_dir" ".zshrc" ".zprofile" ".bashrc" ".bash_profile"; then
         evop_profile_candidate_append_unique candidates "shell"
@@ -124,6 +145,10 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "lua" "$prompt" "lua" "luajit"
     evop_profile_candidate_add_if_prompt_matches candidates "gdscript" "$prompt" "gdscript"
     evop_profile_candidate_add_if_prompt_matches candidates "elixir" "$prompt" "elixir" "phoenix" "mix"
+    evop_profile_candidate_add_if_prompt_matches candidates "clojure" "$prompt" "clojure" "clojurescript" "leiningen"
+    evop_profile_candidate_add_if_prompt_matches candidates "haskell" "$prompt" "haskell" "cabal" "stack"
+    evop_profile_candidate_add_if_prompt_matches candidates "julia" "$prompt" "julia"
+    evop_profile_candidate_add_if_prompt_matches candidates "zig" "$prompt" "zig"
     evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "zsh" "bash" "shell" "shell script" "脚本"
 
     if [[ -n "$candidates" ]]; then

@@ -84,6 +84,9 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "services" "service or API integration layer"
     evop_add_structure_hint "$target_dir" "src/services" "service or API integration layer"
     evop_add_structure_hint "$target_dir" "scripts" "automation or release scripts"
+    evop_add_structure_hint "$target_dir" "cmd" "Go-style command entrypoints or runnable binaries"
+    evop_add_structure_hint "$target_dir" "internal" "language-internal implementation packages"
+    evop_add_structure_hint "$target_dir" "pkg" "shared packages or exported library modules"
     evop_add_structure_hint "$target_dir" "store" "state management"
     evop_add_structure_hint "$target_dir" "src/store" "state management"
     evop_add_structure_hint "$target_dir" "src/stores" "state management"
@@ -109,6 +112,14 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "prisma" "database schema and generated client configuration"
     evop_add_structure_hint "$target_dir" "db" "database access or persistence logic"
     evop_add_structure_hint "$target_dir" "migrations" "schema migrations"
+    evop_add_structure_hint "$target_dir" "examples" "usage examples or sample integrations"
+    evop_add_structure_hint "$target_dir" "plugins" "plugin entrypoints, host adapters, or extension packages"
+    evop_add_structure_hint "$target_dir" "extensions" "extension entrypoints or packaging surfaces"
+    evop_add_structure_hint "$target_dir" "dags" "scheduled DAG definitions or orchestration entrypoints"
+    evop_add_structure_hint "$target_dir" "pipelines" "pipeline stages or data orchestration code"
+    evop_add_structure_hint "$target_dir" "jobs" "batch job entrypoints or scheduled workers"
+    evop_add_structure_hint "$target_dir" "firmware" "firmware sources, board glue, or flashing targets"
+    evop_add_structure_hint "$target_dir" "boards" "board-specific configuration or hardware mappings"
 
     if evop_directory_has_file_pattern "$target_dir" "*.sh"; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_STRUCTURE ".: top-level automation or command entry scripts"
@@ -260,6 +271,22 @@ evop_detect_risk_areas() {
     if evop_directory_has_path_named "$target_dir" "android" \
         || evop_directory_has_path_named "$target_dir" "ios"; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Mobile platform glue, permissions, and lifecycle handling can regress independently of shared app logic."
+    fi
+
+    if evop_repo_looks_like_data_pipeline "$target_dir"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Scheduling, idempotency, backfill behavior, and data contracts can fail long after a code change lands."
+    fi
+
+    if evop_repo_looks_like_embedded_system "$target_dir"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Board configuration, peripheral timing, and flash or boot assumptions can regress outside normal local test coverage."
+    fi
+
+    if evop_repo_looks_like_plugin "$target_dir"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Host compatibility, registration metadata, and plugin lifecycle hooks can break independently of core logic."
+    fi
+
+    if evop_repo_looks_like_library "$target_dir"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Public APIs and examples may need synchronized updates when shared library behavior changes."
     fi
 
     if evop_directory_contains_text "$target_dir" "#!/usr/bin/env zsh" "*.sh" \

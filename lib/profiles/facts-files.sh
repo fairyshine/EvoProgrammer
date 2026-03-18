@@ -123,20 +123,32 @@ evop_directory_has_file_named() {
 evop_directory_has_file_pattern() {
     local directory="$1"
     shift
+    local cache_key=""
+    local cached_value=""
     local basename
 
     evop_ensure_detection_facts "$directory"
+    cache_key="$(evop_detection_cache_key "$directory" "$@")"
+
+    if evop_detection_cache_lookup EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key"; then
+        cached_value="$EVOP_DETECT_CACHE_RESULT"
+        [[ "$cached_value" == "1" ]]
+        return $?
+    fi
 
     if (( ${#EVOP_DETECT_FILE_BASENAMES[@]} == 0 )); then
+        evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "0"
         return 1
     fi
 
     for basename in "${EVOP_DETECT_FILE_BASENAMES[@]}"; do
         if evop_filename_matches_any_pattern "$basename" "$@"; then
+            evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "1"
             return 0
         fi
     done
 
+    evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "0"
     return 1
 }
 

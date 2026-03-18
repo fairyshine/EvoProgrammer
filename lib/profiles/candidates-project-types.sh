@@ -37,6 +37,22 @@ evop_prepare_project_type_candidates() {
         evop_profile_candidate_append_unique candidates "scientific-experiment"
     fi
 
+    if evop_repo_looks_like_data_pipeline "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "data-pipeline"
+    fi
+
+    if evop_repo_looks_like_embedded_system "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "embedded-system"
+    fi
+
+    if evop_repo_looks_like_plugin "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "plugin"
+    fi
+
+    if evop_repo_looks_like_library "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "library"
+    fi
+
     if evop_repo_looks_like_web_app "$target_dir"; then
         evop_profile_candidate_append_unique candidates "web-app"
     fi

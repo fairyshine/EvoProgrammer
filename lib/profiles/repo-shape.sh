@@ -10,8 +10,16 @@ EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_INFRASTRUCTURE_CACHE_DIR=""
@@ -34,6 +42,46 @@ evop_repo_has_mobile_platform_markers() {
         return 0
     fi
 
+    return 1
+}
+
+evop_repo_looks_like_library() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_project_relative_exists "$target_dir" "src/lib.rs"; then
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && ! evop_directory_contains_text "$target_dir" "\"bin\"" "package.json" \
+        && ! evop_repo_looks_like_web_app "$target_dir" \
+        && ! evop_repo_looks_like_backend_service "$target_dir" \
+        && ! evop_repo_looks_like_cli_tool "$target_dir" \
+        && {
+            evop_directory_contains_text "$target_dir" "\"exports\"" "package.json" \
+                || evop_directory_contains_text "$target_dir" "\"types\"" "package.json";
+        }; then
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_has_file_pattern "$target_dir" "*.cabal" \
+        && evop_directory_contains_text "$target_dir" "library" "*.cabal"; then
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_LIBRARY_CACHE_VALUE="0"
     return 1
 }
 
@@ -226,6 +274,33 @@ evop_repo_looks_like_game_project() {
     return 1
 }
 
+evop_repo_looks_like_plugin() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "plugin.xml" \
+        || evop_directory_has_file_pattern "$target_dir" "*.uplugin"; then
+        EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && evop_directory_contains_text "$target_dir" "-plugin" "package.json" "package.json"; then
+        EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_PLUGIN_CACHE_VALUE="0"
+    return 1
+}
+
 evop_repo_looks_like_mobile_game() {
     local target_dir="$1"
 
@@ -242,6 +317,51 @@ evop_repo_looks_like_mobile_game() {
 
     EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_DIR="$target_dir"
     EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_data_pipeline() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "dbt_project.yml" "airflow.cfg" \
+        || evop_directory_has_path_named "$target_dir" "dags" "pipelines" "jobs" \
+        || {
+            evop_directory_has_file_named "$target_dir" "pyproject.toml" "requirements.txt" "requirements-dev.txt" \
+                && evop_repo_has_python_package "$target_dir" "airflow" "dagster" "prefect" "pyspark";
+        }; then
+        EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_embedded_system() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "platformio.ini" "sdkconfig" "idf_component.yml" \
+        || evop_directory_has_file_pattern "$target_dir" "*.ino" \
+        || evop_directory_has_path_named "$target_dir" "firmware" "boards"; then
+        EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE="0"
     return 1
 }
 
