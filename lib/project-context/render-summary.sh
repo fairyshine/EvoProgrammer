@@ -33,6 +33,8 @@ evop_print_project_command_report() {
 }
 
 evop_print_project_agent_catalog_report() {
+    local output_kind="${1:-all}"
+
     [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
     [[ -n "${AGENT:-}" ]] && evop_print_key_value "Agent:" "$AGENT"
     evop_print_resolved_profile "Language profile" "$LANGUAGE_PROFILE" "$LANGUAGE_PROFILE_SOURCE"
@@ -44,20 +46,20 @@ evop_print_project_agent_catalog_report() {
             evop_print_list_item "$line"
         done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
-    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" ]]; then
+    if [[ "$output_kind" != "support" && -n "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" ]]; then
         evop_print_section "Agent command catalog:"
         while IFS=$'\t' read -r kind command source; do
             [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
             evop_print_list_item "$command [$kind; $source]"
         done <<<"$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG"
     fi
-    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
+    if [[ "$output_kind" != "commands" && -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
         evop_print_section "Agent support tools:"
         while IFS= read -r line; do
             evop_print_list_item "$line"
         done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS"
     fi
-    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG" ]]; then
+    if [[ "$output_kind" != "commands" && -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG" ]]; then
         evop_print_section "Agent support tool catalog:"
         while IFS=$'\t' read -r name path source; do
             [[ -n "$name" && -n "$path" && -n "$source" ]] || continue

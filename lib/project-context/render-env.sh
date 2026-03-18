@@ -65,6 +65,8 @@ evop_print_project_inspection_env() {
 }
 
 evop_print_project_agent_catalog_env() {
+    local output_kind="${1:-all}"
+
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TARGET_DIR" "${TARGET_DIR:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_AGENT" "${AGENT:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_LANGUAGE_PROFILE" "${LANGUAGE_PROFILE:-}"
@@ -72,10 +74,21 @@ evop_print_project_agent_catalog_env() {
     evop_print_env_assignment "EVOP_AGENT_CATALOG_PACKAGE_MANAGER" "${EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
-    evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
-    evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
-    evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
-    evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
+    evop_print_env_assignment "EVOP_AGENT_CATALOG_KIND" "$output_kind"
+    if [[ "$output_kind" == "support" ]]; then
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" ""
+    else
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
+    fi
+    if [[ "$output_kind" == "commands" ]]; then
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOLS" ""
+    else
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
+    fi
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TIMING_ANALYZE_CONTEXT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS:-0}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TIMING_FINALIZE_ANALYSIS_MS" "${EVOP_PROJECT_CONTEXT_TIMING_FINALIZE_ANALYSIS_MS:-0}"
 }

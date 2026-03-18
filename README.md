@@ -25,7 +25,7 @@ Recent detection improvements also make project-type inference less shell-centri
 ```zsh
 git clone https://github.com/user/EvoProgrammer.git
 cd EvoProgrammer
-chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh PROFILES.sh
+chmod +x bin/EvoProgrammer install.sh LOOP.sh MAIN.sh DOCTOR.sh INSPECT.sh VERIFY.sh CLEAN.sh STATUS.sh PROFILES.sh CATALOG.sh
 ./install.sh            # symlinks to ~/.local/bin/EvoProgrammer
 ```
 
@@ -136,6 +136,11 @@ EvoProgrammer status --format json --report-file ./status-report.json --report-f
 EvoProgrammer profiles
 EvoProgrammer profiles --category languages
 EvoProgrammer profiles --category frameworks --format json
+
+# Export a focused agent tool catalog
+EvoProgrammer catalog --target-dir /path/to/project
+EvoProgrammer catalog --target-dir /path/to/project --kind commands --format json
+EvoProgrammer catalog --target-dir /path/to/project --kind support --format env
 ```
 
 ## Requirements
@@ -167,6 +172,7 @@ with `zsh -n`.
 | `EvoProgrammer clean` | Remove old artifact directories |
 | `EvoProgrammer status` | Show recent run history, filters, and machine-readable reports |
 | `EvoProgrammer profiles` | List built-in language, framework, and project-type profiles |
+| `EvoProgrammer catalog` | Print a focused agent command/support-tool catalog |
 | `EvoProgrammer --version` | Print version |
 | `EvoProgrammer help` | Show help |
 
@@ -247,6 +253,11 @@ tool catalog with resolved executable paths, so wrappers can invoke repo-local
 commands and machine tools without scraping human-readable text. They
 intentionally skip the broader architecture and workflow report so wrappers can
 fetch the callable tool menu with less detection work.
+
+`catalog` exposes that same agent-facing tool menu as a first-class subcommand,
+with `--kind all|commands|support` filters and `summary|json|env` output. Use it
+when a wrapper or coding agent only needs callable repo surfaces and host
+tooling without the wider inspection report.
 
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, including detected workspace packages for

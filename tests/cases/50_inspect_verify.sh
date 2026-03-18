@@ -179,6 +179,68 @@ assert_contains "$inspect_agent_env_summary" "git [host cli]" "INSPECT agent-env
 assert_contains "$inspect_agent_env_summary" "timings_ok=true" "INSPECT agent-env should export timing diagnostics"
 pass "INSPECT agent-env"
 
+catalog_output="$(run_expect_success "CATALOG should render the focused agent catalog summary" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR")"
+assert_contains "$catalog_output" "Agent command catalog:" "CATALOG summary should print the command catalog heading"
+assert_contains "$catalog_output" "Agent support tool catalog:" "CATALOG summary should print the support tool catalog heading"
+assert_not_contains "$catalog_output" "Suggested commands:" "CATALOG summary should stay focused on agent-facing data"
+pass "CATALOG summary"
+
+catalog_commands_output="$(run_expect_success "CATALOG should filter to command entries" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --kind commands)"
+assert_contains "$catalog_commands_output" "Agent command catalog:" "CATALOG commands view should print command entries"
+assert_not_contains "$catalog_commands_output" "Agent support tool catalog:" "CATALOG commands view should omit support-tool catalog entries"
+assert_not_contains "$catalog_commands_output" "Agent support tools:" "CATALOG commands view should omit support-tool summaries"
+pass "CATALOG commands kind"
+
+catalog_support_json_output="$(run_expect_success "CATALOG should render support-only json output" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format json --kind support)"
+catalog_support_json_summary="$(CATALOG_JSON="$catalog_support_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["CATALOG_JSON"])
+print(data["kind"])
+print(f"command_entries_ok={data['agent_command_catalog'] == []}")
+print(f"support_catalog_ok={any(item['name'] == 'git' for item in data['agent_support_tool_catalog'])}")
+print(f"support_tools_ok={'git [host cli]' in data['agent_support_tools']}")
+PY
+)"
+assert_contains "$catalog_support_json_summary" "support" "CATALOG json should expose the selected kind"
+assert_contains "$catalog_support_json_summary" "command_entries_ok=True" "CATALOG support json should omit command catalog entries"
+assert_contains "$catalog_support_json_summary" "support_catalog_ok=True" "CATALOG support json should keep structured support-tool entries"
+assert_contains "$catalog_support_json_summary" "support_tools_ok=True" "CATALOG support json should keep support-tool summaries"
+pass "CATALOG json"
+
+catalog_env_summary="$(
+    CATALOG_SCRIPT="$CATALOG_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format env --kind commands)"
+
+printf '%s\n' "$EVOP_AGENT_CATALOG_KIND"
+printf 'commands_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_CATALOG" == *$'repo_executable\t./bin/context-tool\trepo executable'* ]] && printf true || printf false)"
+printf 'support_empty_ok=%s\n' "$([[ -z "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" && -z "$EVOP_AGENT_CATALOG_SUPPORT_TOOLS" ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$catalog_env_summary" "commands" "CATALOG env should export the selected kind"
+assert_contains "$catalog_env_summary" "commands_ok=true" "CATALOG env commands view should export structured command entries"
+assert_contains "$catalog_env_summary" "support_empty_ok=true" "CATALOG env commands view should clear support-tool exports"
+pass "CATALOG env"
+
+catalog_report_json="$TEST_TMPDIR/catalog-report.json"
+run_expect_success "CATALOG should write a json report file" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --kind commands --report-file "$catalog_report_json" --report-format json >/dev/null
+catalog_report_json_summary="$(CATALOG_REPORT_JSON="$(cat "$catalog_report_json")" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["CATALOG_REPORT_JSON"])
+print(data["kind"])
+print(f"commands_ok={any(item['command'] == './bin/context-tool' for item in data['agent_command_catalog'])}")
+print(f"support_empty_ok={data['agent_support_tool_catalog'] == []}")
+PY
+)"
+assert_contains "$catalog_report_json_summary" "commands" "CATALOG json report should preserve the selected kind"
+assert_contains "$catalog_report_json_summary" "commands_ok=True" "CATALOG json report should include command catalog entries"
+assert_contains "$catalog_report_json_summary" "support_empty_ok=True" "CATALOG json report should omit support-tool entries for commands-only views"
+pass "CATALOG json report file"
+
 setup_node_monorepo_workspace
 monorepo_inspect_output="$(run_expect_success "INSPECT should surface workspace package roots and recursive commands" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR")"
 assert_contains "$monorepo_inspect_output" "Workspace mode: monorepo" "INSPECT should classify JS workspaces as monorepos"

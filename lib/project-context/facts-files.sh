@@ -550,12 +550,121 @@ evop_append_agent_support_tool_catalog_entry() {
     fi
 }
 
+evop_append_agent_support_tool_candidate() {
+    local var_name="$1"
+    local command_name="$2"
+    local source_label="$3"
+    local current="${(P)var_name:-}"
+    local entry=""
+
+    [[ -n "$command_name" && -n "$source_label" ]] || return 0
+
+    entry="$command_name"$'\t'"$source_label"
+    case $'\n'"$current"$'\n' in
+        *$'\n'"$entry"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    if [[ -n "$current" ]]; then
+        printf -v "$var_name" '%s\n%s' "$current" "$entry"
+    else
+        printf -v "$var_name" '%s' "$entry"
+    fi
+}
+
+evop_collect_agent_support_tool_candidates() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+    local language_profile="${3:-}"
+    local output=""
+
+    evop_append_agent_support_tool_candidate output git "host cli"
+    evop_append_agent_support_tool_candidate output zsh "shell runtime"
+    evop_append_agent_support_tool_candidate output sh "shell runtime"
+    evop_append_agent_support_tool_candidate output find "filesystem cli"
+    evop_append_agent_support_tool_candidate output xargs "pipeline cli"
+    evop_append_agent_support_tool_candidate output sed "text cli"
+    evop_append_agent_support_tool_candidate output awk "text cli"
+
+    if evop_command_available_cached rg; then
+        evop_append_agent_support_tool_candidate output rg "search cli"
+    else
+        evop_append_agent_support_tool_candidate output grep "search cli"
+    fi
+
+    if [[ -f "$target_dir/package.json" ]]; then
+        evop_append_agent_support_tool_candidate output jq "json cli"
+        evop_append_agent_support_tool_candidate output node "language runtime"
+    fi
+
+    if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
+        evop_append_agent_support_tool_candidate output make "build tool"
+    fi
+
+    if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then
+        evop_append_agent_support_tool_candidate output docker "container cli"
+    fi
+
+    case "$package_manager" in
+        pnpm|yarn|npm|bun|poetry|uv|cargo|go|composer|gradle|maven|dotnet|flutter|dart|mix|clojure|leiningen|stack|cabal|julia|luarocks|lua|zig|terraform|swift|bundler|cmake|r|python)
+            evop_append_agent_support_tool_candidate output "$package_manager" "package manager"
+            ;;
+    esac
+
+    case "$language_profile" in
+        javascript|typescript)
+            evop_append_agent_support_tool_candidate output node "language runtime"
+            ;;
+        python)
+            evop_append_agent_support_tool_candidate output python3 "language runtime"
+            ;;
+        ruby)
+            evop_append_agent_support_tool_candidate output ruby "language runtime"
+            ;;
+        php)
+            evop_append_agent_support_tool_candidate output php "language runtime"
+            ;;
+        go)
+            evop_append_agent_support_tool_candidate output go "language runtime"
+            ;;
+        rust)
+            evop_append_agent_support_tool_candidate output cargo "language runtime"
+            ;;
+        java|kotlin)
+            evop_append_agent_support_tool_candidate output java "language runtime"
+            ;;
+        csharp|fsharp|visual-basic)
+            evop_append_agent_support_tool_candidate output dotnet "language runtime"
+            ;;
+        dart)
+            evop_append_agent_support_tool_candidate output dart "language runtime"
+            ;;
+        elixir)
+            evop_append_agent_support_tool_candidate output elixir "language runtime"
+            ;;
+        swift)
+            evop_append_agent_support_tool_candidate output swift "language runtime"
+            ;;
+        lua)
+            evop_append_agent_support_tool_candidate output lua "language runtime"
+            ;;
+        terraform)
+            evop_append_agent_support_tool_candidate output terraform "language runtime"
+            ;;
+    esac
+
+    printf '%s' "$output"
+}
+
 evop_project_agent_support_tools_cached() {
     local target_dir="$1"
     local package_manager="${2:-}"
     local language_profile="${3:-}"
     local cache_key="agent-support-tools|$package_manager|$language_profile"
     local output=""
+    local tool_name=""
+    local source_label=""
 
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT=""
     evop_use_project_context_facts_dir "$target_dir"
@@ -566,80 +675,10 @@ evop_project_agent_support_tools_cached() {
         return 0
     fi
 
-    evop_append_agent_support_tool_if_available output git "host cli"
-    evop_append_agent_support_tool_if_available output zsh "shell runtime"
-    evop_append_agent_support_tool_if_available output sh "shell runtime"
-    evop_append_agent_support_tool_if_available output find "filesystem cli"
-    evop_append_agent_support_tool_if_available output xargs "pipeline cli"
-    evop_append_agent_support_tool_if_available output sed "text cli"
-    evop_append_agent_support_tool_if_available output awk "text cli"
-
-    if evop_command_available_cached rg; then
-        evop_append_unique_multiline_value output "rg [search cli]"
-    elif evop_command_available_cached grep; then
-        evop_append_unique_multiline_value output "grep [search cli]"
-    fi
-
-    if [[ -f "$target_dir/package.json" ]]; then
-        evop_append_agent_support_tool_if_available output jq "json cli"
-        evop_append_agent_support_tool_if_available output node "language runtime"
-    fi
-
-    if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
-        evop_append_agent_support_tool_if_available output make "build tool"
-    fi
-
-    if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then
-        evop_append_agent_support_tool_if_available output docker "container cli"
-    fi
-
-    case "$package_manager" in
-        pnpm|yarn|npm|bun|poetry|uv|cargo|go|composer|gradle|maven|dotnet|flutter|dart|mix|clojure|leiningen|stack|cabal|julia|luarocks|lua|zig|terraform|swift|bundler|cmake|r|python)
-            evop_append_agent_support_tool_if_available output "$package_manager" "package manager"
-            ;;
-    esac
-
-    case "$language_profile" in
-        javascript|typescript)
-            evop_append_agent_support_tool_if_available output node "language runtime"
-            ;;
-        python)
-            evop_append_agent_support_tool_if_available output python3 "language runtime"
-            ;;
-        ruby)
-            evop_append_agent_support_tool_if_available output ruby "language runtime"
-            ;;
-        php)
-            evop_append_agent_support_tool_if_available output php "language runtime"
-            ;;
-        go)
-            evop_append_agent_support_tool_if_available output go "language runtime"
-            ;;
-        rust)
-            evop_append_agent_support_tool_if_available output cargo "language runtime"
-            ;;
-        java|kotlin)
-            evop_append_agent_support_tool_if_available output java "language runtime"
-            ;;
-        csharp|fsharp|visual-basic)
-            evop_append_agent_support_tool_if_available output dotnet "language runtime"
-            ;;
-        dart)
-            evop_append_agent_support_tool_if_available output dart "language runtime"
-            ;;
-        elixir)
-            evop_append_agent_support_tool_if_available output elixir "language runtime"
-            ;;
-        swift)
-            evop_append_agent_support_tool_if_available output swift "language runtime"
-            ;;
-        lua)
-            evop_append_agent_support_tool_if_available output lua "language runtime"
-            ;;
-        terraform)
-            evop_append_agent_support_tool_if_available output terraform "language runtime"
-            ;;
-    esac
+    while IFS=$'\t' read -r tool_name source_label; do
+        [[ -n "$tool_name" && -n "$source_label" ]] || continue
+        evop_append_agent_support_tool_if_available output "$tool_name" "$source_label"
+    done <<<"$(evop_collect_agent_support_tool_candidates "$target_dir" "$package_manager" "$language_profile")"
 
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT="$output"
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_CACHE "$cache_key" "$output"
@@ -662,80 +701,10 @@ evop_project_agent_support_tool_catalog_cached() {
         return 0
     fi
 
-    evop_append_agent_support_tool_catalog_entry output git "host cli"
-    evop_append_agent_support_tool_catalog_entry output zsh "shell runtime"
-    evop_append_agent_support_tool_catalog_entry output sh "shell runtime"
-    evop_append_agent_support_tool_catalog_entry output find "filesystem cli"
-    evop_append_agent_support_tool_catalog_entry output xargs "pipeline cli"
-    evop_append_agent_support_tool_catalog_entry output sed "text cli"
-    evop_append_agent_support_tool_catalog_entry output awk "text cli"
-
-    if evop_command_available_cached rg; then
-        evop_append_agent_support_tool_catalog_entry output rg "search cli"
-    elif evop_command_available_cached grep; then
-        evop_append_agent_support_tool_catalog_entry output grep "search cli"
-    fi
-
-    if [[ -f "$target_dir/package.json" ]]; then
-        evop_append_agent_support_tool_catalog_entry output jq "json cli"
-        evop_append_agent_support_tool_catalog_entry output node "language runtime"
-    fi
-
-    if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
-        evop_append_agent_support_tool_catalog_entry output make "build tool"
-    fi
-
-    if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then
-        evop_append_agent_support_tool_catalog_entry output docker "container cli"
-    fi
-
-    case "$package_manager" in
-        pnpm|yarn|npm|bun|poetry|uv|cargo|go|composer|gradle|maven|dotnet|flutter|dart|mix|clojure|leiningen|stack|cabal|julia|luarocks|lua|zig|terraform|swift|bundler|cmake|r|python)
-            evop_append_agent_support_tool_catalog_entry output "$package_manager" "package manager"
-            ;;
-    esac
-
-    case "$language_profile" in
-        javascript|typescript)
-            evop_append_agent_support_tool_catalog_entry output node "language runtime"
-            ;;
-        python)
-            evop_append_agent_support_tool_catalog_entry output python3 "language runtime"
-            ;;
-        ruby)
-            evop_append_agent_support_tool_catalog_entry output ruby "language runtime"
-            ;;
-        php)
-            evop_append_agent_support_tool_catalog_entry output php "language runtime"
-            ;;
-        go)
-            evop_append_agent_support_tool_catalog_entry output go "language runtime"
-            ;;
-        rust)
-            evop_append_agent_support_tool_catalog_entry output cargo "language runtime"
-            ;;
-        java|kotlin)
-            evop_append_agent_support_tool_catalog_entry output java "language runtime"
-            ;;
-        csharp|fsharp|visual-basic)
-            evop_append_agent_support_tool_catalog_entry output dotnet "language runtime"
-            ;;
-        dart)
-            evop_append_agent_support_tool_catalog_entry output dart "language runtime"
-            ;;
-        elixir)
-            evop_append_agent_support_tool_catalog_entry output elixir "language runtime"
-            ;;
-        swift)
-            evop_append_agent_support_tool_catalog_entry output swift "language runtime"
-            ;;
-        lua)
-            evop_append_agent_support_tool_catalog_entry output lua "language runtime"
-            ;;
-        terraform)
-            evop_append_agent_support_tool_catalog_entry output terraform "language runtime"
-            ;;
-    esac
+    while IFS=$'\t' read -r tool_name source_label; do
+        [[ -n "$tool_name" && -n "$source_label" ]] || continue
+        evop_append_agent_support_tool_catalog_entry output "$tool_name" "$source_label"
+    done <<<"$(evop_collect_agent_support_tool_candidates "$target_dir" "$package_manager" "$language_profile")"
 
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT="$output"
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_CACHE "$cache_key" "$output"

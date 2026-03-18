@@ -12,6 +12,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 5. The result is consumed in one of three ways:
    - `LOOP.sh` / `MAIN.sh` inject it into the agent prompt.
    - `INSPECT.sh` prints it for humans or writes machine-readable report files.
+   - `CATALOG.sh` prints the reduced agent command/support-tool menu for wrappers.
    - `VERIFY.sh` executes the detected verification chain.
    - `PROFILES.sh` exposes the built-in profile catalog for humans and wrappers.
 
@@ -23,6 +24,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `LOOP.sh`: single agent iteration
 - `DOCTOR.sh`: environment readiness check
 - `INSPECT.sh`: repository inspection and prompt preview
+- `CATALOG.sh`: focused agent command/support-tool catalog reporting
 - `VERIFY.sh`: command-chain execution for lint/typecheck/test/build
 - `STATUS.sh`: run-history filtering and report export
 - `PROFILES.sh`: built-in profile catalog reporting
@@ -35,6 +37,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/config.sh`: `.evoprogrammer.conf` loading
 - `lib/prompt-facts.sh`: cached structured prompt-fact extraction shared by profile resolution and workflow rebuilding
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
+- `lib/catalog.sh`: catalog-format validation and stdout/report-file dispatch
 - `lib/status-collect.sh`: status filtering and metadata collection
 - `lib/status-render.sh`: summary/json/env rendering for status output
 - `lib/status.sh`: aggregator for status helpers
@@ -221,10 +224,16 @@ resolved executable paths, so wrappers can invoke discovered machine tools
 without reparsing human-readable output or paying for duplicate path lookups.
 
 `INSPECT.sh` now also exposes that agent-facing tool menu through dedicated
-`agent`, `agent-json`, and `agent-env` output modes. Those modes use a reduced
-analysis path that only resolves the package manager, workspace package roots,
-agent command catalog, and support tools, so wrappers can fetch callable
-surfaces without paying for the full repository architecture report.
+`agent`, `agent-json`, and `agent-env` output modes. `CATALOG.sh` builds on the
+same reduced analysis path, but turns that agent-facing tool menu into a
+first-class command with `all|commands|support` slices for wrappers that only
+need callable surfaces without the broader inspection report.
+
+The support-tool path now also shares one candidate-collection pass between the
+structured catalog and the flattened support-tool list. That keeps agent-facing
+summary output, JSON/env export, and wrapper-oriented catalog output aligned
+while trimming duplicate command-probe logic from the reduced inspection hot
+path.
 
 ## Command Model
 

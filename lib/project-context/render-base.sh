@@ -124,6 +124,8 @@ evop_render_agent_support_tool_catalog_json() {
 }
 
 evop_render_agent_catalog_bundle_json() {
+    local output_kind="${1:-all}"
+
     printf '{\n'
     printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
     printf '  "agent": %s,\n' "$(evop_render_json_string_or_null "${AGENT:-}")"
@@ -133,10 +135,21 @@ evop_render_agent_catalog_bundle_json() {
     printf '  "package_manager": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER")"
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
     printf '  "workspace_packages": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
-    printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG")"
-    printf '  "agent_support_tool_catalog": %s,\n' "$(evop_render_agent_support_tool_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG")"
-    printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
-    printf '  "agent_support_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+    printf '  "kind": %s,\n' "$(evop_render_json_string "$output_kind")"
+    if [[ "$output_kind" == "support" ]]; then
+        printf '  "agent_command_catalog": [],\n'
+        printf '  "agent_tools": [],\n'
+    else
+        printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG")"
+        printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+    fi
+    if [[ "$output_kind" == "commands" ]]; then
+        printf '  "agent_support_tool_catalog": [],\n'
+        printf '  "agent_support_tools": [],\n'
+    else
+        printf '  "agent_support_tool_catalog": %s,\n' "$(evop_render_agent_support_tool_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG")"
+        printf '  "agent_support_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+    fi
     printf '  "timings": %s\n' "$(evop_render_project_context_timings_json)"
     printf '}\n'
 }

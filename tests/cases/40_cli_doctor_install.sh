@@ -7,6 +7,7 @@ assert_contains "$cli_help_output" "Usage:" "CLI help should show usage"
 assert_contains "$cli_help_output" "EvoProgrammer [global-options] clean [options]" "CLI help should mention the clean subcommand"
 assert_contains "$cli_help_output" "EvoProgrammer [global-options] status [options]" "CLI help should mention the status subcommand"
 assert_contains "$cli_help_output" "EvoProgrammer [global-options] profiles [options]" "CLI help should mention the profiles subcommand"
+assert_contains "$cli_help_output" "EvoProgrammer [global-options] catalog [options]" "CLI help should mention the catalog subcommand"
 pass "CLI help"
 
 FAKE_CODEX_LOG="$TEST_TMPDIR/cli-once.log"
@@ -99,6 +100,22 @@ cli_profiles_output="$(run_expect_success "CLI profiles should dispatch to PROFI
 assert_contains "$cli_profiles_output" "Supported profiles (Project types):" "CLI profiles should dispatch to the profile catalog command"
 assert_contains "$cli_profiles_output" "cli-tool:" "CLI profiles should render profile entries"
 pass "CLI profiles behavior"
+
+cli_catalog_output="$(run_expect_success "CLI catalog should dispatch to CATALOG" sh "$CLI_SCRIPT" catalog --target-dir "$TEST_TARGET_DIR" --format json --kind support)"
+cli_catalog_summary="$(CLI_CATALOG_JSON="$cli_catalog_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["CLI_CATALOG_JSON"])
+print(data["kind"])
+print(f"commands_ok={data['agent_command_catalog'] == []}")
+print(f"support_ok={'git [host cli]' in data['agent_support_tools']}")
+PY
+)"
+assert_contains "$cli_catalog_summary" "support" "CLI catalog should forward the selected kind"
+assert_contains "$cli_catalog_summary" "commands_ok=True" "CLI catalog support view should omit command catalog entries"
+assert_contains "$cli_catalog_summary" "support_ok=True" "CLI catalog should include support tools"
+pass "CLI catalog behavior"
 
 install_dir="$TEST_TMPDIR/install-bin"
 install_home="$TEST_TMPDIR/install-home"

@@ -3,6 +3,7 @@
 for rel_path in \
     bin/EvoProgrammer \
     CLEAN.sh \
+    CATALOG.sh \
     DOCTOR.sh \
     INSPECT.sh \
     LOOP.sh \

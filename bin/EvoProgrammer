@@ -17,6 +17,7 @@ VERIFY_SCRIPT="$ROOT_DIR/VERIFY.sh"
 CLEAN_SCRIPT="$ROOT_DIR/CLEAN.sh"
 STATUS_SCRIPT="$ROOT_DIR/STATUS.sh"
 PROFILES_SCRIPT="$ROOT_DIR/PROFILES.sh"
+CATALOG_SCRIPT="$ROOT_DIR/CATALOG.sh"
 COMMON_LIB="$ROOT_DIR/lib/common.sh"
 VERSION_LIB="$ROOT_DIR/lib/version.sh"
 
@@ -34,6 +35,7 @@ Usage:
   EvoProgrammer [global-options] clean [options]
   EvoProgrammer [global-options] status [options]
   EvoProgrammer [global-options] profiles [options]
+  EvoProgrammer [global-options] catalog [options]
   EvoProgrammer help
 
 Default behavior:
@@ -47,6 +49,7 @@ Subcommands:
   clean   Remove old run artifacts from the target directory.
   status  Show recent run and session history from the target directory.
   profiles  List supported language, framework, and project-type profiles.
+  catalog  Print an agent-facing command and support-tool catalog.
   help    Show this help text.
 
 Examples:
@@ -63,13 +66,15 @@ Examples:
   EvoProgrammer clean --target-dir /path/to/project --older-than 7 --dry-run
   EvoProgrammer status --target-dir /path/to/project --last 5
   EvoProgrammer profiles --category frameworks
+  EvoProgrammer catalog --target-dir /path/to/project --kind commands --format json
 
 Use 'EvoProgrammer help' for the wrapper, './MAIN.sh --help' for loop options,
  './LOOP.sh --help' for single-run options, './DOCTOR.sh --help'
 for environment checks, './INSPECT.sh --help' for repo inspection, and
  './VERIFY.sh --help' for command verification, './CLEAN.sh --help' for
 artifact cleanup, './STATUS.sh --help' for run history, and
- './PROFILES.sh --help' for profile catalog output.
+ './PROFILES.sh --help' for profile catalog output, and './CATALOG.sh --help'
+for the agent command catalog.
 EOF
 }
 
@@ -109,7 +114,7 @@ find_subcommand() {
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
                 ;;
-            once|doctor|inspect|verify|clean|status|profiles)
+            once|doctor|inspect|verify|clean|status|profiles|catalog)
                 EVOP_CLI_SUBCOMMAND="$arg"
                 EVOP_CLI_SUBCOMMAND_INDEX="$index"
                 return 0
@@ -150,6 +155,7 @@ evop_require_executable_file "$VERIFY_SCRIPT" "Verify script"
 evop_require_executable_file "$CLEAN_SCRIPT" "Clean script"
 evop_require_executable_file "$STATUS_SCRIPT" "Status script"
 evop_require_executable_file "$PROFILES_SCRIPT" "Profiles script"
+evop_require_executable_file "$CATALOG_SCRIPT" "Catalog script"
 
 find_subcommand "$@" || true
 
@@ -187,6 +193,10 @@ case "${EVOP_CLI_SUBCOMMAND:-}" in
     profiles)
         build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
         exec "$PROFILES_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
+        ;;
+    catalog)
+        build_forwarded_args "$EVOP_CLI_SUBCOMMAND_INDEX" "$@"
+        exec "$CATALOG_SCRIPT" "${EVOP_FORWARDED_ARGS[@]}"
         ;;
     *)
         exec "$MAIN_SCRIPT" "$@"
