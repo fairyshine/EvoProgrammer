@@ -18,6 +18,12 @@ evop_print_project_inspection_env() {
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_CAPABILITIES" "$(
+        while IFS=$'\t' read -r kind command source; do
+            [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+            printf '%s\t%s\n' "$command" "$(evop_agent_command_capability "$kind" "$command" "$source")"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    )"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
@@ -66,6 +72,8 @@ evop_print_project_inspection_env() {
 
 evop_print_project_agent_catalog_env() {
     local output_kind="${1:-all}"
+    local capability_filter="${2:-all}"
+    local filtered_catalog=""
 
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TARGET_DIR" "${TARGET_DIR:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_AGENT" "${AGENT:-}"
@@ -75,12 +83,26 @@ evop_print_project_agent_catalog_env() {
     evop_print_env_assignment "EVOP_AGENT_CATALOG_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_KIND" "$output_kind"
+    evop_print_env_assignment "EVOP_AGENT_CATALOG_CAPABILITY_FILTER" "$capability_filter"
     if [[ "$output_kind" == "support" ]]; then
         evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES" ""
         evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" ""
     else
-        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
-        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
+        filtered_catalog="$(evop_filter_agent_command_catalog_lines "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}" "$capability_filter")"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" "$(
+            while IFS=$'\t' read -r kind capability command source; do
+                [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+                printf '%s\t%s\t%s\n' "$kind" "$command" "$source"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES" "$(
+            while IFS=$'\t' read -r kind capability command source; do
+                [[ -n "$command" && -n "$capability" ]] || continue
+                printf '%s\t%s\n' "$command" "$capability"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "$(evop_render_agent_tool_lines_from_catalog "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}" "$capability_filter")"
     fi
     if [[ "$output_kind" == "commands" ]]; then
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" ""

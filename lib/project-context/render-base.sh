@@ -77,26 +77,71 @@ evop_render_json_array_from_lines() {
     printf '%s' "$output"
 }
 
+evop_filter_agent_command_catalog_lines() {
+    local text="$1"
+    local capability_filter="${2:-all}"
+    local output=""
+    local kind=""
+    local command=""
+    local source=""
+    local capability=""
+
+    while IFS=$'\t' read -r kind command source; do
+        [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+        if ! evop_agent_command_catalog_matches_capability "$kind" "$command" "$source" "$capability_filter"; then
+            continue
+        fi
+        capability="$(evop_agent_command_capability "$kind" "$command" "$source")"
+        output+="$kind"$'\t'"$capability"$'\t'"$command"$'\t'"$source"$'\n'
+    done <<<"$text"
+
+    printf '%s' "$output"
+}
+
 evop_render_agent_command_catalog_json() {
     local text="$1"
+    local capability_filter="${2:-all}"
     local output="["
+    local filtered_text=""
     local kind=""
+    local capability=""
     local command=""
     local source=""
     local needs_comma=0
 
-    while IFS=$'\t' read -r kind command source; do
-        [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
+    while IFS=$'\t' read -r kind capability command source; do
+        [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
         if (( needs_comma == 1 )); then
             output+=", "
         fi
-        output+="{\"kind\": $(evop_render_json_string "$kind"), \"command\": "
-        output+="$(evop_render_json_string "$command")"
+        output+="{\"kind\": $(evop_render_json_string "$kind"), \"capability\": "
+        output+="$(evop_render_json_string "$capability")"
+        output+=", \"command\": $(evop_render_json_string "$command")"
         output+=", \"source\": $(evop_render_json_string "$source")}"
         needs_comma=1
-    done <<<"$text"
+    done <<<"$filtered_text"
 
     output+="]"
+    printf '%s' "$output"
+}
+
+evop_render_agent_tool_lines_from_catalog() {
+    local text="$1"
+    local capability_filter="${2:-all}"
+    local filtered_text=""
+    local kind=""
+    local capability=""
+    local command=""
+    local source=""
+    local output=""
+
+    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
+    while IFS=$'\t' read -r kind capability command source; do
+        [[ -n "$command" && -n "$source" ]] || continue
+        output+="$command [$source]"$'\n'
+    done <<<"$filtered_text"
+
     printf '%s' "$output"
 }
 
@@ -125,6 +170,7 @@ evop_render_agent_support_tool_catalog_json() {
 
 evop_render_agent_catalog_bundle_json() {
     local output_kind="${1:-all}"
+    local capability_filter="${2:-all}"
 
     printf '{\n'
     printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
@@ -136,12 +182,13 @@ evop_render_agent_catalog_bundle_json() {
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
     printf '  "workspace_packages": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
     printf '  "kind": %s,\n' "$(evop_render_json_string "$output_kind")"
+    printf '  "capability_filter": %s,\n' "$(evop_render_json_string "$capability_filter")"
     if [[ "$output_kind" == "support" ]]; then
         printf '  "agent_command_catalog": [],\n'
         printf '  "agent_tools": [],\n'
     else
-        printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG")"
-        printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+        printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
+        printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$(evop_render_agent_tool_lines_from_catalog "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")")"
     fi
     if [[ "$output_kind" == "commands" ]]; then
         printf '  "agent_support_tool_catalog": [],\n'

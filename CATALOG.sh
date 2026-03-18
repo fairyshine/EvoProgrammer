@@ -27,6 +27,7 @@ source "$CATALOG_LIB"
 evop_init_common_context
 OUTPUT_FORMAT="summary"
 OUTPUT_KIND="all"
+CAPABILITY_FILTER="all"
 REPORT_FILE=""
 REPORT_FORMAT=""
 
@@ -46,6 +47,9 @@ Options:
       --context-file FILE  Reuse an `inspect --format env` context snapshot.
       --format NAME        Output format: summary, json, or env.
       --kind NAME          Catalog slice: all, commands, or support.
+      --capability NAME    Command capability filter: all, inspect, verify, lint,
+                           clean, status, profiles, catalog, bootstrap, release,
+                           generate, format, doctor, context, task, automation.
       --report-file FILE   Also write catalog output to a file.
       --report-format NAME Report file format. Defaults to --format.
   -h, --help               Show this help text.
@@ -66,6 +70,11 @@ while (($# > 0)); do
         --kind)
             evop_require_option_value "$1" "$#"
             OUTPUT_KIND="$2"
+            shift 2
+            ;;
+        --capability)
+            evop_require_option_value "$1" "$#"
+            CAPABILITY_FILTER="$2"
             shift 2
             ;;
         --report-file)
@@ -105,6 +114,7 @@ fi
 
 evop_validate_catalog_format "$OUTPUT_FORMAT"
 evop_validate_catalog_kind "$OUTPUT_KIND"
+evop_validate_catalog_capability "$CAPABILITY_FILTER"
 
 if [[ -z "$REPORT_FORMAT" ]]; then
     REPORT_FORMAT="$OUTPUT_FORMAT"
@@ -112,5 +122,5 @@ fi
 evop_validate_catalog_format "$REPORT_FORMAT"
 
 evop_finalize_agent_analysis_context
-evop_print_agent_catalog_output "$OUTPUT_FORMAT" "$OUTPUT_KIND"
-evop_write_agent_catalog_report "$REPORT_FILE" "$REPORT_FORMAT" "$OUTPUT_KIND"
+evop_print_agent_catalog_output "$OUTPUT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER"
+evop_write_agent_catalog_report "$REPORT_FILE" "$REPORT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER"

@@ -32,6 +32,167 @@ evop_append_agent_command_surface_line() {
     evop_append_unique_multiline_value "$var_name" "$command [$source]"
 }
 
+evop_agent_command_capability() {
+    local kind="$1"
+    local command="$2"
+    local source="$3"
+    local capability=""
+    local token=""
+
+    if [[ "$command" == ./* ]]; then
+        token="${command##*/}"
+    else
+        token="${command##* }"
+    fi
+    token="${token##*/}"
+    token="${token%.sh}"
+    token="${token%.py}"
+    token="${token%.js}"
+    token="${token%.cjs}"
+    token="${token%.mjs}"
+    token="${token:l}"
+
+    case "$token" in
+        inspect)
+            capability="inspect"
+            ;;
+        verify|run_tests|run_extended_tests)
+            capability="verify"
+            ;;
+        run_lint)
+            capability="lint"
+            ;;
+        clean)
+            capability="clean"
+            ;;
+        status)
+            capability="status"
+            ;;
+        profiles)
+            capability="profiles"
+            ;;
+        catalog)
+            capability="catalog"
+            ;;
+        install|bootstrap)
+            capability="bootstrap"
+            ;;
+        release)
+            capability="release"
+            ;;
+        generate|codegen)
+            capability="generate"
+            ;;
+        format|fmt)
+            capability="format"
+            ;;
+        doctor)
+            capability="doctor"
+            ;;
+        sync-context|context-tool)
+            capability="context"
+            ;;
+    esac
+
+    if [[ -z "$capability" ]]; then
+        case "$kind" in
+            test_harness_script)
+                capability="verify"
+                ;;
+            repo_helper_program|repo_helper_executable)
+                case "$command" in
+                    *bootstrap*|*setup*)
+                        capability="bootstrap"
+                        ;;
+                    *generate*|*codegen*)
+                        capability="generate"
+                        ;;
+                    *release*)
+                        capability="release"
+                        ;;
+                    *inspect*|*context*)
+                        capability="context"
+                        ;;
+                    *verify*|*test*)
+                        capability="verify"
+                        ;;
+                    *lint*)
+                        capability="lint"
+                        ;;
+                    *clean*)
+                        capability="clean"
+                        ;;
+                    *)
+                        capability="automation"
+                        ;;
+                esac
+                ;;
+            repo_executable)
+                capability="task"
+                ;;
+            make_target|package_script)
+                case "$command" in
+                    *inspect*)
+                        capability="inspect"
+                        ;;
+                    *verify*|*test*|*run_tests*)
+                        capability="verify"
+                        ;;
+                    *lint*)
+                        capability="lint"
+                        ;;
+                    *clean*)
+                        capability="clean"
+                        ;;
+                    *status*)
+                        capability="status"
+                        ;;
+                    *profile*)
+                        capability="profiles"
+                        ;;
+                    *catalog*)
+                        capability="catalog"
+                        ;;
+                    *generate*|*codegen*)
+                        capability="generate"
+                        ;;
+                    *format*|*fmt*)
+                        capability="format"
+                        ;;
+                    *doctor*)
+                        capability="doctor"
+                        ;;
+                    *)
+                        capability="automation"
+                        ;;
+                esac
+                ;;
+            *)
+                capability="automation"
+                ;;
+        esac
+    fi
+
+    if [[ -z "$capability" && "$source" == "repo executable" ]]; then
+        capability="task"
+    fi
+
+    printf '%s' "$capability"
+}
+
+evop_agent_command_catalog_matches_capability() {
+    local kind="$1"
+    local command="$2"
+    local source="$3"
+    local capability_filter="${4:-all}"
+    local capability=""
+
+    [[ -z "$capability_filter" || "$capability_filter" == "all" ]] && return 0
+
+    capability="$(evop_agent_command_capability "$kind" "$command" "$source")"
+    [[ "$capability" == "$capability_filter" ]]
+}
+
 evop_agent_helper_shell_command() {
     local file_path="$1"
     local rel_path="$2"
@@ -139,24 +300,21 @@ evop_append_test_harness_agent_commands() {
     done
 }
 
-evop_project_agent_command_catalog_cached() {
+evop_project_agent_local_command_catalog_cached() {
     local target_dir="$1"
-    local package_manager="${2:-}"
-    local cache_key="agent-command-catalog|$package_manager"
+    local cache_key="agent-local-command-catalog"
     local output=""
     local candidate=""
     local top_level_script=""
     local makefile=""
     local target=""
-    local command=""
-    local package_json="$target_dir/package.json"
 
-    EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT=""
+    EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT=""
     evop_use_project_context_facts_dir "$target_dir"
 
-    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_CACHE "$cache_key"; then
-        EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
-        printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT"
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_CACHE "$cache_key"; then
+        EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT"
         return 0
     fi
 
@@ -182,16 +340,42 @@ evop_project_agent_command_catalog_cached() {
     fi
 
     if [[ -n "$makefile" ]]; then
-        for target in inspect verify doctor clean status profiles install bootstrap ci release format fmt; do
+        for target in inspect verify doctor clean status profiles catalog install bootstrap ci release format fmt; do
             if evop_makefile_has_target "$makefile" "$target"; then
                 evop_append_agent_command_catalog_entry output "make_target" "make $target" "make target"
             fi
         done
     fi
 
+    EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT="$output"
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_CACHE "$cache_key" "$output"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT"
+}
+
+evop_project_agent_command_catalog_cached() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+    local cache_key="agent-command-catalog|$package_manager"
+    local output=""
+    local target=""
+    local command=""
+    local package_json="$target_dir/package.json"
+
+    EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT=""
+    evop_use_project_context_facts_dir "$target_dir"
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_CACHE "$cache_key"; then
+        EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT"
+        return 0
+    fi
+
+    evop_project_agent_local_command_catalog_cached "$target_dir" >/dev/null
+    output="$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT"
+
     if [[ -n "$package_manager" && -f "$package_json" ]]; then
         evop_project_package_json_scripts_cached "$package_json" >/dev/null
-        for target in inspect verify doctor clean status profiles install bootstrap setup ci release generate codegen format fmt; do
+        for target in inspect verify doctor clean status profiles catalog install bootstrap setup ci release generate codegen format fmt; do
             case $'\n'"$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"$'\n' in
                 *$'\n'"$target"$'\n'*)
                     command="$(evop_agent_tool_surface_script_command "$package_manager" "$target")"

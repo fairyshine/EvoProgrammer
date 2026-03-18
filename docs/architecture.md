@@ -226,8 +226,14 @@ without reparsing human-readable output or paying for duplicate path lookups.
 `INSPECT.sh` now also exposes that agent-facing tool menu through dedicated
 `agent`, `agent-json`, and `agent-env` output modes. `CATALOG.sh` builds on the
 same reduced analysis path, but turns that agent-facing tool menu into a
-first-class command with `all|commands|support` slices for wrappers that only
-need callable surfaces without the broader inspection report.
+first-class command with `all|commands|support` slices and capability filters
+for wrappers that only need callable surfaces without the broader inspection
+report. The command catalog now also derives a stable capability label per
+entry, so wrappers can ask for `bootstrap`, `inspect`, `verify`, `generate`,
+and similar intent-level slices instead of reparsing raw command strings. A
+repo-local command catalog cache now holds the bin/script/helper/test-harness
+scan separately from package-manager overlays, which trims repeat work when the
+same repo context is rendered through multiple catalog outputs.
 
 The support-tool path now also shares one candidate-collection pass between the
 structured catalog and the flattened support-tool list. That keeps agent-facing

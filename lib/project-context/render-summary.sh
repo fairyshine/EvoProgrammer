@@ -34,12 +34,18 @@ evop_print_project_command_report() {
 
 evop_print_project_agent_catalog_report() {
     local output_kind="${1:-all}"
+    local capability_filter="${2:-all}"
+    local kind=""
+    local capability=""
+    local command=""
+    local source=""
 
     [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
     [[ -n "${AGENT:-}" ]] && evop_print_key_value "Agent:" "$AGENT"
     evop_print_resolved_profile "Language profile" "$LANGUAGE_PROFILE" "$LANGUAGE_PROFILE_SOURCE"
     [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && evop_print_key_value "Package manager:" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
     [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && evop_print_key_value "Workspace mode:" "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    [[ "$capability_filter" != "all" ]] && evop_print_key_value "Capability filter:" "$capability_filter"
     if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
         evop_print_section "Workspace packages:"
         while IFS= read -r line; do
@@ -48,10 +54,14 @@ evop_print_project_agent_catalog_report() {
     fi
     if [[ "$output_kind" != "support" && -n "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" ]]; then
         evop_print_section "Agent command catalog:"
-        while IFS=$'\t' read -r kind command source; do
-            [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
-            evop_print_list_item "$command [$kind; $source]"
-        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG"
+        if [[ -n "$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")" ]]; then
+            while IFS=$'\t' read -r kind capability command source; do
+                [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
+                evop_print_list_item "$command [$kind; $capability; $source]"
+            done <<<"$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
+        else
+            evop_print_list_item "none"
+        fi
     fi
     if [[ "$output_kind" != "commands" && -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
         evop_print_section "Agent support tools:"

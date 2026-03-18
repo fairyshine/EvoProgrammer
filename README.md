@@ -140,6 +140,7 @@ EvoProgrammer profiles --category frameworks --format json
 # Export a focused agent tool catalog
 EvoProgrammer catalog --target-dir /path/to/project
 EvoProgrammer catalog --target-dir /path/to/project --kind commands --format json
+EvoProgrammer catalog --target-dir /path/to/project --kind commands --capability bootstrap
 EvoProgrammer catalog --target-dir /path/to/project --kind support --format env
 ```
 
@@ -255,9 +256,13 @@ intentionally skip the broader architecture and workflow report so wrappers can
 fetch the callable tool menu with less detection work.
 
 `catalog` exposes that same agent-facing tool menu as a first-class subcommand,
-with `--kind all|commands|support` filters and `summary|json|env` output. Use it
-when a wrapper or coding agent only needs callable repo surfaces and host
-tooling without the wider inspection report.
+with `--kind all|commands|support` filters, `summary|json|env` output, and
+`--capability` filtering for command roles such as `inspect`, `verify`,
+`bootstrap`, `generate`, or `context`. The structured command catalog also
+includes a `capability` field so wrappers can select repo entrypoints by intent
+without reparsing command strings. Use it when a wrapper or coding agent only
+needs callable repo surfaces and host tooling without the wider inspection
+report.
 
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, including detected workspace packages for
