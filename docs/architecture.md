@@ -146,6 +146,9 @@ signals on top of set lookups instead of repeatedly scanning every collected
 basename for glob matches. Repeated glob-style filename checks are now cached
 too, which trims redundant `*.cabal`, `*.ino`, `*.zig`, and similar scans across
 language, framework, and project-type detection passes in one inspection run.
+The same layer now also keeps basename and simple-extension indexes for the
+collected file list, so exact filename and `*.ext` lookups can answer common
+detection and manifest queries without rescanning every collected file.
 
 ## Command Model
 

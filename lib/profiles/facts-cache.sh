@@ -19,6 +19,8 @@ typeset -A EVOP_DETECT_FILE_TEXT_CACHE=()
 typeset -A EVOP_DETECT_FILE_BASENAME_SET=()
 typeset -A EVOP_DETECT_FILE_EXTENSION_SET=()
 typeset -A EVOP_DETECT_PATH_BASENAME_SET=()
+typeset -A EVOP_DETECT_FILE_PATHS_BY_BASENAME=()
+typeset -A EVOP_DETECT_FILE_PATHS_BY_EXTENSION=()
 
 EVOP_DETECT_PRUNE_DIRS=(.git node_modules vendor target build dist __pycache__ .venv .next .tox .mypy_cache .pytest_cache .cargo .gradle .bundle)
 
@@ -38,6 +40,8 @@ evop_reset_detection_facts() {
     EVOP_DETECT_FILE_BASENAME_SET=()
     EVOP_DETECT_FILE_EXTENSION_SET=()
     EVOP_DETECT_PATH_BASENAME_SET=()
+    EVOP_DETECT_FILE_PATHS_BY_BASENAME=()
+    EVOP_DETECT_FILE_PATHS_BY_EXTENSION=()
 }
 
 evop_detection_cache_key() {

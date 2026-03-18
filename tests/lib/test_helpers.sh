@@ -375,6 +375,38 @@ end
 EOF
 }
 
+setup_scala_workspace() {
+    if [[ -n "${TEST_SCALA_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_SCALA_DIR="$TEST_TMPDIR/scala-app"
+    mkdir -p "$TEST_SCALA_DIR/src/main/scala" "$TEST_SCALA_DIR/src/test/scala" "$TEST_SCALA_DIR/project"
+
+    cat >"$TEST_SCALA_DIR/build.sbt" <<'EOF'
+ThisBuild / scalaVersion := "3.3.1"
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "demo-scala"
+  )
+EOF
+
+    cat >"$TEST_SCALA_DIR/project/build.properties" <<'EOF'
+sbt.version=1.10.0
+EOF
+
+    cat >"$TEST_SCALA_DIR/src/main/scala/Main.scala" <<'EOF'
+object Main extends App {
+  println("hello")
+}
+EOF
+
+    cat >"$TEST_SCALA_DIR/src/test/scala/MainSpec.scala" <<'EOF'
+class MainSpec
+EOF
+}
+
 setup_node_cli_workspace() {
     if [[ -n "${TEST_NODE_CLI_DIR:-}" ]]; then
         return 0
@@ -397,6 +429,49 @@ EOF
 
     cat >"$TEST_NODE_CLI_DIR/src/index.ts" <<'EOF'
 export {};
+EOF
+}
+
+setup_lua_workspace() {
+    if [[ -n "${TEST_LUA_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_LUA_DIR="$TEST_TMPDIR/lua-app"
+    mkdir -p "$TEST_LUA_DIR/lua" "$TEST_LUA_DIR/spec"
+
+    cat >"$TEST_LUA_DIR/demo-scm.rockspec" <<'EOF'
+package = "demo"
+version = "scm-1"
+source = { url = "git://example.com/demo" }
+description = {
+  summary = "Demo Lua project"
+}
+build = {
+  type = "builtin",
+  modules = {
+    ["demo.core"] = "lua/demo/core.lua"
+  }
+}
+test = {
+  type = "command",
+  command = "busted"
+}
+EOF
+
+    mkdir -p "$TEST_LUA_DIR/lua/demo"
+    cat >"$TEST_LUA_DIR/lua/demo/core.lua" <<'EOF'
+local M = {}
+
+function M.answer()
+  return 42
+end
+
+return M
+EOF
+
+    cat >"$TEST_LUA_DIR/spec/core_spec.lua" <<'EOF'
+describe("core", function() end)
 EOF
 }
 

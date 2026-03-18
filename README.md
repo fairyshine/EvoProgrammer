@@ -16,7 +16,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 |---|---|---|
 | Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua | React, Next.js, Vue, Svelte, Nuxt, Astro, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Infrastructure, Paper, Scientific Experiment, PPT, Office |
 
-Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Nuxt or Astro frontends, Electron or Tauri desktop apps, infrastructure repos, and game-engine repos now resolve more accurately, and inspect/verify can infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, and CMake projects.
+Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Nuxt or Astro frontends, Electron or Tauri desktop apps, infrastructure repos, and game-engine repos now resolve more accurately, and inspect/verify can infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, sbt, LuaRocks, and CMake projects.
 
 ## Quick Start
 

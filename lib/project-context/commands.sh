@@ -97,6 +97,12 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        scala)
+            if [[ -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" ]]; then
+                printf 'sbt'
+                return 0
+            fi
+            ;;
         go)
             if [[ -f "$target_dir/go.mod" ]]; then
                 printf 'go'
@@ -175,6 +181,16 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        lua)
+            if evop_directory_has_file_pattern "$target_dir" "*.rockspec"; then
+                printf 'luarocks'
+                return 0
+            fi
+            if evop_directory_has_file_extension "$target_dir" "lua"; then
+                printf 'lua'
+                return 0
+            fi
+            ;;
         zig)
             if [[ -f "$target_dir/build.zig" ]]; then
                 printf 'zig'
@@ -231,6 +247,11 @@ evop_choose_package_manager() {
 
     if [[ -f "$target_dir/Cargo.toml" ]]; then
         printf 'cargo'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" ]]; then
+        printf 'sbt'
         return 0
     fi
 
@@ -304,6 +325,16 @@ evop_choose_package_manager() {
         return 0
     fi
 
+    if evop_directory_has_file_pattern "$target_dir" "*.rockspec"; then
+        printf 'luarocks'
+        return 0
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "lua"; then
+        printf 'lua'
+        return 0
+    fi
+
     if [[ -f "$target_dir/build.zig" ]]; then
         printf 'zig'
         return 0
@@ -352,8 +383,8 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
-        || evop_directory_has_file_pattern "$target_dir" "*.cabal" \
+    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
+        || evop_directory_has_file_pattern "$target_dir" "*.cabal" "*.rockspec" \
         || evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
         printf 'single-package'
         return 0
@@ -431,6 +462,13 @@ evop_detect_language_default_commands() {
             evop_set_project_command_if_empty test "cargo test" "Rust defaults"
             evop_set_project_command_if_empty lint "cargo clippy --all-targets --all-features" "Rust defaults"
             evop_set_project_command_if_empty typecheck "cargo check" "Rust defaults"
+            ;;
+        scala)
+            if [[ "$package_manager" == "sbt" ]]; then
+                evop_set_project_command_if_empty dev "sbt run" "sbt defaults"
+                evop_set_project_command_if_empty build "sbt compile" "sbt defaults"
+                evop_set_project_command_if_empty test "sbt test" "sbt defaults"
+            fi
             ;;
         go)
             evop_set_project_command_if_empty build "go build ./..." "Go defaults"
@@ -527,6 +565,16 @@ evop_detect_language_default_commands() {
         julia)
             if [[ "$package_manager" == "julia" ]] && [[ -d "$target_dir/test" || -f "$target_dir/test/runtests.jl" ]]; then
                 evop_set_project_command_if_empty test 'julia --project=. --startup-file=no -e "using Pkg; Pkg.test()"' "Julia defaults"
+            fi
+            ;;
+        lua)
+            if [[ "$package_manager" == "luarocks" ]]; then
+                evop_set_project_command_if_empty build "luarocks make" "LuaRocks defaults"
+                if [[ -d "$target_dir/spec" || -d "$target_dir/tests" || -d "$target_dir/test" ]]; then
+                    evop_set_project_command_if_empty test "luarocks test" "LuaRocks defaults"
+                fi
+            elif [[ "$package_manager" == "lua" ]] && [[ -f "$target_dir/main.lua" ]]; then
+                evop_set_project_command_if_empty dev "lua main.lua" "Lua defaults"
             fi
             ;;
         zig)

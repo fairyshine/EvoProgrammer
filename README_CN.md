@@ -16,7 +16,7 @@
 |---|---|---|
 | Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua | React, Next.js, Vue, Svelte, Nuxt, Astro, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 基础设施, 论文, 科学实验, PPT, Office |
 
-最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、基础设施仓库、以及游戏引擎仓库都会更准确地命中；同时 `inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix 和 CMake 项目推导出更完整的默认命令。
+最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、基础设施仓库、以及游戏引擎仓库都会更准确地命中；同时 `inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix、sbt、LuaRocks 和 CMake 项目推导出更完整的默认命令。
 
 ## 快速开始
 

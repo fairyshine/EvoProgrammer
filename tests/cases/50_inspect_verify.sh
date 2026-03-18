@@ -271,10 +271,28 @@ assert_contains "$elixir_inspect_output" "Test: mix test" "INSPECT should infer 
 assert_contains "$elixir_inspect_output" "Lint: mix format --check-formatted" "INSPECT should infer Mix formatting checks"
 pass "INSPECT Elixir summary"
 
+setup_scala_workspace
+scala_inspect_output="$(run_expect_success "INSPECT should summarize Scala projects" "$INSPECT_SCRIPT" --target-dir "$TEST_SCALA_DIR")"
+assert_contains "$scala_inspect_output" "Language profile: scala (auto-detected)" "INSPECT should detect Scala projects"
+assert_contains "$scala_inspect_output" "Package manager: sbt" "INSPECT should surface the sbt package manager"
+assert_contains "$scala_inspect_output" "Workspace mode: single-package" "INSPECT should classify sbt projects as package-oriented repos"
+assert_contains "$scala_inspect_output" "Build: sbt compile" "INSPECT should infer sbt compile commands"
+assert_contains "$scala_inspect_output" "Test: sbt test" "INSPECT should infer sbt test commands"
+pass "INSPECT Scala summary"
+
 setup_node_cli_workspace
 node_cli_inspect_output="$(run_expect_success "INSPECT should summarize non-shell CLI projects" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_CLI_DIR")"
 assert_contains "$node_cli_inspect_output" "Project type: cli-tool (auto-detected)" "INSPECT should detect non-shell CLI repos"
 pass "INSPECT Node CLI summary"
+
+setup_lua_workspace
+lua_inspect_output="$(run_expect_success "INSPECT should summarize Lua projects" "$INSPECT_SCRIPT" --target-dir "$TEST_LUA_DIR")"
+assert_contains "$lua_inspect_output" "Language profile: lua (auto-detected)" "INSPECT should detect Lua projects"
+assert_contains "$lua_inspect_output" "Package manager: luarocks" "INSPECT should surface the LuaRocks package manager"
+assert_contains "$lua_inspect_output" "Workspace mode: single-package" "INSPECT should classify rockspec repos as package-oriented repos"
+assert_contains "$lua_inspect_output" "Build: luarocks make" "INSPECT should infer LuaRocks build commands"
+assert_contains "$lua_inspect_output" "Test: luarocks test" "INSPECT should infer LuaRocks test commands"
+pass "INSPECT Lua summary"
 
 setup_zig_workspace
 zig_inspect_output="$(run_expect_success "INSPECT should summarize Zig projects" "$INSPECT_SCRIPT" --target-dir "$TEST_ZIG_DIR")"

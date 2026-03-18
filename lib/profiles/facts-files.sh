@@ -19,6 +19,34 @@ evop_detection_record_path_basename() {
     EVOP_DETECT_PATH_BASENAME_SET[$basename]=1
 }
 
+evop_detection_index_rel_path() {
+    local index_name="$1"
+    local key="$2"
+    local rel_path="$3"
+    local current=""
+
+    [[ -n "$key" ]] || return 0
+
+    case "$index_name" in
+        EVOP_DETECT_FILE_PATHS_BY_BASENAME)
+            current="${EVOP_DETECT_FILE_PATHS_BY_BASENAME[$key]-}"
+            if [[ -n "$current" ]]; then
+                EVOP_DETECT_FILE_PATHS_BY_BASENAME[$key]+=$'\n'"$rel_path"
+            else
+                EVOP_DETECT_FILE_PATHS_BY_BASENAME[$key]="$rel_path"
+            fi
+            ;;
+        EVOP_DETECT_FILE_PATHS_BY_EXTENSION)
+            current="${EVOP_DETECT_FILE_PATHS_BY_EXTENSION[$key]-}"
+            if [[ -n "$current" ]]; then
+                EVOP_DETECT_FILE_PATHS_BY_EXTENSION[$key]+=$'\n'"$rel_path"
+            else
+                EVOP_DETECT_FILE_PATHS_BY_EXTENSION[$key]="$rel_path"
+            fi
+            ;;
+    esac
+}
+
 evop_detection_file_basename_exists() {
     local basename="$1"
     [[ -n ${EVOP_DETECT_FILE_BASENAME_SET[$basename]+set} ]]
@@ -32,6 +60,59 @@ evop_detection_file_extension_exists() {
 evop_detection_path_basename_exists() {
     local basename="$1"
     [[ -n ${EVOP_DETECT_PATH_BASENAME_SET[$basename]+set} ]]
+}
+
+evop_detection_rel_paths_for_basename() {
+    local basename="$1"
+
+    printf '%s' "${EVOP_DETECT_FILE_PATHS_BY_BASENAME[$basename]-}"
+}
+
+evop_detection_rel_paths_for_extension() {
+    local extension="$1"
+
+    printf '%s' "${EVOP_DETECT_FILE_PATHS_BY_EXTENSION[$extension]-}"
+}
+
+evop_detection_pattern_is_exact_filename() {
+    local pattern="$1"
+
+    [[ "$pattern" != *[\*\?\[]* ]]
+}
+
+evop_detection_pattern_simple_extension() {
+    local pattern="$1"
+    local extension=""
+
+    [[ "$pattern" == \*.* ]] || return 1
+    extension="${pattern#*.}"
+    [[ -n "$extension" ]] || return 1
+    [[ "$extension" != *.* ]] || return 1
+    [[ "$extension" != *[\*\?\[]* ]]
+}
+
+evop_detection_append_unique_match_lines() {
+    local matches_var_name="$1"
+    local rel_paths="$2"
+    local rel_path=""
+    local current_matches=""
+
+    [[ -n "$rel_paths" ]] || return 0
+
+    while IFS= read -r rel_path; do
+        [[ -n "$rel_path" ]] || continue
+        current_matches="${(P)matches_var_name}"
+        case $'\n'"$current_matches"$'\n' in
+            *$'\n'"$rel_path"$'\n'*)
+                continue
+                ;;
+        esac
+        if [[ -n "$current_matches" ]]; then
+            printf -v "$matches_var_name" '%s\n%s' "$current_matches" "$rel_path"
+        else
+            printf -v "$matches_var_name" '%s' "$rel_path"
+        fi
+    done <<<"$rel_paths"
 }
 
 evop_collect_detection_facts() {
@@ -65,12 +146,14 @@ evop_collect_detection_facts() {
             EVOP_DETECT_FILES_REL+=("$rel")
             EVOP_DETECT_FILE_BASENAMES+=("$entry_basename")
             evop_detection_record_file_basename "$entry_basename"
+            evop_detection_index_rel_path EVOP_DETECT_FILE_PATHS_BY_BASENAME "$entry_basename" "$rel"
             case "$entry_basename" in
                 *.*)
                     entry_extension="${entry_basename##*.}"
                     if [[ "$entry_extension" != "$entry_basename" ]]; then
                         EVOP_DETECT_FILE_EXTENSIONS+=("$entry_extension")
                         evop_detection_record_file_extension "$entry_extension"
+                        evop_detection_index_rel_path EVOP_DETECT_FILE_PATHS_BY_EXTENSION "$entry_extension" "$rel"
                     fi
                     ;;
             esac
@@ -126,6 +209,9 @@ evop_directory_has_file_pattern() {
     local cache_key=""
     local cached_value=""
     local basename
+    local pattern=""
+    local saw_complex_pattern=0
+    local extension=""
 
     evop_ensure_detection_facts "$directory"
     cache_key="$(evop_detection_cache_key "$directory" "$@")"
@@ -137,6 +223,32 @@ evop_directory_has_file_pattern() {
     fi
 
     if (( ${#EVOP_DETECT_FILE_BASENAMES[@]} == 0 )); then
+        evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "0"
+        return 1
+    fi
+
+    for pattern in "$@"; do
+        if evop_detection_pattern_is_exact_filename "$pattern"; then
+            if evop_detection_file_basename_exists "$pattern"; then
+                evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "1"
+                return 0
+            fi
+            continue
+        fi
+
+        if evop_detection_pattern_simple_extension "$pattern"; then
+            extension="${pattern#*.}"
+            if evop_detection_file_extension_exists "$extension"; then
+                evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "1"
+                return 0
+            fi
+            continue
+        fi
+
+        saw_complex_pattern=1
+    done
+
+    if (( saw_complex_pattern == 0 )); then
         evop_detection_cache_store EVOP_DETECT_FILE_PATTERN_CACHE "$cache_key" "0"
         return 1
     fi
@@ -199,6 +311,10 @@ evop_directory_matching_files() {
     local rel_path=""
     local filename=""
     local matches=""
+    local pattern=""
+    local extension=""
+    local indexed_matches=""
+    local saw_complex_pattern=0
 
     EVOP_DETECT_MATCHING_FILES_RESULT=""
     cache_key="$(evop_detection_cache_key "$directory" "$@")"
@@ -212,6 +328,31 @@ evop_directory_matching_files() {
 
     if (( ${#EVOP_DETECT_FILES_REL[@]} == 0 )); then
         evop_detection_cache_store EVOP_DETECT_MATCHING_FILES_CACHE "$cache_key" ""
+        return 0
+    fi
+
+    for pattern in "$@"; do
+        if evop_detection_pattern_is_exact_filename "$pattern"; then
+            indexed_matches="$(evop_detection_rel_paths_for_basename "$pattern")"
+            evop_detection_append_unique_match_lines matches "$indexed_matches"
+            continue
+        fi
+
+        if evop_detection_pattern_simple_extension "$pattern"; then
+            extension="${pattern#*.}"
+            indexed_matches="$(evop_detection_rel_paths_for_extension "$extension")"
+            evop_detection_append_unique_match_lines matches "$indexed_matches"
+            continue
+        fi
+
+        saw_complex_pattern=1
+        break
+    done
+
+    if (( saw_complex_pattern == 0 )); then
+        evop_detection_cache_store EVOP_DETECT_MATCHING_FILES_CACHE "$cache_key" "$matches"
+        EVOP_DETECT_MATCHING_FILES_RESULT="$matches"
+        printf '%s' "$EVOP_DETECT_MATCHING_FILES_RESULT"
         return 0
     fi
 
