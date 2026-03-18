@@ -252,6 +252,36 @@ assert_contains "$flutter_inspect_output" "Test: flutter test" "INSPECT should i
 assert_contains "$flutter_inspect_output" "Lint: flutter analyze" "INSPECT should infer Flutter analyzer commands"
 pass "INSPECT Flutter summary"
 
+setup_maui_workspace
+maui_inspect_output="$(run_expect_success "INSPECT should summarize .NET MAUI mobile projects" "$INSPECT_SCRIPT" --target-dir "$TEST_MAUI_DIR")"
+assert_contains "$maui_inspect_output" "Language profile: csharp (auto-detected)" "INSPECT should detect C# for .NET MAUI projects"
+assert_contains "$maui_inspect_output" "Framework profile: maui (auto-detected)" "INSPECT should detect .NET MAUI framework context"
+assert_contains "$maui_inspect_output" "Project type: mobile-app (auto-detected)" "INSPECT should classify .NET MAUI repos as mobile apps"
+assert_contains "$maui_inspect_output" "Package manager: dotnet" "INSPECT should surface dotnet for .NET MAUI projects"
+assert_contains "$maui_inspect_output" "Build: dotnet build" "INSPECT should infer dotnet build commands for .NET MAUI projects"
+assert_contains "$maui_inspect_output" "Test: dotnet test" "INSPECT should infer dotnet test commands for .NET MAUI projects"
+pass "INSPECT .NET MAUI summary"
+
+setup_expo_workspace
+expo_inspect_output="$(run_expect_success "INSPECT should summarize Expo mobile projects" "$INSPECT_SCRIPT" --target-dir "$TEST_EXPO_DIR")"
+assert_contains "$expo_inspect_output" "Language profile: typescript (auto-detected)" "INSPECT should detect TypeScript for Expo projects"
+assert_contains "$expo_inspect_output" "Framework profile: expo (auto-detected)" "INSPECT should detect Expo framework context"
+assert_contains "$expo_inspect_output" "Project type: mobile-app (auto-detected)" "INSPECT should classify Expo repos as mobile apps"
+assert_contains "$expo_inspect_output" "Package manager: npm" "INSPECT should surface npm for Expo projects without an explicit lockfile"
+assert_contains "$expo_inspect_output" "Dev: npx expo start" "INSPECT should infer Expo dev commands"
+assert_contains "$expo_inspect_output" "Typecheck: tsc --noEmit" "INSPECT should preserve TypeScript defaults for Expo projects"
+pass "INSPECT Expo summary"
+
+setup_react_native_workspace
+react_native_inspect_output="$(run_expect_success "INSPECT should summarize React Native mobile projects" "$INSPECT_SCRIPT" --target-dir "$TEST_REACT_NATIVE_DIR")"
+assert_contains "$react_native_inspect_output" "Language profile: typescript (auto-detected)" "INSPECT should detect TypeScript for React Native projects"
+assert_contains "$react_native_inspect_output" "Framework profile: react-native (auto-detected)" "INSPECT should detect React Native framework context"
+assert_contains "$react_native_inspect_output" "Project type: mobile-app (auto-detected)" "INSPECT should classify React Native repos as mobile apps"
+assert_contains "$react_native_inspect_output" "Package manager: npm" "INSPECT should surface npm for React Native projects without an explicit lockfile"
+assert_contains "$react_native_inspect_output" "Dev: npx react-native start" "INSPECT should infer React Native dev commands"
+assert_contains "$react_native_inspect_output" "Typecheck: tsc --noEmit" "INSPECT should preserve TypeScript defaults for React Native projects"
+pass "INSPECT React Native summary"
+
 setup_java_service_workspace
 java_service_inspect_output="$(run_expect_success "INSPECT should summarize Gradle-backed Java services" "$INSPECT_SCRIPT" --target-dir "$TEST_JAVA_SERVICE_DIR")"
 assert_contains "$java_service_inspect_output" "Language profile: java (auto-detected)" "INSPECT should detect Java for Gradle projects"
@@ -261,6 +291,17 @@ assert_contains "$java_service_inspect_output" "Package manager: gradle" "INSPEC
 assert_contains "$java_service_inspect_output" "Build: gradle build" "INSPECT should infer Gradle build commands"
 assert_contains "$java_service_inspect_output" "Test: gradle test" "INSPECT should infer Gradle test commands"
 pass "INSPECT Java service summary"
+
+setup_aspnet_workspace
+aspnet_inspect_output="$(run_expect_success "INSPECT should summarize ASP.NET Core services" "$INSPECT_SCRIPT" --target-dir "$TEST_ASPNET_DIR")"
+assert_contains "$aspnet_inspect_output" "Language profile: csharp (auto-detected)" "INSPECT should detect C# for ASP.NET Core projects"
+assert_contains "$aspnet_inspect_output" "Framework profile: aspnet-core (auto-detected)" "INSPECT should detect ASP.NET Core framework context"
+assert_contains "$aspnet_inspect_output" "Project type: backend-service (auto-detected)" "INSPECT should classify ASP.NET Core repos as backend services"
+assert_contains "$aspnet_inspect_output" "Package manager: dotnet" "INSPECT should surface dotnet as the package manager"
+assert_contains "$aspnet_inspect_output" "Dev: dotnet run" "INSPECT should infer dotnet run for ASP.NET Core services"
+assert_contains "$aspnet_inspect_output" "Build: dotnet build" "INSPECT should infer dotnet build commands"
+assert_contains "$aspnet_inspect_output" "Test: dotnet test" "INSPECT should infer dotnet test commands"
+pass "INSPECT ASP.NET Core summary"
 
 setup_elixir_workspace
 elixir_inspect_output="$(run_expect_success "INSPECT should summarize Elixir projects" "$INSPECT_SCRIPT" --target-dir "$TEST_ELIXIR_DIR")"

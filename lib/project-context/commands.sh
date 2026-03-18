@@ -479,6 +479,8 @@ evop_detect_language_default_commands() {
     local target_dir="$1"
     local package_manager="$2"
     local language_profile="$3"
+    local framework_profile="${4:-}"
+    local project_type="${5:-}"
     local pyproject="$target_dir/pyproject.toml"
 
     case "$language_profile" in
@@ -510,6 +512,9 @@ evop_detect_language_default_commands() {
             fi
             ;;
         csharp)
+            if [[ "$framework_profile" == "aspnet-core" || "$project_type" == "backend-service" || "$project_type" == "cli-tool" ]]; then
+                evop_set_project_command_if_empty dev "dotnet run" ".NET defaults"
+            fi
             evop_set_project_command_if_empty build "dotnet build" ".NET defaults"
             evop_set_project_command_if_empty test "dotnet test" ".NET defaults"
             ;;
@@ -556,6 +561,11 @@ evop_detect_language_default_commands() {
             fi
             ;;
         typescript|javascript)
+            if [[ "$framework_profile" == "expo" ]]; then
+                evop_set_project_command_if_empty dev "npx expo start" "Expo defaults"
+            elif [[ "$framework_profile" == "react-native" ]]; then
+                evop_set_project_command_if_empty dev "npx react-native start" "React Native defaults"
+            fi
             if [[ -f "$target_dir/tsconfig.json" ]]; then
                 evop_set_project_command_if_empty typecheck "tsc --noEmit" "TypeScript defaults"
             fi
@@ -667,7 +677,8 @@ evop_detect_command_hints() {
     local target_dir="$1"
     local package_manager="$2"
     local language_profile="$3"
-    local project_type="${4:-}"
+    local framework_profile="${4:-}"
+    local project_type="${5:-}"
     local package_json="$target_dir/package.json"
     local makefile=""
 
@@ -679,6 +690,6 @@ evop_detect_command_hints() {
 
     evop_detect_package_json_commands "$package_json" "$package_manager"
     evop_detect_makefile_commands "$makefile"
-    evop_detect_language_default_commands "$target_dir" "$package_manager" "$language_profile"
+    evop_detect_language_default_commands "$target_dir" "$package_manager" "$language_profile" "$framework_profile" "$project_type"
     evop_detect_shell_project_commands "$target_dir" "$language_profile" "$project_type"
 }

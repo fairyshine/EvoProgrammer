@@ -82,6 +82,13 @@ keeps Node, Python, Cargo, Go, Composer, Gem, Mix, and JVM dependency checks
 cached and reusable across framework detection, repo-shape inference, and new
 ecosystem support such as Astro, Nuxt, Phoenix, Scala, Lua, and infrastructure
 repositories without scattering repeated text scans through multiple modules.
+Node package detection now also builds a cached quoted-token index for
+`package.json`, so repeated framework and repo-shape checks reuse exact package
+lookups instead of rescanning manifest text for every candidate. That both
+trims the hot path for JavaScript repositories and avoids false positives from
+script bodies or other non-dependency text. The same shared repo-shape layer
+now also centralizes Expo and React Native mobile-app heuristics so framework,
+project-type, and command detection stay aligned.
 
 ### 4. Project inspection
 

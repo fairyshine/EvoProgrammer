@@ -10,6 +10,10 @@ evop_profile_detect() {
         return 1
     fi
 
+    if evop_repo_looks_like_js_mobile_app "$target_dir"; then
+        return 1
+    fi
+
     evop_profile_match_directory_text 90 "$target_dir" "\"react\"" "package.json" && return 0
     evop_profile_match_prompt 40 "$prompt" "react" && return 0
     return 1

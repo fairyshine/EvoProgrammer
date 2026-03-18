@@ -17,17 +17,11 @@ evop_profile_detect() {
         return 0
     fi
 
-    if evop_directory_has_file_named "$target_dir" "AndroidManifest.xml" "Info.plist"; then
+    if evop_repo_looks_like_mobile_app "$target_dir"; then
         EVOP_PROFILE_DETECT_SCORE=96
         return 0
     fi
 
-    if evop_directory_has_path_named "$target_dir" "android" \
-        && evop_directory_has_path_named "$target_dir" "ios"; then
-        EVOP_PROFILE_DETECT_SCORE=95
-        return 0
-    fi
-
-    evop_profile_match_prompt 95 "$prompt" "mobile app" "ios app" "android app" "flutter app" "手机应用" "移动应用" && return 0
+    evop_profile_match_prompt 95 "$prompt" "mobile app" "ios app" "android app" "flutter app" "maui app" "expo app" "react native app" "react-native app" "手机应用" "移动应用" && return 0
     return 1
 }

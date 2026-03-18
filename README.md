@@ -10,13 +10,13 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 
 **Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterates this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
 
-**Broad language, framework, and project coverage** — 20 languages, 29 frameworks, 19 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Flutter mobile app, a Bevy multiplayer game, a FastAPI microservice, a Spring backend, a Phoenix service, an Astro or Nuxt frontend, a Shiny app, Terraform infrastructure, or a CMake-based native tool, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
+**Broad language, framework, and project coverage** — 20 languages, 31 frameworks, 19 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, an Expo or React Native mobile app, a Flutter mobile app, a Bevy multiplayer game, a FastAPI microservice, a Spring backend, a Phoenix service, an Astro or Nuxt frontend, a Shiny app, Terraform infrastructure, or a CMake-based native tool, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
 
-| Languages (20) | Frameworks (29) | Project Types (19) |
+| Languages (20) | Frameworks (31) | Project Types (19) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Infrastructure, Paper, Scientific Experiment, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Expo, React Native, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Infrastructure, Paper, Scientific Experiment, PPT, Office |
 
-Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Nuxt or Astro frontends, Electron or Tauri desktop apps, Shiny web apps, Terraform infrastructure repos, and game-engine repos now resolve more accurately, and inspect/verify can infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, sbt, LuaRocks, R, Terraform, and CMake projects.
+Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Expo or React Native mobile apps, Nuxt or Astro frontends, Electron or Tauri desktop apps, Shiny web apps, Terraform infrastructure repos, and game-engine repos now resolve more accurately. The Node framework hot path now also uses a cached package-token index, which cuts repeated `package.json` scans while making framework detection more precise. `inspect` and `verify` can also infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, sbt, LuaRocks, R, Terraform, CMake, Expo, and React Native projects.
 
 ## Quick Start
 
@@ -69,6 +69,10 @@ EvoProgrammer --language gdscript --framework godot --project-type single-player
 # Flutter mobile app
 EvoProgrammer --language dart --framework flutter --project-type mobile-app \
   "Build offline auth, app navigation, and widget tests"
+
+# Expo mobile app
+EvoProgrammer --language typescript --framework expo --project-type mobile-app \
+  "Build the auth flow, navigation, and device-safe form validation"
 
 # Auto-detect everything from repo + prompt
 EvoProgrammer "Build a multiplayer arena prototype with dedicated-server support"

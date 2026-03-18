@@ -311,6 +311,51 @@ void main() {}
 EOF
 }
 
+setup_aspnet_workspace() {
+    if [[ -n "${TEST_ASPNET_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_ASPNET_DIR="$TEST_TMPDIR/aspnet-service"
+    mkdir -p \
+        "$TEST_ASPNET_DIR/Controllers" \
+        "$TEST_ASPNET_DIR/Properties" \
+        "$TEST_ASPNET_DIR/tests"
+
+    cat >"$TEST_ASPNET_DIR/DemoService.csproj" <<'EOF'
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
+EOF
+
+    cat >"$TEST_ASPNET_DIR/Program.cs" <<'EOF'
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers();
+var app = builder.Build();
+app.MapControllers();
+app.Run();
+EOF
+
+    cat >"$TEST_ASPNET_DIR/appsettings.json" <<'EOF'
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    }
+  }
+}
+EOF
+
+    cat >"$TEST_ASPNET_DIR/Controllers/HealthController.cs" <<'EOF'
+namespace Demo.Controllers;
+
+public class HealthController {}
+EOF
+}
+
 setup_java_service_workspace() {
     if [[ -n "${TEST_JAVA_SERVICE_DIR:-}" ]]; then
         return 0
@@ -338,6 +383,43 @@ EOF
 package com.example.api;
 
 public class ApplicationTest {}
+EOF
+}
+
+setup_maui_workspace() {
+    if [[ -n "${TEST_MAUI_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_MAUI_DIR="$TEST_TMPDIR/maui-app"
+    mkdir -p \
+        "$TEST_MAUI_DIR/Platforms/Android" \
+        "$TEST_MAUI_DIR/Platforms/iOS" \
+        "$TEST_MAUI_DIR/Resources/Styles"
+
+    cat >"$TEST_MAUI_DIR/DemoMaui.csproj" <<'EOF'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.0" />
+  </ItemGroup>
+</Project>
+EOF
+
+    cat >"$TEST_MAUI_DIR/MauiProgram.cs" <<'EOF'
+namespace DemoMaui;
+
+public static class MauiProgram {}
+EOF
+
+    cat >"$TEST_MAUI_DIR/App.xaml" <<'EOF'
+<?xml version="1.0" encoding="utf-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui" />
 EOF
 }
 
@@ -429,6 +511,87 @@ EOF
 
     cat >"$TEST_NODE_CLI_DIR/src/index.ts" <<'EOF'
 export {};
+EOF
+}
+
+setup_expo_workspace() {
+    if [[ -n "${TEST_EXPO_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_EXPO_DIR="$TEST_TMPDIR/expo-app"
+    mkdir -p "$TEST_EXPO_DIR/app" "$TEST_EXPO_DIR/components"
+
+    cat >"$TEST_EXPO_DIR/package.json" <<'EOF'
+{
+  "name": "expo-app",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "react": "18.3.0",
+    "react-native": "0.76.0"
+  }
+}
+EOF
+
+    cat >"$TEST_EXPO_DIR/app.json" <<'EOF'
+{
+  "expo": {
+    "name": "Expo Demo",
+    "slug": "expo-demo"
+  }
+}
+EOF
+
+    cat >"$TEST_EXPO_DIR/tsconfig.json" <<'EOF'
+{
+  "compilerOptions": {
+    "strict": true
+  }
+}
+EOF
+
+    cat >"$TEST_EXPO_DIR/app/index.tsx" <<'EOF'
+export default function Screen() {
+  return null;
+}
+EOF
+}
+
+setup_react_native_workspace() {
+    if [[ -n "${TEST_REACT_NATIVE_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_REACT_NATIVE_DIR="$TEST_TMPDIR/react-native-app"
+    mkdir -p "$TEST_REACT_NATIVE_DIR/src"
+
+    cat >"$TEST_REACT_NATIVE_DIR/package.json" <<'EOF'
+{
+  "name": "react-native-app",
+  "dependencies": {
+    "react": "18.3.0",
+    "react-native": "0.76.0"
+  }
+}
+EOF
+
+    cat >"$TEST_REACT_NATIVE_DIR/metro.config.js" <<'EOF'
+module.exports = {};
+EOF
+
+    cat >"$TEST_REACT_NATIVE_DIR/tsconfig.json" <<'EOF'
+{
+  "compilerOptions": {
+    "strict": true
+  }
+}
+EOF
+
+    cat >"$TEST_REACT_NATIVE_DIR/App.tsx" <<'EOF'
+export default function App() {
+  return null;
+}
 EOF
 }
 

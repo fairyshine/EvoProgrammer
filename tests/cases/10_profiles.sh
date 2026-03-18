@@ -26,8 +26,12 @@ assert_contains "$profile_catalog_output" "terraform" "Profile catalog should ex
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
 assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
 assert_contains "$profile_catalog_output" "astro" "Profile catalog should expose the Astro framework profile"
+assert_contains "$profile_catalog_output" "aspnet-core" "Profile catalog should expose the ASP.NET Core framework profile"
+assert_contains "$profile_catalog_output" "expo" "Profile catalog should expose the Expo framework profile"
+assert_contains "$profile_catalog_output" "maui" "Profile catalog should expose the .NET MAUI framework profile"
 assert_contains "$profile_catalog_output" "nuxt" "Profile catalog should expose the Nuxt framework profile"
 assert_contains "$profile_catalog_output" "phoenix" "Profile catalog should expose the Phoenix framework profile"
+assert_contains "$profile_catalog_output" "react-native" "Profile catalog should expose the React Native framework profile"
 assert_contains "$profile_catalog_output" "shiny" "Profile catalog should expose the Shiny framework profile"
 assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose project-type profiles"
 assert_contains "$profile_catalog_output" "mobile-app" "Profile catalog should expose the mobile-app project type"
@@ -258,6 +262,203 @@ EOF
 )"
 assert_contains "$node_cli_profile_output" "project_type=cli-tool" "Non-shell CLI repos should detect the cli-tool project type"
 pass "Node CLI project detection"
+
+node_package_lookup_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "lookup-demo",
+  "scripts": {
+    "dev": "react-native start"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^14.0.0"
+  }
+}
+JSON
+
+printf 'react_native=%s\n' "$(
+    if evop_repo_has_node_package "$tmpdir" "react-native"; then
+        printf true
+    else
+        printf false
+    fi
+)"
+printf 'expo_icons=%s\n' "$(
+    if evop_repo_has_node_package "$tmpdir" "@expo/vector-icons"; then
+        printf true
+    else
+        printf false
+    fi
+)"
+EOF
+)"
+assert_contains "$node_package_lookup_output" "react_native=false" "Node package indexing should avoid matching package names that only appear inside scripts"
+assert_contains "$node_package_lookup_output" "expo_icons=true" "Node package indexing should preserve exact scoped package matches"
+pass "Node package indexing"
+
+expo_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/app"
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "expo-demo",
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "react": "18.3.0",
+    "react-native": "0.76.0"
+  }
+}
+JSON
+cat >"$tmpdir/app.json" <<'APPJSON'
+{
+  "expo": {
+    "name": "Expo Demo"
+  }
+}
+APPJSON
+printf '{ "compilerOptions": { "strict": true } }\n' >"$tmpdir/tsconfig.json"
+printf 'export default function Screen() { return null; }\n' >"$tmpdir/app/index.tsx"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$expo_profile_output" "language=typescript" "Expo repos should detect the TypeScript language profile when tsconfig is present"
+assert_contains "$expo_profile_output" "framework=expo" "Expo repos should detect the Expo framework profile"
+assert_contains "$expo_profile_output" "project_type=mobile-app" "Expo repos should detect the mobile-app project type"
+pass "Expo profile detection"
+
+react_native_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "react-native-demo",
+  "dependencies": {
+    "react": "18.3.0",
+    "react-native": "0.76.0"
+  }
+}
+JSON
+printf 'module.exports = {};\n' >"$tmpdir/metro.config.js"
+printf '{ "compilerOptions": { "strict": true } }\n' >"$tmpdir/tsconfig.json"
+printf 'export default function App() { return null; }\n' >"$tmpdir/App.tsx"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$react_native_profile_output" "language=typescript" "React Native repos should detect the TypeScript language profile when tsconfig is present"
+assert_contains "$react_native_profile_output" "framework=react-native" "React Native repos should detect the React Native framework profile"
+assert_contains "$react_native_profile_output" "project_type=mobile-app" "React Native repos should detect the mobile-app project type"
+pass "React Native profile detection"
+
+aspnet_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/Controllers"
+cat >"$tmpdir/DemoService.csproj" <<'CSPROJ'
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+CSPROJ
+printf 'var builder = WebApplication.CreateBuilder(args);\n' >"$tmpdir/Program.cs"
+printf '{}\n' >"$tmpdir/appsettings.json"
+printf 'namespace Demo.Controllers;\n' >"$tmpdir/Controllers/HealthController.cs"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$aspnet_profile_output" "language=csharp" "ASP.NET Core repos should detect the C# language profile"
+assert_contains "$aspnet_profile_output" "framework=aspnet-core" "ASP.NET Core repos should detect the ASP.NET Core framework profile"
+assert_contains "$aspnet_profile_output" "project_type=backend-service" "ASP.NET Core repos should detect the backend-service project type"
+pass "ASP.NET Core profile detection"
+
+maui_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/Platforms/Android" "$tmpdir/Platforms/iOS"
+cat >"$tmpdir/DemoMaui.csproj" <<'CSPROJ'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-android;net8.0-ios</TargetFrameworks>
+    <UseMaui>true</UseMaui>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.0" />
+  </ItemGroup>
+</Project>
+CSPROJ
+printf 'namespace DemoMaui;\n' >"$tmpdir/MauiProgram.cs"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$maui_profile_output" "language=csharp" ".NET MAUI repos should detect the C# language profile"
+assert_contains "$maui_profile_output" "framework=maui" ".NET MAUI repos should detect the MAUI framework profile"
+assert_contains "$maui_profile_output" "project_type=mobile-app" ".NET MAUI repos should detect the mobile-app project type"
+pass ".NET MAUI profile detection"
 
 r_shiny_profile_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'

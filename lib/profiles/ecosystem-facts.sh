@@ -4,6 +4,8 @@
 
 EVOP_ECOSYSTEM_MANIFEST_TEXT_RESULT=""
 typeset -A EVOP_ECOSYSTEM_MANIFEST_TEXT_CACHE=()
+typeset -A EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_READY_CACHE=()
+typeset -A EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_CACHE=()
 
 evop_ecosystem_manifest_patterns() {
     local ecosystem="$1"
@@ -35,6 +37,9 @@ evop_ecosystem_manifest_patterns() {
             ;;
         dart)
             printf '%s\n' "pubspec.yaml"
+            ;;
+        dotnet)
+            printf '%s\n' "*.csproj" "*.fsproj" "*.vbproj" "Directory.Packages.props"
             ;;
         *)
             return 1
@@ -103,13 +108,57 @@ evop_ecosystem_manifest_contains_any() {
     return 1
 }
 
+evop_prepare_node_package_index() {
+    local target_dir="$1"
+    local cache_key=""
+    local token_cache_key=""
+    local manifest_text=""
+    local remaining_text=""
+    local token=""
+
+    cache_key="$(evop_detection_cache_key "$target_dir" "node" "token-index")"
+    if [[ -n ${EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_READY_CACHE[$cache_key]+set} ]]; then
+        return 0
+    fi
+
+    evop_ecosystem_manifest_text "$target_dir" "node" >/dev/null
+    manifest_text="$EVOP_ECOSYSTEM_MANIFEST_TEXT_RESULT"
+    remaining_text="$manifest_text"
+
+    while [[ "$remaining_text" == *\"*\"* ]]; do
+        remaining_text="${remaining_text#*\"}"
+        token="${remaining_text%%\"*}"
+        if [[ -n "$token" ]]; then
+            token_cache_key="$(evop_detection_cache_key "$cache_key" "$token")"
+            EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_CACHE[$token_cache_key]="1"
+        fi
+        remaining_text="${remaining_text#*\"}"
+    done
+
+    EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_READY_CACHE[$cache_key]="1"
+}
+
+evop_node_package_index_contains() {
+    local target_dir="$1"
+    local package_name="$2"
+    local cache_key=""
+    local token_cache_key=""
+
+    [[ -n "$package_name" ]] || return 1
+
+    evop_prepare_node_package_index "$target_dir"
+    cache_key="$(evop_detection_cache_key "$target_dir" "node" "token-index")"
+    token_cache_key="$(evop_detection_cache_key "$cache_key" "$(evop_lowercase "$package_name")")"
+    [[ -n ${EVOP_ECOSYSTEM_NODE_TOKEN_INDEX_CACHE[$token_cache_key]+set} ]]
+}
+
 evop_repo_has_node_package() {
     local target_dir="$1"
     shift
     local package_name=""
 
     for package_name in "$@"; do
-        if evop_ecosystem_manifest_contains_any "$target_dir" "node" "\"$package_name\"" "'$package_name'"; then
+        if evop_node_package_index_contains "$target_dir" "$package_name"; then
             return 0
         fi
     done
@@ -178,4 +227,67 @@ evop_repo_has_pubspec_dependency() {
     shift
 
     evop_ecosystem_manifest_contains_any "$target_dir" "dart" "$@"
+}
+
+evop_repo_dotnet_manifest_contains_any() {
+    local target_dir="$1"
+    shift
+
+    evop_ecosystem_manifest_contains_any "$target_dir" "dotnet" "$@"
+}
+
+evop_repo_has_dotnet_sdk() {
+    local target_dir="$1"
+    shift
+    local sdk_name=""
+
+    for sdk_name in "$@"; do
+        if evop_repo_dotnet_manifest_contains_any "$target_dir" "sdk=\"$sdk_name\"" "<project sdk=\"$sdk_name\""; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+evop_repo_has_dotnet_package() {
+    local target_dir="$1"
+    shift
+    local package_name=""
+
+    for package_name in "$@"; do
+        if evop_repo_dotnet_manifest_contains_any "$target_dir" "include=\"$package_name\"" "<packagereference include=\"$package_name\"" "$package_name"; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+evop_repo_has_dotnet_property_enabled() {
+    local target_dir="$1"
+    shift
+    local property_name=""
+
+    for property_name in "$@"; do
+        if evop_repo_dotnet_manifest_contains_any "$target_dir" "<$property_name>true</$property_name>"; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+evop_repo_targets_dotnet_platform() {
+    local target_dir="$1"
+    shift
+    local platform=""
+
+    for platform in "$@"; do
+        if evop_repo_dotnet_manifest_contains_any "$target_dir" "-$platform" "$platform" ; then
+            return 0
+        fi
+    done
+
+    return 1
 }

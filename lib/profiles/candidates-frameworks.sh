@@ -7,16 +7,41 @@ evop_prepare_framework_profile_candidates() {
     local has_package_json=0
     local has_python_project=0
     local has_cargo=0
+    local has_dotnet=0
 
     if evop_directory_has_file_named "$target_dir" "package.json"; then
         has_package_json=1
+
+        if evop_directory_has_file_named "$target_dir" \
+            "app.json" \
+            "app.config.js" \
+            "app.config.cjs" \
+            "app.config.mjs" \
+            "app.config.ts" \
+            || evop_repo_has_node_package "$target_dir" "expo" "expo-router"; then
+            evop_profile_candidate_append_unique candidates "expo"
+        fi
+
+        if evop_directory_has_file_named "$target_dir" \
+            "metro.config.js" \
+            "metro.config.cjs" \
+            "metro.config.mjs" \
+            "metro.config.ts" \
+            "react-native.config.js" \
+            "react-native.config.cjs" \
+            "react-native.config.mjs" \
+            "react-native.config.ts" \
+            || evop_repo_has_node_package "$target_dir" "react-native"; then
+            evop_profile_candidate_append_unique candidates "react-native"
+        fi
 
         if evop_directory_has_file_named "$target_dir" "next.config.js" "next.config.mjs" "next.config.ts" \
             || evop_repo_has_node_package "$target_dir" "next"; then
             evop_profile_candidate_append_unique candidates "nextjs"
         fi
 
-        if evop_repo_has_node_package "$target_dir" "react"; then
+        if evop_repo_has_node_package "$target_dir" "react" \
+            && ! evop_repo_looks_like_js_mobile_app "$target_dir"; then
             evop_profile_candidate_append_unique candidates "react"
         fi
 
@@ -98,6 +123,18 @@ evop_prepare_framework_profile_candidates() {
         fi
     fi
 
+    if evop_directory_has_file_extension "$target_dir" "sln" "csproj" "fsproj" "vbproj"; then
+        has_dotnet=1
+
+        if evop_repo_looks_like_aspnet_core "$target_dir"; then
+            evop_profile_candidate_append_unique candidates "aspnet-core"
+        fi
+
+        if evop_repo_looks_like_dotnet_maui "$target_dir"; then
+            evop_profile_candidate_append_unique candidates "maui"
+        fi
+    fi
+
     if evop_directory_has_file_named "$target_dir" "go.mod" \
         && evop_repo_has_go_module "$target_dir" "gin-gonic/gin"; then
         evop_profile_candidate_append_unique candidates "gin"
@@ -154,11 +191,13 @@ evop_prepare_framework_profile_candidates() {
         evop_profile_candidate_append_unique candidates "spring"
     fi
 
+    evop_profile_candidate_add_if_prompt_matches candidates "aspnet-core" "$prompt" "asp.net core" "aspnet core" "aspnet"
     evop_profile_candidate_add_if_prompt_matches candidates "actix-web" "$prompt" "actix"
     evop_profile_candidate_add_if_prompt_matches candidates "axum" "$prompt" "axum"
     evop_profile_candidate_add_if_prompt_matches candidates "bevy" "$prompt" "bevy"
     evop_profile_candidate_add_if_prompt_matches candidates "django" "$prompt" "django"
     evop_profile_candidate_add_if_prompt_matches candidates "electron" "$prompt" "electron"
+    evop_profile_candidate_add_if_prompt_matches candidates "expo" "$prompt" "expo" "expo router"
     evop_profile_candidate_add_if_prompt_matches candidates "express" "$prompt" "express"
     evop_profile_candidate_add_if_prompt_matches candidates "fastapi" "$prompt" "fastapi"
     evop_profile_candidate_add_if_prompt_matches candidates "flask" "$prompt" "flask"
@@ -167,6 +206,7 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "godot" "$prompt" "godot"
     evop_profile_candidate_add_if_prompt_matches candidates "astro" "$prompt" "astro"
     evop_profile_candidate_add_if_prompt_matches candidates "laravel" "$prompt" "laravel"
+    evop_profile_candidate_add_if_prompt_matches candidates "maui" "$prompt" "maui" ".net maui"
     evop_profile_candidate_add_if_prompt_matches candidates "nestjs" "$prompt" "nestjs" "nest.js"
     evop_profile_candidate_add_if_prompt_matches candidates "nextjs" "$prompt" "next.js" "nextjs"
     evop_profile_candidate_add_if_prompt_matches candidates "nuxt" "$prompt" "nuxt" "nuxt.js"
@@ -175,6 +215,7 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "qt" "$prompt" "qt"
     evop_profile_candidate_add_if_prompt_matches candidates "rails" "$prompt" "rails"
     evop_profile_candidate_add_if_prompt_matches candidates "react" "$prompt" "react"
+    evop_profile_candidate_add_if_prompt_matches candidates "react-native" "$prompt" "react native" "react-native"
     evop_profile_candidate_add_if_prompt_matches candidates "shiny" "$prompt" "shiny"
     evop_profile_candidate_add_if_prompt_matches candidates "spring" "$prompt" "spring"
     evop_profile_candidate_add_if_prompt_matches candidates "streamlit" "$prompt" "streamlit"
@@ -194,6 +235,10 @@ evop_prepare_framework_profile_candidates() {
 
     if [[ -z "$candidates" && "$has_cargo" == "1" ]]; then
         candidates=$'actix-web\naxum\nbevy'
+    fi
+
+    if [[ -z "$candidates" && "$has_dotnet" == "1" ]]; then
+        candidates=$'aspnet-core\nmaui'
     fi
 
     if [[ -z "$candidates" && -f "$target_dir/pubspec.yaml" ]]; then

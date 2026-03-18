@@ -20,10 +20,18 @@ EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_INFRASTRUCTURE_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_INFRASTRUCTURE_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_VALUE=""
 
 evop_repo_shape_cache_value_matches() {
     local cached_value="$1"
@@ -42,6 +50,92 @@ evop_repo_has_mobile_platform_markers() {
         return 0
     fi
 
+    return 1
+}
+
+evop_repo_looks_like_aspnet_core() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_repo_has_dotnet_sdk "$target_dir" "Microsoft.NET.Sdk.Web" \
+        || evop_repo_has_dotnet_package "$target_dir" "Microsoft.AspNetCore.App" "Microsoft.AspNetCore.Mvc.Testing" \
+        || { evop_directory_has_file_named "$target_dir" "appsettings.json" "appsettings.Development.json" \
+            && evop_directory_has_path_named "$target_dir" "Controllers"; }; then
+        EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_dotnet_maui() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_repo_has_dotnet_property_enabled "$target_dir" "UseMaui" \
+        || evop_repo_has_dotnet_package "$target_dir" "Microsoft.Maui.Controls" "Microsoft.Maui.Controls.Compatibility" \
+        || { evop_directory_has_path_named "$target_dir" "Platforms" \
+            && evop_directory_has_file_named "$target_dir" "MauiProgram.cs"; }; then
+        EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_js_mobile_app() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && {
+            evop_repo_has_node_package "$target_dir" "expo" "expo-router" "react-native";
+        }; then
+        EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && evop_directory_has_file_named "$target_dir" \
+            "app.json" \
+            "app.config.js" \
+            "app.config.cjs" \
+            "app.config.mjs" \
+            "app.config.ts" \
+            "metro.config.js" \
+            "metro.config.cjs" \
+            "metro.config.mjs" \
+            "metro.config.ts" \
+            "react-native.config.js" \
+            "react-native.config.cjs" \
+            "react-native.config.mjs" \
+            "react-native.config.ts"; then
+        EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_JS_MOBILE_APP_CACHE_VALUE="0"
     return 1
 }
 
@@ -192,6 +286,12 @@ evop_repo_looks_like_backend_service() {
         return 0
     fi
 
+    if evop_repo_looks_like_aspnet_core "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_VALUE="1"
+        return 0
+    fi
+
     if evop_repo_has_java_dependency "$target_dir" "spring-boot" "org.springframework.boot"; then
         EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_DIR="$target_dir"
         EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_VALUE="1"
@@ -207,6 +307,38 @@ evop_repo_looks_like_backend_service() {
 
     EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_DIR="$target_dir"
     EVOP_REPO_LOOKS_LIKE_BACKEND_SERVICE_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_mobile_app() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_repo_has_mobile_platform_markers "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_repo_looks_like_js_mobile_app "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_repo_looks_like_dotnet_maui "$target_dir" \
+        && evop_repo_targets_dotnet_platform "$target_dir" "android" "ios"; then
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE="0"
     return 1
 }
 
@@ -234,6 +366,13 @@ evop_repo_looks_like_desktop_app() {
 
     if evop_directory_has_file_extension "$target_dir" "ui" \
         || evop_directory_contains_text "$target_dir" "qt" "CMakeLists.txt" "*.pro" "pyproject.toml"; then
+        EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_repo_looks_like_dotnet_maui "$target_dir" \
+        && evop_repo_targets_dotnet_platform "$target_dir" "windows" "maccatalyst" "macos"; then
         EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_DIR="$target_dir"
         EVOP_REPO_LOOKS_LIKE_DESKTOP_APP_CACHE_VALUE="1"
         return 0
@@ -371,6 +510,12 @@ evop_repo_looks_like_web_app() {
     if [[ "$EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR" == "$target_dir" ]]; then
         evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE"
         return $?
+    fi
+
+    if evop_repo_looks_like_js_mobile_app "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE="0"
+        return 1
     fi
 
     if evop_directory_has_path_named "$target_dir" "public" "src" "app" "pages" "components"; then
