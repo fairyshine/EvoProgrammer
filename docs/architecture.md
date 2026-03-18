@@ -129,6 +129,15 @@ manifest text for repeated package.json script checks. The implementation is
 now zsh-only and uses associative arrays directly rather than carrying a second
 fallback cache backend for shells the project no longer targets.
 
+The same facts layer now also caches nested workspace manifest discovery for
+common monorepo roots such as `apps/`, `packages/`, `services/`, `crates/`,
+and `tools/`. That lets command inference, architecture hints, prompt context,
+JSON/env export, and snapshot reuse share one discovery pass instead of each
+re-scanning the workspace tree. JavaScript workspaces can now also fall back to
+recursive pnpm/npm commands when the root `package.json` does not define its
+own scripts, which keeps `inspect` and `verify` useful for package-oriented
+monorepos without adding a second command-planning path.
+
 The snapshot sub-layer lets other entrypoints reuse an earlier
 `inspect --format env` report. That keeps profile resolution and repo analysis
 centralized in one place while allowing `verify`, `doctor`, `LOOP.sh`, and

@@ -127,6 +127,30 @@ evop_detect_structure_hints() {
     fi
 }
 
+evop_detect_workspace_package_hints() {
+    local target_dir="$1"
+    local rel_manifest_path=""
+    local rel_root=""
+    local manifest_name=""
+
+    [[ "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" == "monorepo" ]] || return 0
+
+    evop_project_workspace_manifests_cached "$target_dir" >/dev/null
+    if [[ -z "$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT" ]]; then
+        return 0
+    fi
+
+    while IFS= read -r rel_manifest_path; do
+        [[ -n "$rel_manifest_path" ]] || continue
+        rel_root="${rel_manifest_path%/*}"
+        manifest_name="${rel_manifest_path##*/}"
+        [[ -n "$rel_root" && "$rel_root" != "$rel_manifest_path" ]] || continue
+        evop_append_multiline EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES "$rel_root [$manifest_name]"
+        evop_append_csv_unique EVOP_PROJECT_CONTEXT_SEARCH_ROOTS "$rel_root"
+        evop_append_multiline EVOP_PROJECT_CONTEXT_STRUCTURE "$rel_root: workspace package root [$manifest_name]"
+    done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT"
+}
+
 evop_detect_conventions() {
     local target_dir="$1"
     local language_profile="$2"

@@ -80,6 +80,7 @@ evop_render_project_context_json() {
     printf '  "profile_detection": %s,\n' "$(evop_render_profile_detection_json)"
     printf '  "package_manager": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER")"
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
+    printf '  "workspace_packages": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
     printf '  "commands": %s,\n' "$(evop_render_project_commands_json)"
     printf '  "search_roots": %s,\n' "$(evop_render_json_array_from_lines "${EVOP_PROJECT_CONTEXT_SEARCH_ROOTS//, /$'\n'}")"
     printf '  "structure": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_STRUCTURE")"

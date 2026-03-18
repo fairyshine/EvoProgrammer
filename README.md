@@ -16,7 +16,7 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 |---|---|---|
 | Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Expo, React Native, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Infrastructure, Paper, Scientific Experiment, PPT, Office |
 
-Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Expo or React Native mobile apps, Nuxt or Astro frontends, Electron or Tauri desktop apps, Shiny web apps, Terraform infrastructure repos, and game-engine repos now resolve more accurately. The Node framework hot path now also uses a cached package-token index, which cuts repeated `package.json` scans while making framework detection more precise. `inspect` and `verify` can also infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, sbt, LuaRocks, R, Terraform, CMake, Expo, and React Native projects.
+Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style or Phoenix backend services, Expo or React Native mobile apps, Nuxt or Astro frontends, Electron or Tauri desktop apps, Shiny web apps, Terraform infrastructure repos, and game-engine repos now resolve more accurately. The Node framework hot path now also uses a cached package-token index, which cuts repeated `package.json` scans while making framework detection more precise. Monorepo inspection now also caches nested workspace manifest discovery, surfaces workspace package roots in `inspect`, and can infer recursive pnpm/npm workspace commands when the root manifest does not define its own scripts. `inspect` and `verify` can also infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, sbt, LuaRocks, R, Terraform, CMake, Expo, and React Native projects.
 
 ## Quick Start
 
@@ -236,8 +236,9 @@ want the inferred dev/build/test/lint/typecheck plan without the rest of the
 repository analysis.
 
 `inspect --format env` exports the same resolved context as shell-safe
-`EVOP_INSPECT_*` assignments, so CI jobs and helper scripts can `source` the
-result instead of re-parsing human-readable output.
+`EVOP_INSPECT_*` assignments, including detected workspace packages for
+monorepos, so CI jobs and helper scripts can `source` the result instead of
+re-parsing human-readable output.
 
 `inspect --report-file` writes any inspect format to disk, including JSON and
 shell-safe env exports for CI jobs and wrapper scripts.

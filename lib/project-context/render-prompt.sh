@@ -4,7 +4,7 @@ evop_render_project_context_prompt() {
     local guidance=""
     local has_repo_context=0
 
-    if [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" || -n "$EVOP_PROJECT_CONTEXT_STRUCTURE" || -n "$EVOP_PROJECT_CONTEXT_CONVENTIONS" || -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" || -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" || -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] || evop_project_has_any_command; then
+    if [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" || -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" || -n "$EVOP_PROJECT_CONTEXT_STRUCTURE" || -n "$EVOP_PROJECT_CONTEXT_CONVENTIONS" || -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" || -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" || -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] || evop_project_has_any_command; then
         has_repo_context=1
     fi
 
@@ -15,6 +15,11 @@ evop_render_project_context_prompt() {
         fi
         if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]]; then
             guidance+="Workspace mode: $EVOP_PROJECT_CONTEXT_WORKSPACE_MODE\n"
+        fi
+        if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
+            guidance+="Workspace packages:\n"
+            guidance+="$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+            guidance+=$'\n'
         fi
         if evop_project_has_any_command; then
             guidance+="Suggested commands:\n"

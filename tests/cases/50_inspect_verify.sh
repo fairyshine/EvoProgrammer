@@ -84,6 +84,49 @@ assert_contains "$inspect_env_summary" "text_cache_ok=true" "INSPECT env should 
 assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
 pass "INSPECT env"
 
+setup_node_monorepo_workspace
+monorepo_inspect_output="$(run_expect_success "INSPECT should surface workspace package roots and recursive commands" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR")"
+assert_contains "$monorepo_inspect_output" "Workspace mode: monorepo" "INSPECT should classify JS workspaces as monorepos"
+assert_contains "$monorepo_inspect_output" "Workspace packages:" "INSPECT should print discovered workspace packages"
+assert_contains "$monorepo_inspect_output" "apps/web [package.json]" "INSPECT should list app workspace packages"
+assert_contains "$monorepo_inspect_output" "packages/shared [package.json]" "INSPECT should list shared workspace packages"
+assert_contains "$monorepo_inspect_output" "Build: pnpm -r --if-present run build [workspace package.json scripts]" "INSPECT should infer recursive workspace build commands when the root manifest has no scripts"
+assert_contains "$monorepo_inspect_output" "Typecheck: pnpm -r --if-present run typecheck [workspace package.json scripts]" "INSPECT should infer recursive workspace typecheck commands"
+assert_contains "$monorepo_inspect_output" "apps/web: workspace package root [package.json]" "INSPECT should add workspace package roots to architecture hints"
+pass "INSPECT monorepo workspace packages"
+
+monorepo_inspect_json_output="$(run_expect_success "INSPECT json should include workspace packages" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR" --format json)"
+monorepo_inspect_json_summary="$(INSPECT_JSON="$monorepo_inspect_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["INSPECT_JSON"])
+print(data["workspace_mode"])
+print(data["commands"]["build"]["command"])
+print(f"apps_ok={'apps/web [package.json]' in data['workspace_packages']}")
+print(f"shared_ok={'packages/shared [package.json]' in data['workspace_packages']}")
+PY
+)"
+assert_contains "$monorepo_inspect_json_summary" "monorepo" "INSPECT json should include workspace mode for monorepos"
+assert_contains "$monorepo_inspect_json_summary" "pnpm -r --if-present run build" "INSPECT json should export recursive workspace commands"
+assert_contains "$monorepo_inspect_json_summary" "apps_ok=True" "INSPECT json should export app workspace packages"
+assert_contains "$monorepo_inspect_json_summary" "shared_ok=True" "INSPECT json should export shared workspace packages"
+pass "INSPECT monorepo json"
+
+monorepo_inspect_env_summary="$(
+    INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_NODE_MONOREPO_DIR="$TEST_NODE_MONOREPO_DIR" zsh <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR" --format env)"
+printf '%s\n' "$EVOP_INSPECT_WORKSPACE_MODE"
+printf '%s\n' "$EVOP_INSPECT_BUILD_COMMAND"
+printf 'packages_ok=%s\n' "$([[ "$EVOP_INSPECT_WORKSPACE_PACKAGES" == *"apps/web [package.json]"* && "$EVOP_INSPECT_WORKSPACE_PACKAGES" == *"packages/shared [package.json]"* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$monorepo_inspect_env_summary" "monorepo" "INSPECT env should export workspace mode"
+assert_contains "$monorepo_inspect_env_summary" "pnpm -r --if-present run build" "INSPECT env should export recursive workspace commands"
+assert_contains "$monorepo_inspect_env_summary" "packages_ok=true" "INSPECT env should export workspace packages"
+pass "INSPECT monorepo env"
+
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
 assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"
 assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"
@@ -216,6 +259,13 @@ verify_dry_run_output="$(run_expect_success "VERIFY dry-run should print command
 assert_contains "$verify_dry_run_output" "Running test: make test" "VERIFY dry-run should print the selected test command"
 assert_contains "$verify_dry_run_output" "Running build: make build" "VERIFY dry-run should print the selected build command"
 pass "VERIFY dry-run"
+
+verify_monorepo_dry_run_output="$(run_expect_success "VERIFY dry-run should reuse recursive monorepo commands" "$VERIFY_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR" --steps lint,typecheck,test,build --dry-run)"
+assert_contains "$verify_monorepo_dry_run_output" "Running lint: pnpm -r --if-present run lint" "VERIFY dry-run should reuse recursive monorepo lint commands"
+assert_contains "$verify_monorepo_dry_run_output" "Running typecheck: pnpm -r --if-present run typecheck" "VERIFY dry-run should reuse recursive monorepo typecheck commands"
+assert_contains "$verify_monorepo_dry_run_output" "Running test: pnpm -r --if-present run test" "VERIFY dry-run should reuse recursive monorepo test commands"
+assert_contains "$verify_monorepo_dry_run_output" "Running build: pnpm -r --if-present run build" "VERIFY dry-run should reuse recursive monorepo build commands"
+pass "VERIFY monorepo dry-run"
 
 verify_partial_dir="$TEST_TMPDIR/verify-partial-project"
 mkdir -p "$verify_partial_dir"

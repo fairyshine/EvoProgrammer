@@ -514,6 +514,71 @@ export {};
 EOF
 }
 
+setup_node_monorepo_workspace() {
+    if [[ -n "${TEST_NODE_MONOREPO_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_NODE_MONOREPO_DIR="$TEST_TMPDIR/node-monorepo"
+    mkdir -p \
+        "$TEST_NODE_MONOREPO_DIR/apps/web/src" \
+        "$TEST_NODE_MONOREPO_DIR/packages/shared/src" \
+        "$TEST_NODE_MONOREPO_DIR/tools/release"
+
+    cat >"$TEST_NODE_MONOREPO_DIR/package.json" <<'EOF'
+{
+  "name": "node-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
+EOF
+
+    cat >"$TEST_NODE_MONOREPO_DIR/pnpm-workspace.yaml" <<'EOF'
+packages:
+  - "apps/*"
+  - "packages/*"
+EOF
+
+    cat >"$TEST_NODE_MONOREPO_DIR/apps/web/package.json" <<'EOF'
+{
+  "name": "@demo/web",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.0.0",
+    "react": "19.0.0"
+  }
+}
+EOF
+
+    cat >"$TEST_NODE_MONOREPO_DIR/packages/shared/package.json" <<'EOF'
+{
+  "name": "@demo/shared",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint ."
+  }
+}
+EOF
+
+    cat >"$TEST_NODE_MONOREPO_DIR/apps/web/src/page.tsx" <<'EOF'
+export default function Page() {
+  return null;
+}
+EOF
+
+    cat >"$TEST_NODE_MONOREPO_DIR/packages/shared/src/index.ts" <<'EOF'
+export const shared = true;
+EOF
+}
+
 setup_expo_workspace() {
     if [[ -n "${TEST_EXPO_DIR:-}" ]]; then
         return 0

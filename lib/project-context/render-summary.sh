@@ -4,6 +4,10 @@ evop_print_project_command_report() {
     [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
     [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
     [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
+        printf 'Workspace packages:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+    fi
     printf 'Suggested commands:\n'
     if evop_project_has_any_command; then
         printf '%s\n' "$(evop_append_project_command_lines "- " 1)"
@@ -47,6 +51,7 @@ evop_print_project_context() {
     if [[ "$output_style" == "doctor" ]]; then
         [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'OK package-manager %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
         [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'OK workspace-mode %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+        [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]] && printf 'OK workspace-packages %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
         [[ -n "$EVOP_PROJECT_CONTEXT_DEV_COMMAND" ]] && printf 'OK dev-command %s\n' "$EVOP_PROJECT_CONTEXT_DEV_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND" ]] && printf 'OK build-command %s\n' "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_TEST_COMMAND" ]] && printf 'OK test-command %s\n' "$EVOP_PROJECT_CONTEXT_TEST_COMMAND"
@@ -64,6 +69,10 @@ evop_print_project_context() {
 
     [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
     [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
+        printf 'Workspace packages:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+    fi
     while IFS= read -r slot; do
         command="$(evop_get_project_command "$slot")"
         [[ -n "$command" ]] || continue
@@ -94,6 +103,10 @@ evop_print_project_inspection_report() {
 
     [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
     [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
+        printf 'Workspace packages:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+    fi
 
     if evop_project_has_any_command; then
         printf 'Suggested commands:\n'
