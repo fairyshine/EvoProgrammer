@@ -49,6 +49,7 @@ assert_contains "$inspect_agent_output" "Agent command catalog:" "INSPECT agent 
 assert_contains "$inspect_agent_output" "./bin/context-tool [repo_executable; repo executable]" "INSPECT agent mode should show structured repo executable entries"
 assert_contains "$inspect_agent_output" "sh ./scripts/bootstrap.sh [repo_helper_program; repo helper program]" "INSPECT agent mode should show structured helper program entries"
 assert_contains "$inspect_agent_output" "git [host cli]" "INSPECT agent mode should include agent support tools"
+assert_contains "$inspect_agent_output" "Agent support tool catalog:" "INSPECT agent mode should print the structured support tool catalog"
 assert_not_contains "$inspect_agent_output" "Suggested commands:" "INSPECT agent mode should skip the general command plan"
 pass "INSPECT agent"
 
@@ -61,6 +62,7 @@ data = json.loads(os.environ["INSPECT_JSON"])
 print(data["profiles"]["language"]["name"])
 print(data["package_manager"])
 print("\n".join(f"{item['kind']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
+print("\n".join(f"{item['name']}|{item['path']}|{item['source']}" for item in data["agent_support_tool_catalog"]))
 print("\n".join(data["agent_tools"]))
 print("\n".join(data["agent_support_tools"]))
 print(data["commands"]["lint"]["command"])
@@ -70,6 +72,7 @@ print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
 print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
 print(f"text_entries_ok={data['facts_cache']['file_text_entries'] > 0}")
 print(f"command_entries_ok={data['facts_cache']['command_availability_entries'] > 0}")
+print(f"command_path_entries_ok={data['facts_cache']['command_path_entries'] > 0}")
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
 print(f"profile_detection_ok={any(item['name'] == 'typescript' for item in data['profile_detection']['languages'])}")
 PY
@@ -78,6 +81,7 @@ assert_contains "$inspect_json_summary" "typescript" "INSPECT json should includ
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
 assert_contains "$inspect_json_summary" "repo_helper_program|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT json should include structured helper program entries"
 assert_contains "$inspect_json_summary" "test_harness_script|zsh ./tests/run_tests.sh|test harness script" "INSPECT json should include structured test harness entries"
+assert_contains "$inspect_json_summary" "git|" "INSPECT json should include structured support tool catalog entries"
 assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
 assert_contains "$inspect_json_summary" "./scripts/release [repo helper executable]" "INSPECT json should include repo helper executables"
 assert_contains "$inspect_json_summary" "git [host cli]" "INSPECT json should include agent support tools"
@@ -88,6 +92,7 @@ assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should i
 assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
 assert_contains "$inspect_json_summary" "text_entries_ok=True" "INSPECT json should include file-text cache entry counts"
 assert_contains "$inspect_json_summary" "command_entries_ok=True" "INSPECT json should include command-availability cache entry counts"
+assert_contains "$inspect_json_summary" "command_path_entries_ok=True" "INSPECT json should include command-path cache entry counts"
 assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should include phase timings"
 assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT json should include profile-detection candidates"
 pass "INSPECT json"
@@ -101,6 +106,7 @@ data = json.loads(os.environ["INSPECT_AGENT_JSON"])
 print(data["language_profile"]["name"])
 print(data["package_manager"])
 print("\n".join(f"{item['kind']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
+print("\n".join(f"{item['name']}|{item['path']}|{item['source']}" for item in data["agent_support_tool_catalog"]))
 print("\n".join(data["agent_support_tools"]))
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
 print(f"commands_key={'commands' in data}")
@@ -109,6 +115,7 @@ PY
 assert_contains "$inspect_agent_json_summary" "typescript" "INSPECT agent-json should include the detected language profile"
 assert_contains "$inspect_agent_json_summary" "pnpm" "INSPECT agent-json should include the package manager"
 assert_contains "$inspect_agent_json_summary" "repo_helper_program|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT agent-json should include structured helper program entries"
+assert_contains "$inspect_agent_json_summary" "git|" "INSPECT agent-json should include the structured support tool catalog"
 assert_contains "$inspect_agent_json_summary" "git [host cli]" "INSPECT agent-json should include support tools"
 assert_contains "$inspect_agent_json_summary" "timings_ok=True" "INSPECT agent-json should include timing diagnostics"
 assert_contains "$inspect_agent_json_summary" "commands_key=False" "INSPECT agent-json should stay focused on agent-facing data"
@@ -122,6 +129,7 @@ source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --pro
 printf '%s\n' "$EVOP_INSPECT_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
 printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_CATALOG"
+printf '%s\n' "$EVOP_INSPECT_AGENT_SUPPORT_TOOL_CATALOG"
 printf '%s\n' "$EVOP_INSPECT_AGENT_TOOLS"
 printf '%s\n' "$EVOP_INSPECT_AGENT_SUPPORT_TOOLS"
 printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
@@ -129,12 +137,14 @@ printf 'automation_ok=%s\n' "$([[ "$EVOP_INSPECT_AUTOMATION" == *".github/workfl
 printf 'workflow_ok=%s\n' "$([[ "$EVOP_INSPECT_TASK_WORKFLOW" == *"Reproduce or localize the failure path first"* ]] && printf true || printf false)"
 printf 'text_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_FILE_TEXT_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'command_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_COMMAND_AVAILABILITY_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
+printf 'command_path_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_COMMAND_PATH_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'timings_ok=%s\n' "$([[ "$EVOP_INSPECT_TIMING_RESOLVE_PROFILES_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
 EOF
 )"
 assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export the detected language profile"
 assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
 assert_contains "$inspect_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT env should export the structured agent command catalog"
+assert_contains "$inspect_env_summary" $'git\t' "INSPECT env should export the structured support tool catalog"
 assert_contains "$inspect_env_summary" $'test_harness_script\tzsh ./tests/run_tests.sh\ttest harness script' "INSPECT env should export structured test harness entries"
 assert_contains "$inspect_env_summary" "pnpm inspect [package.json script]" "INSPECT env should export agent command surfaces"
 assert_contains "$inspect_env_summary" "./tools/sync-context [repo helper executable]" "INSPECT env should export repo helper executables"
@@ -144,6 +154,7 @@ assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should 
 assert_contains "$inspect_env_summary" "workflow_ok=true" "INSPECT env should export workflow guidance"
 assert_contains "$inspect_env_summary" "text_cache_ok=true" "INSPECT env should export file-text cache entry counts"
 assert_contains "$inspect_env_summary" "command_cache_ok=true" "INSPECT env should export command-availability cache entry counts"
+assert_contains "$inspect_env_summary" "command_path_cache_ok=true" "INSPECT env should export command-path cache entry counts"
 assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
 pass "INSPECT env"
 
@@ -155,6 +166,7 @@ source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --pro
 printf '%s\n' "$EVOP_AGENT_CATALOG_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_AGENT_CATALOG_PACKAGE_MANAGER"
 printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_CATALOG"
+printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG"
 printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOLS"
 printf 'timings_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_TIMING_ANALYZE_CONTEXT_MS" =~ ^[0-9]+$ && "$EVOP_AGENT_CATALOG_TIMING_FINALIZE_ANALYSIS_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
 EOF
@@ -162,6 +174,7 @@ EOF
 assert_contains "$inspect_agent_env_summary" "typescript" "INSPECT agent-env should export the detected language profile"
 assert_contains "$inspect_agent_env_summary" "pnpm" "INSPECT agent-env should export the package manager"
 assert_contains "$inspect_agent_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT agent-env should export the structured command catalog"
+assert_contains "$inspect_agent_env_summary" $'git\t' "INSPECT agent-env should export the structured support tool catalog"
 assert_contains "$inspect_agent_env_summary" "git [host cli]" "INSPECT agent-env should export support tools"
 assert_contains "$inspect_agent_env_summary" "timings_ok=true" "INSPECT agent-env should export timing diagnostics"
 pass "INSPECT agent-env"
@@ -308,6 +321,7 @@ source "$ROOT_DIR/lib/project-context.sh"
 evop_project_agent_support_tools_cached "$TEST_CONTEXT_DIR" "pnpm" "typescript" >/dev/null
 printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_CACHE)"
 printf 'availability_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE)"
+printf 'path_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE)"
 evop_project_agent_support_tools_cached "$TEST_CONTEXT_DIR" "pnpm" "typescript" >/dev/null
 printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_CACHE)"
 printf 'tool_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT" == *"git [host cli]"* ]] && printf true || printf false)"
@@ -315,9 +329,28 @@ EOF
 )"
 assert_contains "$agent_support_tool_cache_output" "first_cache_entries=1" "Agent support tool discovery should populate the dedicated cache on first access"
 assert_contains "$agent_support_tool_cache_output" "availability_entries=" "Agent support tool discovery should populate command-availability cache entries"
+assert_contains "$agent_support_tool_cache_output" "path_entries=" "Agent support tool discovery should populate command-path cache entries"
 assert_contains "$agent_support_tool_cache_output" "second_cache_entries=1" "Agent support tool discovery should reuse the cache on repeated access"
 assert_contains "$agent_support_tool_cache_output" "tool_ok=true" "Agent support tool discovery should return available host CLI support tools"
 pass "Agent support tool cache reuse"
+
+agent_support_tool_catalog_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_agent_support_tool_catalog_cached "$TEST_CONTEXT_DIR" "pnpm" "typescript" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_CACHE)"
+evop_project_agent_support_tool_catalog_cached "$TEST_CONTEXT_DIR" "pnpm" "typescript" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_CACHE)"
+printf 'tool_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT" == *$'git\t'*$'\thost cli'* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$agent_support_tool_catalog_cache_output" "first_cache_entries=1" "Agent support tool catalog should populate the dedicated cache on first access"
+assert_contains "$agent_support_tool_catalog_cache_output" "second_cache_entries=1" "Agent support tool catalog should reuse the dedicated cache on repeated access"
+assert_contains "$agent_support_tool_catalog_cache_output" "tool_ok=true" "Agent support tool catalog should include resolved host CLI entries"
+pass "Agent support tool catalog cache reuse"
 
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
 assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"
@@ -326,6 +359,7 @@ assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT di
 assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
 assert_contains "$inspect_diagnostics_output" "File-text cache entries:" "INSPECT diagnostics should print file-text cache entries"
 assert_contains "$inspect_diagnostics_output" "Command-availability cache entries:" "INSPECT diagnostics should print command-availability cache entries"
+assert_contains "$inspect_diagnostics_output" "Command-path cache entries:" "INSPECT diagnostics should print command-path cache entries"
 assert_contains "$inspect_diagnostics_output" "Timing resolve_profiles:" "INSPECT diagnostics should print timing diagnostics"
 assert_contains "$inspect_diagnostics_output" "Language candidates:" "INSPECT diagnostics should include profile detection candidates"
 pass "INSPECT diagnostics"

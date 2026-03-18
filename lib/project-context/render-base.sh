@@ -100,6 +100,29 @@ evop_render_agent_command_catalog_json() {
     printf '%s' "$output"
 }
 
+evop_render_agent_support_tool_catalog_json() {
+    local text="$1"
+    local output="["
+    local name=""
+    local path=""
+    local source=""
+    local needs_comma=0
+
+    while IFS=$'\t' read -r name path source; do
+        [[ -n "$name" && -n "$path" && -n "$source" ]] || continue
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+        output+="{\"name\": $(evop_render_json_string "$name"), \"path\": "
+        output+="$(evop_render_json_string "$path")"
+        output+=", \"source\": $(evop_render_json_string "$source")}"
+        needs_comma=1
+    done <<<"$text"
+
+    output+="]"
+    printf '%s' "$output"
+}
+
 evop_render_agent_catalog_bundle_json() {
     printf '{\n'
     printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
@@ -111,6 +134,7 @@ evop_render_agent_catalog_bundle_json() {
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
     printf '  "workspace_packages": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
     printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG")"
+    printf '  "agent_support_tool_catalog": %s,\n' "$(evop_render_agent_support_tool_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG")"
     printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
     printf '  "agent_support_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
     printf '  "timings": %s\n' "$(evop_render_project_context_timings_json)"

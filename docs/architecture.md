@@ -216,6 +216,9 @@ current machine. That availability index keeps prompt context, `inspect`
 reports, and snapshot reuse aligned on which host CLIs are actually callable
 for search, shell scripting, package management, runtimes, and container
 operations without repeating `command -v` probes across the same execution.
+The same pass now also materializes a structured support-tool catalog with
+resolved executable paths, so wrappers can invoke discovered machine tools
+without reparsing human-readable output or paying for duplicate path lookups.
 
 `INSPECT.sh` now also exposes that agent-facing tool menu through dedicated
 `agent`, `agent-json`, and `agent-env` output modes. Those modes use a reduced

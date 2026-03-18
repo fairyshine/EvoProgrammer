@@ -57,6 +57,13 @@ evop_print_project_agent_catalog_report() {
             evop_print_list_item "$line"
         done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS"
     fi
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG" ]]; then
+        evop_print_section "Agent support tool catalog:"
+        while IFS=$'\t' read -r name path source; do
+            [[ -n "$name" && -n "$path" && -n "$source" ]] || continue
+            evop_print_list_item "$name -> $path [$source]"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG"
+    fi
 }
 
 evop_print_profile_detection_report() {

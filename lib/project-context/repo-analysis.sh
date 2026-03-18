@@ -269,6 +269,8 @@ evop_detect_agent_support_tool_hints() {
     local package_manager="${2:-}"
     local language_profile="${3:-}"
 
+    evop_project_agent_support_tool_catalog_cached "$target_dir" "$package_manager" "$language_profile" >/dev/null
+    EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG="$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT"
     evop_project_agent_support_tools_cached "$target_dir" "$package_manager" "$language_profile" >/dev/null
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS="$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT"
 }

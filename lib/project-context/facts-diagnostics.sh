@@ -11,10 +11,11 @@ evop_print_project_context_facts_diagnostics() {
     printf 'File-regex cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
     printf 'File-text cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)"
     printf 'Command-availability cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE)"
+    printf 'Command-path cache entries: %s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE)"
 }
 
 evop_render_project_context_facts_diagnostics_json() {
-    printf '{"backend": %s, "lookups": %s, "hits": %s, "misses": %s, "hit_rate_percent": %s, "relative_exists_entries": %s, "file_literal_entries": %s, "file_regex_entries": %s, "file_text_entries": %s, "command_availability_entries": %s}' \
+    printf '{"backend": %s, "lookups": %s, "hits": %s, "misses": %s, "hit_rate_percent": %s, "relative_exists_entries": %s, "file_literal_entries": %s, "file_regex_entries": %s, "file_text_entries": %s, "command_availability_entries": %s, "command_path_entries": %s}' \
         "\"$EVOP_PROJECT_CONTEXT_FACTS_CACHE_BACKEND\"" \
         "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_LOOKUPS" \
         "$EVOP_PROJECT_CONTEXT_FACTS_CACHE_HITS" \
@@ -24,5 +25,6 @@ evop_render_project_context_facts_diagnostics_json() {
         "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)" \
         "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)" \
         "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)" \
-        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE)"
+        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE)" \
+        "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE)"
 }

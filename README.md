@@ -242,9 +242,11 @@ repository analysis.
 
 `inspect --format agent`, `agent-json`, and `agent-env` expose a lighter-weight
 agent-facing catalog of repo command surfaces, invocable helper programs, test
-harnesses, and support CLIs. Those formats intentionally skip the broader
-architecture and workflow report so wrappers can fetch the callable tool menu
-with less detection work.
+harnesses, and support CLIs. Those formats now also include a structured host
+tool catalog with resolved executable paths, so wrappers can invoke repo-local
+commands and machine tools without scraping human-readable text. They
+intentionally skip the broader architecture and workflow report so wrappers can
+fetch the callable tool menu with less detection work.
 
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, including detected workspace packages for

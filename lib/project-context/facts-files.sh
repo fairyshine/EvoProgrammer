@@ -464,22 +464,54 @@ evop_agent_tool_surface_script_command() {
 
 evop_command_available_cached() {
     local command_name="$1"
-    local cached_value=""
 
     [[ -n "$command_name" ]] || return 1
 
+    if evop_resolve_command_path_cached "$command_name"; then
+        return 0
+    fi
+
+    return 1
+}
+
+evop_resolve_command_path_cached() {
+    local command_name="$1"
+    local cached_value=""
+    local resolved_path=""
+
+    EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT=""
+    [[ -n "$command_name" ]] || return 1
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE "$command_name"; then
+        cached_value="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        if [[ "$cached_value" == "__missing__" ]]; then
+            return 1
+        fi
+        EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT="$cached_value"
+        return 0
+    fi
+
     if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE "$command_name"; then
         cached_value="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        if [[ "$cached_value" == "1" ]] && evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE "$command_name"; then
+            EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+            [[ -n "$EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT" && "$EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT" != "__missing__" ]]
+            return $?
+        fi
         [[ "$cached_value" == "1" ]]
         return $?
     fi
 
-    if command -v "$command_name" >/dev/null 2>&1; then
+    resolved_path="$(command -v "$command_name" 2>/dev/null || true)"
+    if [[ -n "$resolved_path" ]]; then
         evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE "$command_name" "1"
+        evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE "$command_name" "$resolved_path"
+        EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT="$resolved_path"
         return 0
     fi
 
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE "$command_name" "0"
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE "$command_name" "__missing__"
     return 1
 }
 
@@ -490,6 +522,31 @@ evop_append_agent_support_tool_if_available() {
 
     if evop_command_available_cached "$command_name"; then
         evop_append_unique_multiline_value "$var_name" "$command_name [$source_label]"
+    fi
+}
+
+evop_append_agent_support_tool_catalog_entry() {
+    local var_name="$1"
+    local command_name="$2"
+    local source_label="$3"
+    local current="${(P)var_name:-}"
+    local entry=""
+
+    if ! evop_resolve_command_path_cached "$command_name"; then
+        return 0
+    fi
+
+    entry="$command_name"$'\t'"$EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT"$'\t'"$source_label"
+    case $'\n'"$current"$'\n' in
+        *$'\n'"$entry"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    if [[ -n "$current" ]]; then
+        printf -v "$var_name" '%s\n%s' "$current" "$entry"
+    else
+        printf -v "$var_name" '%s' "$entry"
     fi
 }
 
@@ -587,4 +644,100 @@ evop_project_agent_support_tools_cached() {
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT="$output"
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_CACHE "$cache_key" "$output"
     printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT"
+}
+
+evop_project_agent_support_tool_catalog_cached() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+    local language_profile="${3:-}"
+    local cache_key="agent-support-tool-catalog|$package_manager|$language_profile"
+    local output=""
+
+    EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT=""
+    evop_use_project_context_facts_dir "$target_dir"
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_CACHE "$cache_key"; then
+        EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT"
+        return 0
+    fi
+
+    evop_append_agent_support_tool_catalog_entry output git "host cli"
+    evop_append_agent_support_tool_catalog_entry output zsh "shell runtime"
+    evop_append_agent_support_tool_catalog_entry output sh "shell runtime"
+    evop_append_agent_support_tool_catalog_entry output find "filesystem cli"
+    evop_append_agent_support_tool_catalog_entry output xargs "pipeline cli"
+    evop_append_agent_support_tool_catalog_entry output sed "text cli"
+    evop_append_agent_support_tool_catalog_entry output awk "text cli"
+
+    if evop_command_available_cached rg; then
+        evop_append_agent_support_tool_catalog_entry output rg "search cli"
+    elif evop_command_available_cached grep; then
+        evop_append_agent_support_tool_catalog_entry output grep "search cli"
+    fi
+
+    if [[ -f "$target_dir/package.json" ]]; then
+        evop_append_agent_support_tool_catalog_entry output jq "json cli"
+        evop_append_agent_support_tool_catalog_entry output node "language runtime"
+    fi
+
+    if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
+        evop_append_agent_support_tool_catalog_entry output make "build tool"
+    fi
+
+    if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then
+        evop_append_agent_support_tool_catalog_entry output docker "container cli"
+    fi
+
+    case "$package_manager" in
+        pnpm|yarn|npm|bun|poetry|uv|cargo|go|composer|gradle|maven|dotnet|flutter|dart|mix|clojure|leiningen|stack|cabal|julia|luarocks|lua|zig|terraform|swift|bundler|cmake|r|python)
+            evop_append_agent_support_tool_catalog_entry output "$package_manager" "package manager"
+            ;;
+    esac
+
+    case "$language_profile" in
+        javascript|typescript)
+            evop_append_agent_support_tool_catalog_entry output node "language runtime"
+            ;;
+        python)
+            evop_append_agent_support_tool_catalog_entry output python3 "language runtime"
+            ;;
+        ruby)
+            evop_append_agent_support_tool_catalog_entry output ruby "language runtime"
+            ;;
+        php)
+            evop_append_agent_support_tool_catalog_entry output php "language runtime"
+            ;;
+        go)
+            evop_append_agent_support_tool_catalog_entry output go "language runtime"
+            ;;
+        rust)
+            evop_append_agent_support_tool_catalog_entry output cargo "language runtime"
+            ;;
+        java|kotlin)
+            evop_append_agent_support_tool_catalog_entry output java "language runtime"
+            ;;
+        csharp|fsharp|visual-basic)
+            evop_append_agent_support_tool_catalog_entry output dotnet "language runtime"
+            ;;
+        dart)
+            evop_append_agent_support_tool_catalog_entry output dart "language runtime"
+            ;;
+        elixir)
+            evop_append_agent_support_tool_catalog_entry output elixir "language runtime"
+            ;;
+        swift)
+            evop_append_agent_support_tool_catalog_entry output swift "language runtime"
+            ;;
+        lua)
+            evop_append_agent_support_tool_catalog_entry output lua "language runtime"
+            ;;
+        terraform)
+            evop_append_agent_support_tool_catalog_entry output terraform "language runtime"
+            ;;
+    esac
+
+    EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT="$output"
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_CACHE "$cache_key" "$output"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT"
 }
