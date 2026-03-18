@@ -73,6 +73,7 @@ evop_repo_has_non_shell_runtime_markers() {
         "build.gradle.kts" \
         "Package.swift" \
         "project.godot" \
+        "pubspec.yaml" \
         "AndroidManifest.xml" \
         "Info.plist" \
         "CMakeLists.txt"; then

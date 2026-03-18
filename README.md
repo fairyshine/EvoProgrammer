@@ -10,11 +10,11 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 
 **Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterates this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
 
-**Broad language, framework, and project coverage** — 13 languages, 24 frameworks, 17 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Bevy multiplayer game, a FastAPI microservice, or a Godot single-player adventure, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
+**Broad language, framework, and project coverage** — 14 languages, 25 frameworks, 18 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Flutter mobile app, a Bevy multiplayer game, a FastAPI microservice, or a Godot single-player adventure, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
 
-| Languages (13) | Frameworks (24) | Project Types (17) |
+| Languages (14) | Frameworks (25) | Project Types (18) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Paper, Scientific Experiment, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Paper, Scientific Experiment, PPT, Office |
 
 ## Quick Start
 
@@ -64,11 +64,19 @@ EvoProgrammer --language rust --framework bevy --project-type online-game \
 EvoProgrammer --language gdscript --framework godot --project-type single-player-game \
   "Build the first playable loop, scene transitions, and save checkpoints"
 
+# Flutter mobile app
+EvoProgrammer --language dart --framework flutter --project-type mobile-app \
+  "Build offline auth, app navigation, and widget tests"
+
 # Auto-detect everything from repo + prompt
 EvoProgrammer "Build a multiplayer arena prototype with dedicated-server support"
 
 # Point at another directory
 EvoProgrammer --target-dir /path/to/project "Improve the README, tests, and CI"
+
+# Commit each successful iteration automatically
+EvoProgrammer --auto-commit --auto-commit-message "feat: evolve repo" \
+  "Add the missing mobile flow and tighten verification"
 
 # Pass extra flags to the agent CLI
 EvoProgrammer --agent-args '["--model","gpt-5"]' "Generate the full project and keep fixing issues"
@@ -174,6 +182,8 @@ with `zsh -n`.
 | `-v, --verbose` | Show extra detail |
 | `--dry-run` | Print the command without running it |
 | `--agent-args JSON` | Extra agent arguments as a JSON string list |
+| `--auto-commit` | Commit each successful iteration's new git changes |
+| `--auto-commit-message TEXT` | Override the auto-commit message |
 
 ## Inspection And Verification
 
@@ -205,6 +215,11 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --format diagnostics` adds facts-cache counters for repo inspection, so
 you can see cache lookups, hit rate, and entry counts when profiling detection.
+
+`once` and loop mode now also support `--auto-commit` and
+`--auto-commit-message`. Auto-commit only stages and commits the paths that
+became newly changed during the current iteration, so pre-existing dirty files
+in the repo are left alone.
 
 `inspect --format profiles` shows the matched language, framework, and
 project-type candidates with their detection scores, which is useful when you

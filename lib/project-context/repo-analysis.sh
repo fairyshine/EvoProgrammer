@@ -96,6 +96,12 @@ evop_detect_structure_hints() {
     evop_add_structure_hint "$target_dir" "server" "backend or server entrypoints"
     evop_add_structure_hint "$target_dir" "src/server" "backend or server entrypoints"
     evop_add_structure_hint "$target_dir" "backend" "backend services or adapters"
+    evop_add_structure_hint "$target_dir" "android" "Android application shell, build files, and native integration"
+    evop_add_structure_hint "$target_dir" "ios" "iOS application shell, Xcode project, and native integration"
+    evop_add_structure_hint "$target_dir" "macos" "macOS desktop target and platform integration"
+    evop_add_structure_hint "$target_dir" "linux" "Linux desktop target and packaging integration"
+    evop_add_structure_hint "$target_dir" "windows" "Windows desktop target and packaging integration"
+    evop_add_structure_hint "$target_dir" "integration_test" "end-to-end or device-level test coverage"
     evop_add_structure_hint "$target_dir" "docs" "project documentation and design notes"
     evop_add_structure_hint "$target_dir" "tests" "automated tests"
     evop_add_structure_hint "$target_dir" "test" "automated tests"
@@ -160,6 +166,14 @@ evop_detect_conventions() {
 
     if [[ "$language_profile" == "rust" ]]; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_CONVENTIONS "Cargo is the primary workflow for build, check, test, and lint."
+    fi
+
+    if [[ "$language_profile" == "dart" ]]; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_CONVENTIONS "Dart or Flutter tooling is the primary workflow for run, analyze, and test."
+    fi
+
+    if [[ -f "$target_dir/analysis_options.yaml" ]]; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_CONVENTIONS "Analyzer rules are configured through analysis_options.yaml."
     fi
 }
 
@@ -241,6 +255,11 @@ evop_detect_risk_areas() {
     if evop_directory_has_file_pattern "$target_dir" "*.sh" \
         && evop_directory_has_path_named "$target_dir" "lib" "bin"; then
         evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Shell entrypoints often share sourced helpers, so changing common libraries can break multiple commands at once."
+    fi
+
+    if evop_directory_has_path_named "$target_dir" "android" \
+        || evop_directory_has_path_named "$target_dir" "ios"; then
+        evop_append_multiline EVOP_PROJECT_CONTEXT_RISK_AREAS "Mobile platform glue, permissions, and lifecycle handling can regress independently of shared app logic."
     fi
 
     if evop_directory_contains_text "$target_dir" "#!/usr/bin/env zsh" "*.sh" \

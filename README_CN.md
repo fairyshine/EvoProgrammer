@@ -10,11 +10,11 @@
 
 **自迭代代码演进** — 不同于一次性的 agent 调用，EvoProgrammer 会把 agent 反复投入同一个仓库（它实际上也在迭代这个代码仓库，它本身的仓库）。每一轮都建立在上一轮的基础上：第 1 轮搭脚手架，第 2 轮写测试，第 3 轮修 bug，第 4 轮打磨细节……循环持续进行，直到代码库收敛或达到你设定的上限。
 
-**广泛的语言、框架和项目覆盖** — 开箱即用支持 13 种语言、24 个框架、17 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Bevy 多人游戏、FastAPI 微服务还是 Godot 单机游戏，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
+**广泛的语言、框架和项目覆盖** — 开箱即用支持 14 种语言、25 个框架、18 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Flutter 移动应用、Bevy 多人游戏、FastAPI 微服务还是 Godot 单机游戏，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
 
-| 语言 (13) | 框架 (24) | 项目类型 (17) |
+| 语言 (14) | 框架 (25) | 项目类型 (18) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 论文, 科学实验, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 论文, 科学实验, PPT, Office |
 
 ## 快速开始
 
@@ -64,11 +64,19 @@ EvoProgrammer --language rust --framework bevy --project-type online-game \
 EvoProgrammer --language gdscript --framework godot --project-type single-player-game \
   "先做出第一版可玩循环、场景切换和存档点"
 
+# Flutter 移动应用
+EvoProgrammer --language dart --framework flutter --project-type mobile-app \
+  "Build offline auth, app navigation, and widget tests"
+
 # 完全自动检测
 EvoProgrammer "构建一个支持专用服务器的多人竞技原型"
 
 # 指向其他目录
 EvoProgrammer --target-dir /path/to/project "完善 README、测试和 CI"
+
+# 每次成功迭代后自动提交
+EvoProgrammer --auto-commit --auto-commit-message "feat: evolve repo" \
+  "Add the missing mobile flow and tighten verification"
 
 # 向 agent CLI 透传额外参数
 EvoProgrammer --agent-args '["--model","gpt-5"]' "生成完整项目并持续修复问题"
@@ -173,6 +181,8 @@ bootstrap shim 运行 `shellcheck`，其余脚本统一使用 `zsh -n` 做语法
 | `-v, --verbose` | 详细输出 |
 | `--dry-run` | 只打印命令不执行 |
 | `--agent-args JSON` | 额外 agent 参数（JSON 字符串列表） |
+| `--auto-commit` | 每次成功迭代后提交本次新增的 git 变更 |
+| `--auto-commit-message TEXT` | 覆盖自动提交信息 |
 
 ## 检测与验证
 
@@ -203,6 +213,10 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --format diagnostics` 会额外输出仓库检测 facts 缓存的命中、未命中和条目数，
 方便分析一次检测为什么快或慢。
+
+`once` 和循环模式现在也支持 `--auto-commit` 与
+`--auto-commit-message`。自动提交只会 stage/commit 当前这一次迭代里新产生
+的变更路径，不会把仓库里原本就存在的脏改动一起提交。
 
 `inspect --format profiles` 会输出命中的语言、框架、项目类型候选项及其检测分数，
 方便理解和排查自动检测的决策过程。

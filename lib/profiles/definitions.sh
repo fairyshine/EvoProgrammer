@@ -7,6 +7,11 @@ EVOP_PROFILE_CATEGORIES="languages frameworks project-types"
 EVOP_SUPPORTED_PROFILES_CACHE_LANGUAGES=""
 EVOP_SUPPORTED_PROFILES_CACHE_FRAMEWORKS=""
 EVOP_SUPPORTED_PROFILES_CACHE_PROJECT_TYPES=""
+EVOP_PROFILE_LOADED_KEY=""
+
+typeset -A EVOP_PROFILE_PROMPT_CACHE=()
+typeset -A EVOP_PROFILE_DETECT_FUNCTION_CACHE=()
+typeset -A EVOP_PROFILE_APPLY_FUNCTION_CACHE=()
 
 evop_validate_profile_category() {
     local category_dir="$1"
@@ -147,6 +152,7 @@ evop_profile_definition_path() {
 }
 
 evop_reset_profile_definition() {
+    EVOP_PROFILE_LOADED_KEY=""
     EVOP_PROFILE_DIR=""
     EVOP_PROFILE_SCRIPTS_DIR=""
     EVOP_PROFILE_PROMPT=""
@@ -155,11 +161,82 @@ evop_reset_profile_definition() {
     unset -f evop_profile_apply_project_context 2>/dev/null || true
 }
 
+evop_profile_cache_key() {
+    local category_dir="$1"
+    local profile_name="$2"
+
+    printf '%s:%s' "$category_dir" "$profile_name"
+}
+
+evop_cache_loaded_profile_definition() {
+    local cache_key="$1"
+    local cached_function=""
+
+    EVOP_PROFILE_PROMPT_CACHE[$cache_key]="$EVOP_PROFILE_PROMPT"
+
+    if evop_function_exists evop_profile_detect; then
+        cached_function="$(evop_profile_cached_function_name "detect" "$cache_key")"
+        unset -f "$cached_function" 2>/dev/null || true
+        functions -c evop_profile_detect "$cached_function"
+        EVOP_PROFILE_DETECT_FUNCTION_CACHE[$cache_key]="$cached_function"
+    else
+        EVOP_PROFILE_DETECT_FUNCTION_CACHE[$cache_key]=""
+    fi
+
+    if evop_function_exists evop_profile_apply_project_context; then
+        cached_function="$(evop_profile_cached_function_name "apply_project_context" "$cache_key")"
+        unset -f "$cached_function" 2>/dev/null || true
+        functions -c evop_profile_apply_project_context "$cached_function"
+        EVOP_PROFILE_APPLY_FUNCTION_CACHE[$cache_key]="$cached_function"
+    else
+        EVOP_PROFILE_APPLY_FUNCTION_CACHE[$cache_key]=""
+    fi
+}
+
+evop_restore_cached_profile_definition() {
+    local cache_key="$1"
+    local profile_dir="$2"
+    local cached_function=""
+
+    EVOP_PROFILE_DIR="$profile_dir"
+    EVOP_PROFILE_SCRIPTS_DIR="$profile_dir/scripts"
+    EVOP_PROFILE_PROMPT="${EVOP_PROFILE_PROMPT_CACHE[$cache_key]}"
+
+    unset -f evop_profile_detect 2>/dev/null || true
+    unset -f evop_profile_apply_project_context 2>/dev/null || true
+
+    cached_function="${EVOP_PROFILE_DETECT_FUNCTION_CACHE[$cache_key]}"
+    if [[ -n "$cached_function" ]]; then
+        functions -c "$cached_function" evop_profile_detect
+    fi
+
+    cached_function="${EVOP_PROFILE_APPLY_FUNCTION_CACHE[$cache_key]}"
+    if [[ -n "$cached_function" ]]; then
+        functions -c "$cached_function" evop_profile_apply_project_context
+    fi
+}
+
+evop_profile_cached_function_name() {
+    local kind="$1"
+    local cache_key="$2"
+    local sanitized_key="$cache_key"
+
+    sanitized_key="${sanitized_key//[^[:alnum:]_]/_}"
+    printf 'evop_cached_profile_%s_%s' "$kind" "$sanitized_key"
+}
+
 evop_load_profile_definition() {
     local category_dir="$1"
     local profile_name="$2"
     local definition_path
     local profile_dir
+    local cache_key=""
+
+    evop_validate_profile_category "$category_dir"
+    cache_key="$(evop_profile_cache_key "$category_dir" "$profile_name")"
+    if [[ "$EVOP_PROFILE_LOADED_KEY" == "$cache_key" ]]; then
+        return 0
+    fi
 
     evop_reset_profile_definition
     definition_path="$(evop_profile_definition_path "$category_dir" "$profile_name")"
@@ -172,8 +249,16 @@ evop_load_profile_definition() {
     EVOP_PROFILE_SCRIPTS_DIR="$profile_dir/scripts"
     EVOP_PROFILE_PROMPT=""
 
+    if [[ -n ${EVOP_PROFILE_PROMPT_CACHE[$cache_key]+set} ]]; then
+        evop_restore_cached_profile_definition "$cache_key" "$profile_dir"
+        EVOP_PROFILE_LOADED_KEY="$cache_key"
+        return 0
+    fi
+
     # shellcheck source=/dev/null
     source "$definition_path"
+    evop_cache_loaded_profile_definition "$cache_key"
+    EVOP_PROFILE_LOADED_KEY="$cache_key"
 }
 
 evop_print_profile_prompt() {

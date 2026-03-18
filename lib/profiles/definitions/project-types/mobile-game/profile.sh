@@ -13,7 +13,13 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    evop_profile_match_file_named 97 "$target_dir" "AndroidManifest.xml" "Info.plist" && return 0
+    if evop_directory_has_file_named "$target_dir" "project.godot" \
+        || { evop_directory_has_path_named "$target_dir" "Assets" && evop_directory_has_path_named "$target_dir" "ProjectSettings"; } \
+        || evop_directory_has_file_pattern "$target_dir" "*.uproject"; then
+        EVOP_PROFILE_DETECT_SCORE=97
+        return 0
+    fi
+
     evop_profile_match_prompt 97 "$prompt" "mobile game" "ios game" "android game" "手机游戏" && return 0
     return 1
 }

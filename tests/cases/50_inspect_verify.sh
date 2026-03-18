@@ -242,3 +242,39 @@ pass "VERIFY env report"
 cli_inspect_output="$(run_expect_success "CLI inspect should dispatch to INSPECT" "$CLI_SCRIPT" inspect --target-dir "$TEST_CONTEXT_DIR")"
 assert_contains "$cli_inspect_output" "Suggested commands:" "CLI inspect should dispatch to INSPECT"
 pass "CLI inspect behavior"
+
+setup_flutter_workspace
+flutter_inspect_output="$(run_expect_success "INSPECT should summarize Flutter mobile projects" "$INSPECT_SCRIPT" --target-dir "$TEST_FLUTTER_DIR")"
+assert_contains "$flutter_inspect_output" "Language profile: dart (auto-detected)" "INSPECT should detect Dart for Flutter projects"
+assert_contains "$flutter_inspect_output" "Framework profile: flutter (auto-detected)" "INSPECT should detect Flutter framework context"
+assert_contains "$flutter_inspect_output" "Project type: mobile-app (auto-detected)" "INSPECT should detect the mobile-app project type"
+assert_contains "$flutter_inspect_output" "Test: flutter test" "INSPECT should infer Flutter test commands"
+assert_contains "$flutter_inspect_output" "Lint: flutter analyze" "INSPECT should infer Flutter analyzer commands"
+pass "INSPECT Flutter summary"
+
+setup_agent_test_workspace
+mkdir -p "$TEST_TARGET_DIR/.evoprogrammer/hooks"
+cat >"$TEST_TARGET_DIR/.evoprogrammer/hooks/post-iteration" <<'EOF'
+#!/usr/bin/env zsh
+set -euo pipefail
+printf 'generated\n' >"generated.txt"
+EOF
+chmod +x "$TEST_TARGET_DIR/.evoprogrammer/hooks/post-iteration"
+printf 'baseline dirty change\n' >"$TEST_TARGET_DIR/existing.txt"
+
+run_expect_success "LOOP should auto-commit only iteration changes" env PATH="$TEST_FAKE_BIN:$PATH" "$LOOP_SCRIPT" --target-dir "$TEST_TARGET_DIR" --auto-commit --auto-commit-message "feat: auto commit test" --prompt "generate a file" >/dev/null
+auto_commit_status="$(
+    TARGET_DIR="$TEST_TARGET_DIR" zsh <<'EOF'
+set -euo pipefail
+commit_subject="$(git -C "$TARGET_DIR" log -1 --pretty=%s)"
+status_output="$(git -C "$TARGET_DIR" status --short)"
+tracked_generated="$(git -C "$TARGET_DIR" ls-files generated.txt)"
+printf 'subject=%s\n' "$commit_subject"
+printf 'status=%s\n' "$status_output"
+printf 'generated=%s\n' "$tracked_generated"
+EOF
+)"
+assert_contains "$auto_commit_status" "subject=feat: auto commit test" "LOOP auto-commit should use the requested commit message"
+assert_contains "$auto_commit_status" "generated=generated.txt" "LOOP auto-commit should commit iteration-created files"
+assert_contains "$auto_commit_status" "existing.txt" "LOOP auto-commit should leave pre-existing dirty changes untouched"
+pass "LOOP auto-commit isolation"

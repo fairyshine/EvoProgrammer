@@ -167,6 +167,8 @@ setup_agent_test_workspace() {
     TEST_TARGET_DIR="$TEST_TMPDIR/project"
     mkdir -p "$TEST_TARGET_DIR"
     git init -q "$TEST_TARGET_DIR"
+    git -C "$TEST_TARGET_DIR" config user.name "EvoProgrammer Tests"
+    git -C "$TEST_TARGET_DIR" config user.email "tests@example.com"
 
     TEST_TARGET_DIR_PHYSICAL="$(cd "$TEST_TARGET_DIR" && pwd -P)"
     TEST_PROMPT_FILE="$TEST_TMPDIR/prompt.txt"
@@ -263,4 +265,48 @@ set -euo pipefail
 printf '%s\n' "\${EVOP_PREFERRED_SHELL:-unknown}" >"$TEST_VERIFY_SHELL_LOG"
 EOF
     chmod +x "$TEST_VERIFY_SHELL_BIN/make"
+}
+
+setup_flutter_workspace() {
+    if [[ -n "${TEST_FLUTTER_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_FLUTTER_DIR="$TEST_TMPDIR/flutter-app"
+    mkdir -p \
+        "$TEST_FLUTTER_DIR/lib" \
+        "$TEST_FLUTTER_DIR/test" \
+        "$TEST_FLUTTER_DIR/android/app/src/main" \
+        "$TEST_FLUTTER_DIR/ios/Runner"
+
+    cat >"$TEST_FLUTTER_DIR/pubspec.yaml" <<'EOF'
+name: flutter_app
+description: Test Flutter app
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+EOF
+
+    cat >"$TEST_FLUTTER_DIR/analysis_options.yaml" <<'EOF'
+include: package:flutter_lints/flutter.yaml
+EOF
+
+    cat >"$TEST_FLUTTER_DIR/lib/main.dart" <<'EOF'
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const Placeholder());
+}
+EOF
+
+    cat >"$TEST_FLUTTER_DIR/test/widget_test.dart" <<'EOF'
+void main() {}
+EOF
 }

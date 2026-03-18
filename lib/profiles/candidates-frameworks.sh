@@ -88,6 +88,14 @@ evop_prepare_framework_profile_candidates() {
         evop_profile_candidate_append_unique candidates "gin"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "pubspec.yaml"; then
+        if evop_directory_contains_text "$target_dir" "flutter:" "pubspec.yaml" \
+            || evop_directory_contains_text "$target_dir" "sdk: flutter" "pubspec.yaml" \
+            || { evop_directory_has_path_named "$target_dir" "android" && evop_directory_has_path_named "$target_dir" "ios"; }; then
+            evop_profile_candidate_append_unique candidates "flutter"
+        fi
+    fi
+
     if evop_directory_has_file_named "$target_dir" "project.godot" \
         || evop_directory_has_file_pattern "$target_dir" "*.gd"; then
         evop_profile_candidate_append_unique candidates "godot"
@@ -134,6 +142,7 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "express" "$prompt" "express"
     evop_profile_candidate_add_if_prompt_matches candidates "fastapi" "$prompt" "fastapi"
     evop_profile_candidate_add_if_prompt_matches candidates "flask" "$prompt" "flask"
+    evop_profile_candidate_add_if_prompt_matches candidates "flutter" "$prompt" "flutter"
     evop_profile_candidate_add_if_prompt_matches candidates "gin" "$prompt" "gin"
     evop_profile_candidate_add_if_prompt_matches candidates "godot" "$prompt" "godot"
     evop_profile_candidate_add_if_prompt_matches candidates "laravel" "$prompt" "laravel"
@@ -161,6 +170,10 @@ evop_prepare_framework_profile_candidates() {
 
     if [[ -z "$candidates" && "$has_cargo" == "1" ]]; then
         candidates=$'actix-web\naxum\nbevy'
+    fi
+
+    if [[ -z "$candidates" && -f "$target_dir/pubspec.yaml" ]]; then
+        candidates="flutter"
     fi
 
     if [[ -n "$candidates" ]]; then

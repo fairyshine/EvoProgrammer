@@ -36,9 +36,9 @@ build_loop_command() {
     local artifacts_dir="$1"
 
     if ((${#LOOP_ARGS[@]} > 0)); then
-        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST" "${LOOP_ARGS[@]}"
+        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST" "$AUTO_COMMIT" "$AUTO_COMMIT_MESSAGE" "${LOOP_ARGS[@]}"
     else
-        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST"
+        evop_build_loop_command "$LOOP_SCRIPT" "$AGENT" "$resolved_prompt" "$PROMPT_FILE" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE" "$artifacts_dir" "$CONTEXT_FILE" "$AGENT_ARGS_LIST" "$AUTO_COMMIT" "$AUTO_COMMIT_MESSAGE"
     fi
 
     loop_cmd=("${EVOP_LOOP_COMMAND[@]}")
@@ -90,6 +90,9 @@ Options:
   -d, --delay-seconds NUM     Delay between runs.
   -c, --continue-on-error     Keep looping after a failed run.
       --agent-args JSON       JSON-like string list of extra agent arguments.
+      --auto-commit           Commit each successful iteration's new git changes.
+      --auto-commit-message TEXT
+                              Override the auto-commit message for each iteration.
   -a, --agent-arg ARG         Extra argument to pass to the agent CLI. Repeat as needed.
       --codex-arg ARG         Backward-compatible alias for --agent-arg.
       --dry-run               Print the next iteration command and exit.
@@ -109,7 +112,10 @@ Environment variables:
     EVOPROGRAMMER_CONTEXT_FILE       Reuse an `inspect --format env` context snapshot.
     EVOPROGRAMMER_MAX_ITERATIONS     0 means run forever. Default: 0.
     EVOPROGRAMMER_DELAY_SECONDS      Delay between runs. Default: 0.
-  EVOPROGRAMMER_CONTINUE_ON_ERROR  1 keeps looping after a failed run. Default: 0.
+    EVOPROGRAMMER_CONTINUE_ON_ERROR  1 keeps looping after a failed run. Default: 0.
+    EVOPROGRAMMER_AUTO_COMMIT       1 commits each successful iteration. Default: 0.
+    EVOPROGRAMMER_AUTO_COMMIT_MESSAGE
+                                     Override the auto-commit message for each iteration.
 EOF
 }
 
@@ -172,6 +178,7 @@ evop_finalize_common_context
 evop_validate_non_negative_integer "EVOPROGRAMMER_MAX_ITERATIONS" "$MAX_ITERATIONS"
 evop_validate_non_negative_integer "EVOPROGRAMMER_DELAY_SECONDS" "$DELAY_SECONDS"
 evop_validate_zero_or_one "EVOPROGRAMMER_CONTINUE_ON_ERROR" "$CONTINUE_ON_ERROR"
+evop_validate_zero_or_one "EVOPROGRAMMER_AUTO_COMMIT" "$AUTO_COMMIT"
 evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
 
 if [[ "$DRY_RUN" == "1" ]]; then
@@ -180,6 +187,10 @@ if [[ "$DRY_RUN" == "1" ]]; then
     printf 'Max iterations: %s\n' "$MAX_ITERATIONS"
     printf 'Delay seconds: %s\n' "$DELAY_SECONDS"
     printf 'Continue on error: %s\n' "$CONTINUE_ON_ERROR"
+    printf 'Auto commit: %s\n' "$AUTO_COMMIT"
+    if [[ -n "$AUTO_COMMIT_MESSAGE" ]]; then
+        printf 'Auto commit message: %s\n' "$AUTO_COMMIT_MESSAGE"
+    fi
     printf 'Artifacts root: %s\n' "$artifacts_root"
     build_loop_command "$artifacts_root"
     evop_print_command_preview "$TARGET_DIR" "${loop_cmd[@]}"

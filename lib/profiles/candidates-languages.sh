@@ -71,6 +71,11 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "swift"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "pubspec.yaml" \
+        || evop_directory_has_file_pattern "$target_dir" "*.dart"; then
+        evop_profile_candidate_append_unique candidates "dart"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "project.godot" \
         || evop_directory_has_file_pattern "$target_dir" "*.gd"; then
         evop_profile_candidate_append_unique candidates "gdscript"
@@ -93,6 +98,7 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "csharp" "$prompt" "c#" "dotnet"
     evop_profile_candidate_add_if_prompt_matches candidates "cpp" "$prompt" "c++" "cpp"
     evop_profile_candidate_add_if_prompt_matches candidates "swift" "$prompt" "swift"
+    evop_profile_candidate_add_if_prompt_matches candidates "dart" "$prompt" "dart" "flutter"
     evop_profile_candidate_add_if_prompt_matches candidates "gdscript" "$prompt" "gdscript"
     evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "zsh" "bash" "shell" "shell script" "脚本"
 

@@ -35,5 +35,7 @@ evop_build_common_metadata_args() {
         TARGET_DIR "$TARGET_DIR"
         ARTIFACTS_ROOT "$artifacts_root"
         PROMPT_SOURCE "$prompt_source"
+        AUTO_COMMIT "$AUTO_COMMIT"
+        AUTO_COMMIT_MESSAGE "$AUTO_COMMIT_MESSAGE"
     )
 }

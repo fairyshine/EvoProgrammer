@@ -91,6 +91,17 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        dart)
+            if [[ -f "$target_dir/pubspec.yaml" ]]; then
+                if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
+                    || evop_file_contains_literal "$target_dir/pubspec.yaml" "sdk: flutter"; then
+                    printf 'flutter'
+                else
+                    printf 'dart'
+                fi
+                return 0
+            fi
+            ;;
     esac
 
     if [[ -f "$target_dir/pnpm-lock.yaml" || -f "$target_dir/pnpm-workspace.yaml" ]]; then
@@ -148,6 +159,16 @@ evop_choose_package_manager() {
         return 0
     fi
 
+    if [[ -f "$target_dir/pubspec.yaml" ]]; then
+        if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
+            || evop_file_contains_literal "$target_dir/pubspec.yaml" "sdk: flutter"; then
+            printf 'flutter'
+        else
+            printf 'dart'
+        fi
+        return 0
+    fi
+
     return 1
 }
 
@@ -175,7 +196,7 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" ]]; then
+    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" ]]; then
         printf 'single-package'
         return 0
     fi
@@ -274,6 +295,22 @@ evop_detect_language_default_commands() {
         typescript|javascript)
             if [[ -f "$target_dir/tsconfig.json" ]]; then
                 evop_set_project_command_if_empty typecheck "tsc --noEmit" "TypeScript defaults"
+            fi
+            ;;
+        dart)
+            if [[ "$package_manager" == "flutter" ]]; then
+                evop_set_project_command_if_empty dev "flutter run" "Flutter defaults"
+                evop_set_project_command_if_empty test "flutter test" "Flutter defaults"
+                evop_set_project_command_if_empty lint "flutter analyze" "Flutter defaults"
+                evop_set_project_command_if_empty typecheck "flutter analyze" "Flutter defaults"
+            else
+                evop_set_project_command_if_empty dev "dart run" "Dart defaults"
+                if [[ -d "$target_dir/test" || -d "$target_dir/integration_test" ]] \
+                    || evop_file_contains_literal "$target_dir/pubspec.yaml" "test:"; then
+                    evop_set_project_command_if_empty test "dart test" "Dart defaults"
+                fi
+                evop_set_project_command_if_empty lint "dart analyze" "Dart defaults"
+                evop_set_project_command_if_empty typecheck "dart analyze" "Dart defaults"
             fi
             ;;
     esac

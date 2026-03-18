@@ -12,8 +12,11 @@ printf 'project-types=%s\n' "$(evop_supported_profiles_as_string project-types)"
 EOF
 )"
 assert_contains "$profile_catalog_output" "languages=cpp" "Profile catalog should expose language profiles"
+assert_contains "$profile_catalog_output" "dart" "Profile catalog should expose the Dart language profile"
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
+assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
 assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose project-type profiles"
+assert_contains "$profile_catalog_output" "mobile-app" "Profile catalog should expose the mobile-app project type"
 pass "Profile catalog"
 
 profile_hook_output="$(
@@ -36,6 +39,31 @@ EOF
 assert_contains "$profile_hook_output" "Inspect package entrypoints, service modules, schemas, and tests before editing." "Language profiles should be able to contribute project-context search guidance"
 assert_contains "$profile_hook_output" "Existing pytest-style tests are present; extend the nearest coverage before broadening integration checks." "Profile hooks should be able to add dynamic analysis based on the target directory"
 pass "Profile project-context hooks"
+
+profile_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/test"
+printf 'name: dart_app\nflutter:\n  uses-material-design: true\n' >"$tmpdir/pubspec.yaml"
+
+first_prompt="$(evop_print_profile_prompt frameworks flutter)"
+second_prompt="$(evop_print_profile_prompt frameworks flutter)"
+
+evop_reset_project_context
+evop_apply_profile_project_context_hooks "frameworks" "flutter" "$tmpdir" ""
+
+printf 'same_prompt=%s\n' "$([[ "$first_prompt" == "$second_prompt" ]] && printf true || printf false)"
+printf 'search=%s\n' "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY"
+EOF
+)"
+assert_contains "$profile_cache_output" "same_prompt=true" "Profile caching should preserve repeated prompt rendering"
+assert_contains "$profile_cache_output" "integration_test/" "Profile caching should preserve apply-project-context hooks"
+pass "Profile definition cache reuse"
 
 profile_catalog_zsh_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
@@ -150,6 +178,41 @@ assert_contains "$shell_cli_candidate_zsh_output" "frameworks_mode=none" "Shell 
 assert_contains "$shell_cli_candidate_zsh_output" "project-types_candidates=cli-tool" "Shell CLI repos should keep cli-tool candidates under zsh"
 assert_contains "$shell_cli_candidate_zsh_output" "project_type=cli-tool" "Shell CLI repos should auto-detect cli-tool under zsh"
 pass "Shell CLI project detection zsh"
+
+flutter_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/lib" "$tmpdir/test" "$tmpdir/android" "$tmpdir/ios"
+cat >"$tmpdir/pubspec.yaml" <<'PUBSPEC'
+name: flutter_app
+dependencies:
+  flutter:
+    sdk: flutter
+flutter:
+  uses-material-design: true
+PUBSPEC
+printf 'void main() {}\n' >"$tmpdir/lib/main.dart"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$flutter_profile_output" "language=dart" "Flutter repos should detect the Dart language profile"
+assert_contains "$flutter_profile_output" "framework=flutter" "Flutter repos should detect the Flutter framework profile"
+assert_contains "$flutter_profile_output" "project_type=mobile-app" "Flutter repos should detect the mobile-app project type"
+pass "Flutter profile detection"
 
 profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
 assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"

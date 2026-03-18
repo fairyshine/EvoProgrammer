@@ -5,7 +5,14 @@ evop_prepare_project_type_candidates() {
     local prompt="${2:-}"
     local candidates=""
 
-    if evop_directory_has_file_named "$target_dir" "AndroidManifest.xml" "Info.plist"; then
+    if evop_directory_has_file_named "$target_dir" "AndroidManifest.xml" "Info.plist" \
+        || { evop_directory_has_path_named "$target_dir" "android" && evop_directory_has_path_named "$target_dir" "ios"; }; then
+        evop_profile_candidate_append_unique candidates "mobile-app"
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "project.godot" \
+        || evop_directory_has_path_named "$target_dir" "Assets" "ProjectSettings" \
+        || evop_directory_has_file_pattern "$target_dir" "*.uproject"; then
         evop_profile_candidate_append_unique candidates "mobile-game"
     fi
 
@@ -45,6 +52,7 @@ evop_prepare_project_type_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "desktop-app" "$prompt" "desktop app" "desktop application" "桌面应用"
     evop_profile_candidate_add_if_prompt_matches candidates "embedded-system" "$prompt" "embedded" "firmware" "mcu" "microcontroller"
     evop_profile_candidate_add_if_prompt_matches candidates "library" "$prompt" "sdk" "library" "package" "crate" "module"
+    evop_profile_candidate_add_if_prompt_matches candidates "mobile-app" "$prompt" "mobile app" "ios app" "android app" "flutter app" "手机应用" "移动应用"
     evop_profile_candidate_add_if_prompt_matches candidates "mobile-game" "$prompt" "mobile game" "ios game" "android game" "手机游戏"
     evop_profile_candidate_add_if_prompt_matches candidates "office" "$prompt" "office" "spreadsheet" "report" "word document" "excel" "办公"
     evop_profile_candidate_add_if_prompt_matches candidates "online-game" "$prompt" "online game" "multiplayer" "networked game" "dedicated server" "client sync" "server authoritative" "联网游戏"

@@ -205,7 +205,9 @@ evop_build_loop_command() {
     local artifacts_dir="$8"
     local context_file="$9"
     local agent_args_list="${10}"
-    shift 10
+    local auto_commit="${11}"
+    local auto_commit_message="${12}"
+    shift 12
 
     EVOP_LOOP_COMMAND=("$loop_script" --agent "$agent")
 
@@ -235,6 +237,14 @@ evop_build_loop_command() {
 
     if [[ -n "$agent_args_list" ]]; then
         EVOP_LOOP_COMMAND+=(--agent-args "$agent_args_list")
+    fi
+
+    if [[ "$auto_commit" == "1" ]]; then
+        EVOP_LOOP_COMMAND+=(--auto-commit)
+    fi
+
+    if [[ -n "$auto_commit_message" ]]; then
+        EVOP_LOOP_COMMAND+=(--auto-commit-message "$auto_commit_message")
     fi
 
     if (($# > 0)); then

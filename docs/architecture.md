@@ -31,6 +31,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 
 - `lib/cli.sh`: shared flag parsing and context finalization
 - `lib/runtime.sh`: filesystem, artifacts, command capture, and path helpers
+- `lib/git.sh`: iteration-scoped git diff snapshots and safe auto-commit helpers
 - `lib/config.sh`: `.evoprogrammer.conf` loading
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
 - `lib/status-collect.sh`: status filtering and metadata collection
@@ -60,6 +61,11 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/profiles/detect-helpers.sh`: aggregator for profile-detection fact helpers
 
 This layer answers: "What kind of repo is this?"
+
+Profile definitions now also use an in-process cache for prompt text and copied
+detect/apply hooks. That keeps repeated prompt rendering, project-context hook
+application, and related reporting paths from re-sourcing the same definition
+multiple times in one command execution.
 
 ### 4. Project inspection
 
@@ -146,6 +152,14 @@ Verification execution also records first-class step results, durations, and log
 paths. `VERIFY.sh` can emit that report as JSON or shell-safe env assignments so
 CI and helper scripts can consume the same execution state without scraping the
 human-readable log stream.
+
+Loop and one-shot execution now follow the same first-class state model for git
+history too. When `--auto-commit` is enabled, `lib/git.sh` snapshots the repo's
+pre-iteration dirty paths, compares the post-iteration working tree, and only
+stages or commits the paths that became newly changed during that iteration.
+That keeps pre-existing dirty worktree files out of EvoProgrammer-managed
+commits while still allowing repeated automated runs to checkpoint their
+progress.
 
 Verification planning follows the same pattern now: `verify --list` can emit the
 selected step plan as summary, JSON, or env output, and `--require-all` lets CI

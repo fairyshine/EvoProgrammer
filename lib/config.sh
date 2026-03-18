@@ -72,6 +72,16 @@ evop_load_project_config() {
                     ARTIFACTS_DIR="$value"
                 fi
                 ;;
+            auto_commit)
+                if [[ -z "${EVOPROGRAMMER_AUTO_COMMIT:-}" ]]; then
+                    AUTO_COMMIT="$value"
+                fi
+                ;;
+            auto_commit_message)
+                if [[ -z "${EVOPROGRAMMER_AUTO_COMMIT_MESSAGE:-}" && -z "$AUTO_COMMIT_MESSAGE" ]]; then
+                    AUTO_COMMIT_MESSAGE="$value"
+                fi
+                ;;
             verbosity)
                 if [[ "$EVOP_VERBOSITY" == "1" ]]; then
                     EVOP_VERBOSITY="$value"

@@ -17,6 +17,7 @@ CLI_LIB="$LIB_DIR/cli.sh"
 METADATA_LIB="$LIB_DIR/metadata.sh"
 CONFIG_LIB="$LIB_DIR/config.sh"
 HOOKS_LIB="$LIB_DIR/hooks.sh"
+GIT_LIB="$LIB_DIR/git.sh"
 
 # Shared helpers keep validation and command preview logic consistent.
 source "$COMMON_LIB"
@@ -27,6 +28,7 @@ source "$CLI_LIB"
 source "$METADATA_LIB"
 source "$CONFIG_LIB"
 source "$HOOKS_LIB"
+source "$GIT_LIB"
 
 evop_init_common_context
 declare -a AGENT_ARGS=()
@@ -69,6 +71,9 @@ Options:
   -o, --artifacts-dir DIR   Root directory used to store run artifacts.
       --context-file FILE   Reuse an `inspect --format env` context snapshot.
       --agent-args JSON     JSON-like string list of extra agent arguments.
+      --auto-commit         Commit this iteration's new git changes after a successful run.
+      --auto-commit-message TEXT
+                            Override the auto-commit message for this iteration.
   -a, --agent-arg ARG       Extra argument to pass to the agent CLI. Repeat as needed.
       --codex-arg ARG       Backward-compatible alias for --agent-arg.
       --dry-run             Print the command instead of running it.
@@ -91,6 +96,10 @@ Environment variables:
                            Framework adaptation profile. Auto-detected when omitted.
   EVOPROGRAMMER_PROJECT_TYPE
                            Project-type adaptation profile. Auto-detected when omitted.
+  EVOPROGRAMMER_AUTO_COMMIT
+                           1 commits new iteration changes after success. Default: 0.
+  EVOPROGRAMMER_AUTO_COMMIT_MESSAGE
+                           Override the auto-commit message for this iteration.
 EOF
 }
 
@@ -136,6 +145,7 @@ if (($# > 0)); then
 fi
 
 evop_finalize_common_context
+evop_validate_zero_or_one "EVOPROGRAMMER_AUTO_COMMIT" "$AUTO_COMMIT"
 agent_display_name="$(evop_agent_display_name "$AGENT")"
 agent_command_name="$(evop_agent_command_name "$AGENT")"
 final_prompt="$(evop_compose_prompt "$resolved_prompt" "$LANGUAGE_PROFILE" "$FRAMEWORK_PROFILE" "$PROJECT_TYPE")"
@@ -158,6 +168,10 @@ if [[ "$DRY_RUN" == "1" ]]; then
     printf 'Agent: %s\n' "$AGENT"
     evop_print_current_profiles
     printf 'Artifacts root: %s\n' "$artifacts_root"
+    printf 'Auto commit: %s\n' "$AUTO_COMMIT"
+    if [[ -n "$AUTO_COMMIT_MESSAGE" ]]; then
+        printf 'Auto commit message: %s\n' "$AUTO_COMMIT_MESSAGE"
+    fi
     evop_print_command_preview "$TARGET_DIR" "${agent_cmd[@]}"
     exit 0
 fi
@@ -181,6 +195,10 @@ evop_log_info "Agent: $agent_display_name"
 evop_print_current_profiles
 evop_log_info "Artifacts directory: $run_dir"
 
+if [[ "$AUTO_COMMIT" == "1" ]]; then
+    evop_git_snapshot_iteration_baseline "$TARGET_DIR" || true
+fi
+
 evop_run_hook "$TARGET_DIR" "pre-iteration"
 
 if evop_run_and_capture "$TARGET_DIR" "$output_file" "${agent_cmd[@]}"; then
@@ -192,6 +210,15 @@ fi
 evop_run_hook "$TARGET_DIR" "post-iteration"
 
 finished_at="$(evop_timestamp_utc)"
+
+if [[ "$run_status" == "0" && "$AUTO_COMMIT" == "1" ]]; then
+    if evop_git_auto_commit_iteration "$TARGET_DIR" "$AUTO_COMMIT_MESSAGE" "$resolved_prompt"; then
+        :
+    else
+        run_status=$?
+    fi
+fi
+
 write_run_metadata "$metadata_file" "$run_status" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"
 
 exit "$run_status"

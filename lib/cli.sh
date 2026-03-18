@@ -20,6 +20,8 @@ evop_init_common_context() {
     LANGUAGE_PROFILE_SOURCE="none"
     FRAMEWORK_PROFILE_SOURCE="none"
     PROJECT_TYPE_SOURCE="none"
+    AUTO_COMMIT="${EVOPROGRAMMER_AUTO_COMMIT:-0}"
+    AUTO_COMMIT_MESSAGE="${EVOPROGRAMMER_AUTO_COMMIT_MESSAGE:-}"
     DRY_RUN=0
 }
 
@@ -83,6 +85,15 @@ evop_parse_common_option() {
         --agent-args)
             evop_require_option_value "$option" "$argument_count"
             AGENT_ARGS_LIST="$option_value"
+            EVOP_CLI_OPTION_SHIFT=2
+            ;;
+        --auto-commit)
+            AUTO_COMMIT=1
+            EVOP_CLI_OPTION_SHIFT=1
+            ;;
+        --auto-commit-message)
+            evop_require_option_value "$option" "$argument_count"
+            AUTO_COMMIT_MESSAGE="$option_value"
             EVOP_CLI_OPTION_SHIFT=2
             ;;
         --dry-run)
