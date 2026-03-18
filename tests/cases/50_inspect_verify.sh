@@ -10,7 +10,10 @@ assert_contains "$inspect_output" "Lint: pnpm lint [package.json script]" "INSPE
 assert_contains "$inspect_output" "Agent command surfaces:" "INSPECT should print agent command surfaces"
 assert_contains "$inspect_output" "./bin/context-tool [repo executable]" "INSPECT should list repo executables that agents can call directly"
 assert_contains "$inspect_output" "zsh ./STATUS.sh [top-level script]" "INSPECT should list top-level scripts as agent command surfaces"
+assert_contains "$inspect_output" "./scripts/release [repo helper executable]" "INSPECT should list executable helper scripts for agents"
+assert_contains "$inspect_output" "./tools/sync-context [repo helper executable]" "INSPECT should list executable helper tools for agents"
 assert_contains "$inspect_output" "pnpm inspect [package.json script]" "INSPECT should list non-verification package scripts as agent command surfaces"
+assert_contains "$inspect_output" "pnpm generate [package.json script]" "INSPECT should list generation scripts as agent command surfaces"
 assert_contains "$inspect_output" "Agent support tools:" "INSPECT should print agent support tools"
 assert_contains "$inspect_output" "git [host cli]" "INSPECT should list available host CLI support tools"
 assert_contains "$inspect_output" "Operational surfaces:" "INSPECT should print operational surfaces"
@@ -47,8 +50,8 @@ import os
 data = json.loads(os.environ["INSPECT_JSON"])
 print(data["profiles"]["language"]["name"])
 print(data["package_manager"])
-print(data["agent_tools"][0])
-print(data["agent_support_tools"][0])
+print("\n".join(data["agent_tools"]))
+print("\n".join(data["agent_support_tools"]))
 print(data["commands"]["lint"]["command"])
 print(f"automation_ok={any('.github/workflows' in item for item in data['automation'])}")
 print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'line-table'}}")
@@ -63,6 +66,7 @@ PY
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
 assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
+assert_contains "$inspect_json_summary" "./scripts/release [repo helper executable]" "INSPECT json should include repo helper executables"
 assert_contains "$inspect_json_summary" "git [host cli]" "INSPECT json should include agent support tools"
 assert_contains "$inspect_json_summary" "pnpm lint" "INSPECT json should include the lint command"
 assert_contains "$inspect_json_summary" "automation_ok=True" "INSPECT json should include automation entries"
@@ -95,6 +99,7 @@ EOF
 assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export the detected language profile"
 assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
 assert_contains "$inspect_env_summary" "pnpm inspect [package.json script]" "INSPECT env should export agent command surfaces"
+assert_contains "$inspect_env_summary" "./tools/sync-context [repo helper executable]" "INSPECT env should export repo helper executables"
 assert_contains "$inspect_env_summary" "git [host cli]" "INSPECT env should export agent support tools"
 assert_contains "$inspect_env_summary" "pnpm lint" "INSPECT env should export command slots"
 assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should export automation surfaces"
@@ -190,12 +195,32 @@ printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP
 evop_project_agent_tool_surfaces_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
 printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_CACHE)"
 printf 'tool_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT" == *"./bin/context-tool [repo executable]"* ]] && printf true || printf false)"
+printf 'helper_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT" == *"./tools/sync-context [repo helper executable]"* ]] && printf true || printf false)"
 EOF
 )"
 assert_contains "$agent_tool_cache_output" "first_cache_entries=1" "Agent tool discovery should populate the dedicated cache on first access"
 assert_contains "$agent_tool_cache_output" "second_cache_entries=1" "Agent tool discovery should reuse the cache on repeated access"
 assert_contains "$agent_tool_cache_output" "tool_ok=true" "Agent tool discovery should return repo executable surfaces"
+assert_contains "$agent_tool_cache_output" "helper_ok=true" "Agent tool discovery should return repo helper executable surfaces"
 pass "Agent tool cache reuse"
+
+package_json_script_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_package_json_scripts_cached "$TEST_CONTEXT_DIR/package.json" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_CACHE)"
+printf 'generate_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT" == *$'\n'generate$'\n'* || "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT" == generate || "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT" == generate$'\n'* || "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT" == *$'\n'generate ]] && printf true || printf false)"
+evop_project_package_json_scripts_cached "$TEST_CONTEXT_DIR/package.json" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_CACHE)"
+EOF
+)"
+assert_contains "$package_json_script_cache_output" "first_cache_entries=1" "Package.json script discovery should populate the dedicated cache on first access"
+assert_contains "$package_json_script_cache_output" "generate_ok=true" "Package.json script discovery should return cached script names"
+assert_contains "$package_json_script_cache_output" "second_cache_entries=1" "Package.json script discovery should reuse the cache on repeated access"
+pass "Package.json script cache reuse"
 
 agent_support_tool_cache_output="$(
     ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'

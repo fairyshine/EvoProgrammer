@@ -156,6 +156,134 @@ evop_project_makefile_targets_cached() {
     printf '%s' "$EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT"
 }
 
+evop_project_package_json_scripts_cached() {
+    local file_path="$1"
+    local script_names=""
+
+    EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        script_names="$(
+            awk '
+                BEGIN {
+                    RS = "\0"
+                    ORS = ""
+                    depth = 0
+                    in_string = 0
+                    escape = 0
+                    pending_key = 0
+                    want_scripts = 0
+                    in_scripts = 0
+                    scripts_depth = 0
+                    token = ""
+                    output = ""
+                }
+                {
+                    text = $0
+                    for (i = 1; i <= length(text); i++) {
+                        ch = substr(text, i, 1)
+
+                        if (in_string) {
+                            if (escape) {
+                                token = token ch
+                                escape = 0
+                                continue
+                            }
+
+                            if (ch == "\\") {
+                                escape = 1
+                                continue
+                            }
+
+                            if (ch == "\"") {
+                                in_string = 0
+                                pending_key = 1
+                                continue
+                            }
+
+                            token = token ch
+                            continue
+                        }
+
+                        if (pending_key) {
+                            if (ch ~ /[[:space:]]/) {
+                                continue
+                            }
+
+                            if (ch == ":") {
+                                if (in_scripts && depth == scripts_depth) {
+                                    add_key(token)
+                                } else if (!in_scripts && depth == 1 && token == "scripts") {
+                                    want_scripts = 1
+                                }
+                            }
+
+                            pending_key = 0
+                            token = ""
+                        }
+
+                        if (ch == "\"") {
+                            in_string = 1
+                            token = ""
+                            continue
+                        }
+
+                        if (ch == "{") {
+                            depth++
+                            if (want_scripts && !in_scripts) {
+                                in_scripts = 1
+                                scripts_depth = depth
+                                want_scripts = 0
+                            }
+                            continue
+                        }
+
+                        if (ch == "}") {
+                            if (in_scripts && depth == scripts_depth) {
+                                in_scripts = 0
+                                scripts_depth = 0
+                            }
+                            if (depth > 0) {
+                                depth--
+                            }
+                            continue
+                        }
+                    }
+                }
+                END {
+                    print output
+                }
+                function add_key(key, needle) {
+                    if (key == "") {
+                        return
+                    }
+
+                    needle = "\n" key "\n"
+                    if (index("\n" output "\n", needle) != 0) {
+                        return
+                    }
+
+                    if (output != "") {
+                        output = output "\n"
+                    }
+
+                    output = output key
+                }
+            ' "$file_path"
+        )"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_CACHE "$file_path" "$script_names"
+    EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT="$script_names"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"
+}
+
 evop_project_workspace_manifest_search_dirs() {
     local target_dir="$1"
     local rel_dir=""
@@ -281,10 +409,13 @@ evop_project_workspace_has_package_json_script_cached() {
 
     while IFS= read -r rel_manifest_path; do
         [[ -n "$rel_manifest_path" ]] || continue
-        if evop_project_file_text_contains_regex_cached "$target_dir/$rel_manifest_path" "\"$script_name\"[[:space:]]*:"; then
-            evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "1"
-            return 0
-        fi
+        evop_project_package_json_scripts_cached "$target_dir/$rel_manifest_path" >/dev/null
+        case $'\n'"$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"$'\n' in
+            *$'\n'"$script_name"$'\n'*)
+                evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "1"
+                return 0
+                ;;
+        esac
     done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT"
 
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "0"
@@ -374,6 +505,8 @@ evop_project_agent_tool_surfaces_cached() {
     local package_json="$target_dir/package.json"
     local bin_rel=""
     local top_level_script=""
+    local helper_dir=""
+    local rel_helper_path=""
 
     EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT=""
     evop_use_project_context_facts_dir "$target_dir"
@@ -394,6 +527,19 @@ evop_project_agent_tool_surfaces_cached() {
         evop_append_unique_multiline_value output "zsh ./$top_level_script [top-level script]"
     done
 
+    for helper_dir in scripts tools hack dev; do
+        [[ -d "$target_dir/$helper_dir" ]] || continue
+        while IFS= read -r rel_helper_path; do
+            [[ -n "$rel_helper_path" ]] || continue
+            evop_append_unique_multiline_value output "./$rel_helper_path [repo helper executable]"
+        done < <(
+            find "$target_dir/$helper_dir" -maxdepth 2 -type f \
+                \( -perm -001 -o -perm -010 -o -perm -100 \) -print 2>/dev/null \
+                | sed "s#^$target_dir/##" \
+                | LC_ALL=C sort
+        )
+    done
+
     if [[ -f "$target_dir/Makefile" ]]; then
         makefile="$target_dir/Makefile"
     elif [[ -f "$target_dir/makefile" ]]; then
@@ -409,11 +555,14 @@ evop_project_agent_tool_surfaces_cached() {
     fi
 
     if [[ -n "$package_manager" && -f "$package_json" ]]; then
+        evop_project_package_json_scripts_cached "$package_json" >/dev/null
         for target in inspect verify doctor clean status profiles install bootstrap setup ci release generate codegen format fmt; do
-            if evop_package_json_has_script "$package_json" "$target"; then
+            case $'\n'"$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"$'\n' in
+                *$'\n'"$target"$'\n'*)
                 command="$(evop_agent_tool_surface_script_command "$package_manager" "$target")"
                 evop_append_unique_multiline_value output "$command [package.json script]"
-            fi
+                    ;;
+            esac
         done
     fi
 

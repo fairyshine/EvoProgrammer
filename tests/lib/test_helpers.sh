@@ -188,6 +188,7 @@ setup_context_workspace() {
         "$TEST_CONTEXT_DIR/.github/workflows" \
         "$TEST_CONTEXT_DIR/.devcontainer" \
         "$TEST_CONTEXT_DIR/bin" \
+        "$TEST_CONTEXT_DIR/tools" \
         "$TEST_CONTEXT_DIR/src/app" \
         "$TEST_CONTEXT_DIR/src/components" \
         "$TEST_CONTEXT_DIR/src/services" \
@@ -202,7 +203,7 @@ setup_context_workspace() {
 
     printf 'packages:\n  - "packages/*"\n' >"$TEST_CONTEXT_DIR/pnpm-workspace.yaml"
     printf '{ "compilerOptions": { "strict": true } }\n' >"$TEST_CONTEXT_DIR/tsconfig.json"
-    printf '{\n  "name": "context-app",\n  "scripts": {\n    "dev": "next dev",\n    "build": "next build",\n    "test": "vitest",\n    "lint": "eslint .",\n    "typecheck": "tsc --noEmit",\n    "inspect": "node scripts/inspect.js",\n    "clean": "node scripts/clean.js"\n  },\n  "dependencies": {\n    "next": "14.0.0",\n    "react": "18.2.0",\n    "tailwindcss": "3.4.0",\n    "zustand": "4.5.0",\n    "prisma": "5.0.0"\n  },\n  "devDependencies": {\n    "eslint": "9.0.0",\n    "prettier": "3.0.0",\n    "vitest": "2.0.0"\n  }\n}\n' >"$TEST_CONTEXT_DIR/package.json"
+    printf '{\n  "name": "context-app",\n  "scripts": {\n    "dev": "next dev",\n    "build": "next build",\n    "test": "vitest",\n    "lint": "eslint .",\n    "typecheck": "tsc --noEmit",\n    "inspect": "node scripts/inspect.js",\n    "clean": "node scripts/clean.js",\n    "generate": "node scripts/generate.js"\n  },\n  "dependencies": {\n    "next": "14.0.0",\n    "react": "18.2.0",\n    "tailwindcss": "3.4.0",\n    "zustand": "4.5.0",\n    "prisma": "5.0.0"\n  },\n  "devDependencies": {\n    "eslint": "9.0.0",\n    "prettier": "3.0.0",\n    "vitest": "2.0.0"\n  }\n}\n' >"$TEST_CONTEXT_DIR/package.json"
     printf 'export default function Page() { return null; }\n' >"$TEST_CONTEXT_DIR/src/app/page.tsx"
     printf 'export function Card() { return null; }\n' >"$TEST_CONTEXT_DIR/src/components/Card.tsx"
     printf 'export async function getDashboard() { return null; }\n' >"$TEST_CONTEXT_DIR/src/services/dashboard.ts"
@@ -217,10 +218,13 @@ setup_context_workspace() {
     printf 'FROM node:20\n' >"$TEST_CONTEXT_DIR/Dockerfile"
     printf 'version: "3.9"\nservices:\n  web:\n    build: .\n' >"$TEST_CONTEXT_DIR/docker-compose.yml"
     printf 'release workflow\n' >"$TEST_CONTEXT_DIR/scripts/release"
+    chmod +x "$TEST_CONTEXT_DIR/scripts/release"
     printf '#!/usr/bin/env zsh\nprint context-tool\n' >"$TEST_CONTEXT_DIR/bin/context-tool"
     chmod +x "$TEST_CONTEXT_DIR/bin/context-tool"
     printf '#!/usr/bin/env zsh\nprint status\n' >"$TEST_CONTEXT_DIR/STATUS.sh"
     chmod +x "$TEST_CONTEXT_DIR/STATUS.sh"
+    printf '#!/usr/bin/env zsh\nprint sync-context\n' >"$TEST_CONTEXT_DIR/tools/sync-context"
+    chmod +x "$TEST_CONTEXT_DIR/tools/sync-context"
     printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
 }
 

@@ -18,7 +18,14 @@ evop_package_json_has_script() {
     local package_json="$1"
     local script_name="$2"
 
-    evop_project_file_text_contains_regex_cached "$package_json" "\"$script_name\"[[:space:]]*:"
+    evop_project_package_json_scripts_cached "$package_json" >/dev/null
+    case $'\n'"$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"$'\n' in
+        *$'\n'"$script_name"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    return 1
 }
 
 evop_package_json_mentions() {
