@@ -13,9 +13,7 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    if evop_directory_has_file_named "$target_dir" "project.godot" \
-        || { evop_directory_has_path_named "$target_dir" "Assets" && evop_directory_has_path_named "$target_dir" "ProjectSettings"; } \
-        || evop_directory_has_file_pattern "$target_dir" "*.uproject"; then
+    if evop_repo_looks_like_mobile_game "$target_dir"; then
         EVOP_PROFILE_DETECT_SCORE=97
         return 0
     fi

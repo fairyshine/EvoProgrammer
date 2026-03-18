@@ -310,3 +310,110 @@ EOF
 void main() {}
 EOF
 }
+
+setup_java_service_workspace() {
+    if [[ -n "${TEST_JAVA_SERVICE_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_JAVA_SERVICE_DIR="$TEST_TMPDIR/java-service"
+    mkdir -p \
+        "$TEST_JAVA_SERVICE_DIR/src/main/java/com/example/api" \
+        "$TEST_JAVA_SERVICE_DIR/src/test/java/com/example/api"
+
+    cat >"$TEST_JAVA_SERVICE_DIR/build.gradle" <<'EOF'
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.0'
+}
+EOF
+
+    cat >"$TEST_JAVA_SERVICE_DIR/src/main/java/com/example/api/Application.java" <<'EOF'
+package com.example.api;
+
+public class Application {}
+EOF
+
+    cat >"$TEST_JAVA_SERVICE_DIR/src/test/java/com/example/api/ApplicationTest.java" <<'EOF'
+package com.example.api;
+
+public class ApplicationTest {}
+EOF
+}
+
+setup_elixir_workspace() {
+    if [[ -n "${TEST_ELIXIR_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_ELIXIR_DIR="$TEST_TMPDIR/elixir-app"
+    mkdir -p "$TEST_ELIXIR_DIR/lib" "$TEST_ELIXIR_DIR/test"
+
+    cat >"$TEST_ELIXIR_DIR/mix.exs" <<'EOF'
+defmodule Demo.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :demo,
+      version: "0.1.0",
+      deps: []
+    ]
+  end
+end
+EOF
+
+    cat >"$TEST_ELIXIR_DIR/lib/demo.ex" <<'EOF'
+defmodule Demo do
+end
+EOF
+
+    cat >"$TEST_ELIXIR_DIR/test/demo_test.exs" <<'EOF'
+defmodule DemoTest do
+  use ExUnit.Case
+end
+EOF
+}
+
+setup_node_cli_workspace() {
+    if [[ -n "${TEST_NODE_CLI_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_NODE_CLI_DIR="$TEST_TMPDIR/node-cli"
+    mkdir -p "$TEST_NODE_CLI_DIR/src"
+
+    cat >"$TEST_NODE_CLI_DIR/package.json" <<'EOF'
+{
+  "name": "node-cli",
+  "bin": {
+    "node-cli": "dist/index.js"
+  },
+  "dependencies": {
+    "commander": "12.0.0"
+  }
+}
+EOF
+
+    cat >"$TEST_NODE_CLI_DIR/src/index.ts" <<'EOF'
+export {};
+EOF
+}
+
+setup_godot_workspace() {
+    if [[ -n "${TEST_GODOT_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_GODOT_DIR="$TEST_TMPDIR/godot-game"
+    mkdir -p "$TEST_GODOT_DIR/scenes"
+
+    cat >"$TEST_GODOT_DIR/project.godot" <<'EOF'
+[application]
+config/name="TestGame"
+EOF
+
+    cat >"$TEST_GODOT_DIR/scenes/main.gd" <<'EOF'
+extends Node
+EOF
+}

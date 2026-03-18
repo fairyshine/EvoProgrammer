@@ -47,6 +47,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 
 - `lib/profiles/detect.sh`: profile entrypoints
 - `lib/profiles/candidates-common.sh`: shared candidate state and shell-CLI prefilters
+- `lib/profiles/repo-shape.sh`: cached repository-shape heuristics shared by candidate planning and detect hooks
 - `lib/profiles/candidates-languages.sh`: language candidate planning
 - `lib/profiles/candidates-frameworks.sh`: framework candidate planning
 - `lib/profiles/candidates-project-types.sh`: project-type candidate planning
@@ -66,6 +67,12 @@ Profile definitions now also use an in-process cache for prompt text and copied
 detect/apply hooks. That keeps repeated prompt rendering, project-context hook
 application, and related reporting paths from re-sourcing the same definition
 multiple times in one command execution.
+
+Repository-shape heuristics now live in a shared helper layer instead of being
+duplicated across project-type candidate planning and individual detect hooks.
+That keeps CLI-tool, backend-service, desktop-app, and game-project
+classification aligned while still allowing prompt-driven overrides when the
+repo shape is ambiguous.
 
 ### 4. Project inspection
 
@@ -123,6 +130,11 @@ detection do not source unrelated profile definitions. Repository-shape checks
 are cached as first-class candidate facts now, which avoids recomputing the
 same shell-CLI classification across language, framework, and project-type
 detection passes in one inspection run.
+
+The detection facts layer now also indexes file extensions directly. That keeps
+common candidate checks such as `.kt`, `.csproj`, `.ipynb`, `.tex`, and similar
+signals on top of set lookups instead of repeatedly scanning every collected
+basename for glob matches.
 
 ## Command Model
 

@@ -15,14 +15,8 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    if evop_directory_has_path_named "$target_dir" "bin"; then
+    if evop_repo_looks_like_cli_tool "$target_dir"; then
         EVOP_PROFILE_DETECT_SCORE=82
-        return 0
-    fi
-
-    if evop_directory_has_file_pattern "$target_dir" "*.sh" \
-        && evop_directory_has_path_named "$target_dir" "lib" "tests"; then
-        EVOP_PROFILE_DETECT_SCORE=68
         return 0
     fi
 

@@ -10,11 +10,13 @@ Give it a natural-language goal, point it at a directory, and walk away — EvoP
 
 **Self-iterating code evolution** — Unlike a single-shot agent call, EvoProgrammer feeds the agent back into the same repo over and over (It actually also iterates this code repo, its own repo.). Each pass builds on the last: scaffolding in round 1, tests in round 2, bug fixes in round 3, polish in round 4… The loop keeps going until the codebase converges or you set a limit.
 
-**Broad language, framework, and project coverage** — 14 languages, 25 frameworks, 18 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Flutter mobile app, a Bevy multiplayer game, a FastAPI microservice, or a Godot single-player adventure, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
+**Broad language, framework, and project coverage** — 16 languages, 25 frameworks, 18 project types out of the box, all auto-detected from your repo. Whether you're building a Next.js SaaS, a Flutter mobile app, a Bevy multiplayer game, a FastAPI microservice, a Spring backend, a Mix-powered Elixir service, or a CMake-based native tool, EvoProgrammer injects the right idioms, toolchain commands, and architectural guidance into every agent call.
 
-| Languages (14) | Frameworks (25) | Project Types (18) |
+| Languages (16) | Frameworks (25) | Project Types (18) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Paper, Scientific Experiment, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir | React, Next.js, Vue, Svelte, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, Single-player Game, Mobile Game, Online Game, AI Agent, Data Pipeline, Plugin, Embedded System, Paper, Scientific Experiment, PPT, Office |
+
+Recent detection improvements also make project-type inference less shell-centric: non-shell CLIs, Spring-style backend services, Electron or Tauri desktop apps, and game-engine repos now resolve more accurately, and inspect/verify can infer stronger default commands for Gradle, Maven, .NET, SwiftPM, Mix, and CMake projects.
 
 ## Quick Start
 

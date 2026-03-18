@@ -252,6 +252,30 @@ assert_contains "$flutter_inspect_output" "Test: flutter test" "INSPECT should i
 assert_contains "$flutter_inspect_output" "Lint: flutter analyze" "INSPECT should infer Flutter analyzer commands"
 pass "INSPECT Flutter summary"
 
+setup_java_service_workspace
+java_service_inspect_output="$(run_expect_success "INSPECT should summarize Gradle-backed Java services" "$INSPECT_SCRIPT" --target-dir "$TEST_JAVA_SERVICE_DIR")"
+assert_contains "$java_service_inspect_output" "Language profile: java (auto-detected)" "INSPECT should detect Java for Gradle projects"
+assert_contains "$java_service_inspect_output" "Framework profile: spring (auto-detected)" "INSPECT should detect Spring framework context"
+assert_contains "$java_service_inspect_output" "Project type: backend-service (auto-detected)" "INSPECT should detect backend services from framework and repo markers"
+assert_contains "$java_service_inspect_output" "Package manager: gradle" "INSPECT should surface the Gradle package manager"
+assert_contains "$java_service_inspect_output" "Build: gradle build" "INSPECT should infer Gradle build commands"
+assert_contains "$java_service_inspect_output" "Test: gradle test" "INSPECT should infer Gradle test commands"
+pass "INSPECT Java service summary"
+
+setup_elixir_workspace
+elixir_inspect_output="$(run_expect_success "INSPECT should summarize Elixir projects" "$INSPECT_SCRIPT" --target-dir "$TEST_ELIXIR_DIR")"
+assert_contains "$elixir_inspect_output" "Language profile: elixir (auto-detected)" "INSPECT should detect Elixir projects"
+assert_contains "$elixir_inspect_output" "Package manager: mix" "INSPECT should surface the Mix package manager"
+assert_contains "$elixir_inspect_output" "Build: mix compile" "INSPECT should infer Mix compile commands"
+assert_contains "$elixir_inspect_output" "Test: mix test" "INSPECT should infer Mix test commands"
+assert_contains "$elixir_inspect_output" "Lint: mix format --check-formatted" "INSPECT should infer Mix formatting checks"
+pass "INSPECT Elixir summary"
+
+setup_node_cli_workspace
+node_cli_inspect_output="$(run_expect_success "INSPECT should summarize non-shell CLI projects" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_CLI_DIR")"
+assert_contains "$node_cli_inspect_output" "Project type: cli-tool (auto-detected)" "INSPECT should detect non-shell CLI repos"
+pass "INSPECT Node CLI summary"
+
 setup_agent_test_workspace
 mkdir -p "$TEST_TARGET_DIR/.evoprogrammer/hooks"
 cat >"$TEST_TARGET_DIR/.evoprogrammer/hooks/post-iteration" <<'EOF'

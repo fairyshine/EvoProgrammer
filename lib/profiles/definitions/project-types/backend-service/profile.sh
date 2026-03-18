@@ -13,6 +13,11 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
+    if evop_repo_looks_like_backend_service "$target_dir"; then
+        EVOP_PROFILE_DETECT_SCORE=78
+        return 0
+    fi
+
     evop_profile_match_prompt 50 "$prompt" "backend service" "api service" "microservice" "rest api" "backend" && return 0
     return 1
 }

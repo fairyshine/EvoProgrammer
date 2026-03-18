@@ -48,6 +48,30 @@ evop_python_tool_command() {
     done
 }
 
+evop_gradle_task_command() {
+    local target_dir="$1"
+    local task_name="$2"
+
+    if [[ -x "$target_dir/gradlew" ]]; then
+        printf './gradlew %s' "$task_name"
+        return 0
+    fi
+
+    printf 'gradle %s' "$task_name"
+}
+
+evop_maven_task_command() {
+    local target_dir="$1"
+    local task_name="$2"
+
+    if [[ -x "$target_dir/mvnw" ]]; then
+        printf './mvnw %s' "$task_name"
+        return 0
+    fi
+
+    printf 'mvn %s' "$task_name"
+}
+
 evop_choose_package_manager() {
     local target_dir="$1"
     local language_profile="${2:-}"
@@ -88,6 +112,40 @@ evop_choose_package_manager() {
         php)
             if [[ -f "$target_dir/composer.json" ]]; then
                 printf 'composer'
+                return 0
+            fi
+            ;;
+        java|kotlin)
+            if [[ -f "$target_dir/mvnw" || -f "$target_dir/pom.xml" ]]; then
+                printf 'maven'
+                return 0
+            fi
+            if [[ -f "$target_dir/gradlew" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" ]]; then
+                printf 'gradle'
+                return 0
+            fi
+            ;;
+        csharp)
+            if evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
+                printf 'dotnet'
+                return 0
+            fi
+            ;;
+        c|cpp)
+            if [[ -f "$target_dir/CMakeLists.txt" ]]; then
+                printf 'cmake'
+                return 0
+            fi
+            ;;
+        swift)
+            if [[ -f "$target_dir/Package.swift" ]]; then
+                printf 'swift'
+                return 0
+            fi
+            ;;
+        elixir)
+            if [[ -f "$target_dir/mix.exs" ]]; then
+                printf 'mix'
                 return 0
             fi
             ;;
@@ -159,6 +217,36 @@ evop_choose_package_manager() {
         return 0
     fi
 
+    if [[ -f "$target_dir/mvnw" || -f "$target_dir/pom.xml" ]]; then
+        printf 'maven'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/gradlew" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" ]]; then
+        printf 'gradle'
+        return 0
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
+        printf 'dotnet'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/CMakeLists.txt" ]]; then
+        printf 'cmake'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/Package.swift" ]]; then
+        printf 'swift'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/mix.exs" ]]; then
+        printf 'mix'
+        return 0
+    fi
+
     if [[ -f "$target_dir/pubspec.yaml" ]]; then
         if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
             || evop_file_contains_literal "$target_dir/pubspec.yaml" "sdk: flutter"; then
@@ -181,6 +269,12 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
+    if evop_file_contains_regex "$target_dir/settings.gradle" "include" \
+        || evop_file_contains_regex "$target_dir/settings.gradle.kts" "include"; then
+        printf 'monorepo'
+        return 0
+    fi
+
     if evop_file_contains_regex "$target_dir/Cargo.toml" "^\[workspace\]"; then
         printf 'monorepo'
         return 0
@@ -196,7 +290,8 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" ]]; then
+    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
+        || evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
         printf 'single-package'
         return 0
     fi
@@ -278,6 +373,25 @@ evop_detect_language_default_commands() {
             evop_set_project_command_if_empty build "go build ./..." "Go defaults"
             evop_set_project_command_if_empty test "go test ./..." "Go defaults"
             ;;
+        java|kotlin)
+            if [[ "$package_manager" == "maven" ]]; then
+                evop_set_project_command_if_empty build "$(evop_maven_task_command "$target_dir" package)" "Maven defaults"
+                evop_set_project_command_if_empty test "$(evop_maven_task_command "$target_dir" test)" "Maven defaults"
+            elif [[ "$package_manager" == "gradle" ]]; then
+                evop_set_project_command_if_empty build "$(evop_gradle_task_command "$target_dir" build)" "Gradle defaults"
+                evop_set_project_command_if_empty test "$(evop_gradle_task_command "$target_dir" test)" "Gradle defaults"
+            fi
+            ;;
+        csharp)
+            evop_set_project_command_if_empty build "dotnet build" ".NET defaults"
+            evop_set_project_command_if_empty test "dotnet test" ".NET defaults"
+            ;;
+        c|cpp)
+            if [[ "$package_manager" == "cmake" ]]; then
+                evop_set_project_command_if_empty build "cmake -S . -B build && cmake --build build" "CMake defaults"
+                evop_set_project_command_if_empty test "ctest --test-dir build --output-on-failure" "CMake defaults"
+            fi
+            ;;
         python)
             if [[ -d "$target_dir/tests" || -d "$target_dir/test" || -f "$target_dir/pytest.ini" ]] \
                 || evop_file_contains_literal "$pyproject" "pytest"; then
@@ -311,6 +425,18 @@ evop_detect_language_default_commands() {
                 fi
                 evop_set_project_command_if_empty lint "dart analyze" "Dart defaults"
                 evop_set_project_command_if_empty typecheck "dart analyze" "Dart defaults"
+            fi
+            ;;
+        swift)
+            evop_set_project_command_if_empty build "swift build" "SwiftPM defaults"
+            evop_set_project_command_if_empty test "swift test" "SwiftPM defaults"
+            ;;
+        elixir)
+            evop_set_project_command_if_empty build "mix compile" "Mix defaults"
+            evop_set_project_command_if_empty test "mix test" "Mix defaults"
+            evop_set_project_command_if_empty lint "mix format --check-formatted" "Mix defaults"
+            if evop_file_contains_literal "$target_dir/mix.exs" "dialyxir"; then
+                evop_set_project_command_if_empty typecheck "mix dialyzer" "Mix defaults"
             fi
             ;;
     esac

@@ -130,7 +130,8 @@ evop_prepare_framework_profile_candidates() {
         evop_profile_candidate_append_unique candidates "qt"
     fi
 
-    if evop_directory_contains_text "$target_dir" "spring-boot" "pom.xml" "build.gradle" "build.gradle.kts"; then
+    if evop_directory_contains_text "$target_dir" "spring-boot" "pom.xml" "build.gradle" "build.gradle.kts" \
+        || evop_directory_contains_text "$target_dir" "org.springframework.boot" "build.gradle" "build.gradle.kts"; then
         evop_profile_candidate_append_unique candidates "spring"
     fi
 

@@ -10,26 +10,28 @@ evop_prepare_project_type_candidates() {
         evop_profile_candidate_append_unique candidates "mobile-app"
     fi
 
-    if evop_directory_has_file_named "$target_dir" "project.godot" \
-        || evop_directory_has_path_named "$target_dir" "Assets" "ProjectSettings" \
-        || evop_directory_has_file_pattern "$target_dir" "*.uproject"; then
+    if evop_repo_looks_like_mobile_game "$target_dir"; then
         evop_profile_candidate_append_unique candidates "mobile-game"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.docx" "*.xlsx" "*.doc" "*.xls"; then
+    if evop_repo_looks_like_game_project "$target_dir" && ! evop_repo_looks_like_mobile_game "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "single-player-game"
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "docx" "xlsx" "doc" "xls"; then
         evop_profile_candidate_append_unique candidates "office"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.tex" "*.bib"; then
+    if evop_directory_has_file_extension "$target_dir" "tex" "bib"; then
         evop_profile_candidate_append_unique candidates "paper"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.pptx" "*.key" \
+    if evop_directory_has_file_extension "$target_dir" "pptx" "key" \
         || evop_directory_has_path_named "$target_dir" "slides"; then
         evop_profile_candidate_append_unique candidates "ppt"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.ipynb" \
+    if evop_directory_has_file_extension "$target_dir" "ipynb" \
         || evop_directory_has_path_named "$target_dir" "notebooks" \
         || evop_directory_has_path_named "$target_dir" "datasets"; then
         evop_profile_candidate_append_unique candidates "scientific-experiment"
@@ -40,8 +42,16 @@ evop_prepare_project_type_candidates() {
         evop_profile_candidate_append_unique candidates "web-app"
     fi
 
-    if evop_repo_looks_like_shell_cli "$target_dir"; then
+    if evop_repo_looks_like_cli_tool "$target_dir"; then
         evop_profile_candidate_append_unique candidates "cli-tool"
+    fi
+
+    if evop_repo_looks_like_backend_service "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "backend-service"
+    fi
+
+    if evop_repo_looks_like_desktop_app "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "desktop-app"
     fi
 
     evop_profile_candidate_add_if_prompt_matches candidates "ai-agent" "$prompt" "ai agent" "assistant" "tool-using agent" "workflow agent"

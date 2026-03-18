@@ -6,6 +6,13 @@ evop_detection_record_file_basename() {
     EVOP_DETECT_FILE_BASENAME_SET[$basename]=1
 }
 
+evop_detection_record_file_extension() {
+    local extension="$1"
+
+    [[ -n "$extension" ]] || return 0
+    EVOP_DETECT_FILE_EXTENSION_SET[$extension]=1
+}
+
 evop_detection_record_path_basename() {
     local basename="$1"
 
@@ -15,6 +22,11 @@ evop_detection_record_path_basename() {
 evop_detection_file_basename_exists() {
     local basename="$1"
     [[ -n ${EVOP_DETECT_FILE_BASENAME_SET[$basename]+set} ]]
+}
+
+evop_detection_file_extension_exists() {
+    local extension="$1"
+    [[ -n ${EVOP_DETECT_FILE_EXTENSION_SET[$extension]+set} ]]
 }
 
 evop_detection_path_basename_exists() {
@@ -29,6 +41,7 @@ evop_collect_detection_facts() {
     local prune_args=()
     local dir_name
     local entry_basename=""
+    local entry_extension=""
 
     evop_reset_detection_facts
     EVOP_DETECT_FACTS_DIR="$directory"
@@ -52,6 +65,15 @@ evop_collect_detection_facts() {
             EVOP_DETECT_FILES_REL+=("$rel")
             EVOP_DETECT_FILE_BASENAMES+=("$entry_basename")
             evop_detection_record_file_basename "$entry_basename"
+            case "$entry_basename" in
+                *.*)
+                    entry_extension="${entry_basename##*.}"
+                    if [[ "$entry_extension" != "$entry_basename" ]]; then
+                        EVOP_DETECT_FILE_EXTENSIONS+=("$entry_extension")
+                        evop_detection_record_file_extension "$entry_extension"
+                    fi
+                    ;;
+            esac
         fi
     done < <(find "$directory" -maxdepth "$EVOP_DETECT_MAX_DEPTH" \( -type d \( "${prune_args[@]}" \) -prune \) -o \( -type f -o -type d \) -print0 2>/dev/null)
 }
@@ -131,6 +153,26 @@ evop_directory_has_path_named() {
 
     for name in "$@"; do
         if evop_detection_path_basename_exists "$name"; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+evop_directory_has_file_extension() {
+    local directory="$1"
+    shift
+    local extension=""
+
+    evop_ensure_detection_facts "$directory"
+
+    if (( ${#EVOP_DETECT_FILE_EXTENSIONS[@]} == 0 )); then
+        return 1
+    fi
+
+    for extension in "$@"; do
+        if evop_detection_file_extension_exists "$extension"; then
             return 0
         fi
     done

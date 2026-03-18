@@ -7,6 +7,7 @@ evop_profile_detect() {
     local prompt="${2:-}"
 
     evop_profile_match_directory_text 100 "$target_dir" "spring-boot" "pom.xml" "build.gradle" "build.gradle.kts" && return 0
+    evop_profile_match_directory_text 100 "$target_dir" "org.springframework.boot" "build.gradle" "build.gradle.kts" && return 0
     evop_profile_match_prompt 40 "$prompt" "spring" && return 0
     return 1
 }

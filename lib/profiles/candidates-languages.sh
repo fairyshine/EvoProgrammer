@@ -14,74 +14,84 @@ evop_prepare_language_profile_candidates() {
     fi
 
     if evop_directory_has_file_named "$target_dir" "tsconfig.json" \
-        || evop_directory_has_file_pattern "$target_dir" "*.ts" "*.tsx"; then
+        || evop_directory_has_file_extension "$target_dir" "ts" "tsx"; then
         evop_profile_candidate_append_unique candidates "typescript"
     fi
 
     if evop_directory_has_file_named "$target_dir" "package.json" \
-        || evop_directory_has_file_pattern "$target_dir" "*.js" "*.jsx" "*.mjs" "*.cjs"; then
+        || evop_directory_has_file_extension "$target_dir" "js" "jsx" "mjs" "cjs"; then
         evop_profile_candidate_append_unique candidates "javascript"
     fi
 
     if evop_directory_has_file_named "$target_dir" "pyproject.toml" "requirements.txt" "setup.py" \
-        || evop_directory_has_file_pattern "$target_dir" "*.py"; then
+        || evop_directory_has_file_extension "$target_dir" "py"; then
         evop_profile_candidate_append_unique candidates "python"
     fi
 
     if evop_directory_has_file_named "$target_dir" "Cargo.toml" \
-        || evop_directory_has_file_pattern "$target_dir" "*.rs"; then
+        || evop_directory_has_file_extension "$target_dir" "rs"; then
         evop_profile_candidate_append_unique candidates "rust"
     fi
 
     if evop_directory_has_file_named "$target_dir" "go.mod" \
-        || evop_directory_has_file_pattern "$target_dir" "*.go"; then
+        || evop_directory_has_file_extension "$target_dir" "go"; then
         evop_profile_candidate_append_unique candidates "go"
     fi
 
     if evop_directory_has_file_named "$target_dir" "Gemfile" \
-        || evop_directory_has_file_pattern "$target_dir" "*.rb"; then
+        || evop_directory_has_file_extension "$target_dir" "rb"; then
         evop_profile_candidate_append_unique candidates "ruby"
     fi
 
     if evop_directory_has_file_named "$target_dir" "composer.json" \
-        || evop_directory_has_file_pattern "$target_dir" "*.php"; then
+        || evop_directory_has_file_extension "$target_dir" "php"; then
         evop_profile_candidate_append_unique candidates "php"
     fi
 
     if evop_directory_has_file_named "$target_dir" "pom.xml" "build.gradle" "build.gradle.kts" \
-        || evop_directory_has_file_pattern "$target_dir" "*.java"; then
+        || evop_directory_has_file_extension "$target_dir" "java"; then
         evop_profile_candidate_append_unique candidates "java"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.kt" "*.kts"; then
+    if evop_directory_has_file_extension "$target_dir" "kt" "kts"; then
         evop_profile_candidate_append_unique candidates "kotlin"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.cs"; then
+    if evop_directory_has_file_extension "$target_dir" "sln" "csproj" "cs"; then
         evop_profile_candidate_append_unique candidates "csharp"
     fi
 
+    if evop_directory_has_file_extension "$target_dir" "c" "h" \
+        && ! evop_directory_has_file_extension "$target_dir" "cpp" "cc" "cxx" "hpp" "hh" "hxx"; then
+        evop_profile_candidate_append_unique candidates "c"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "CMakeLists.txt" \
-        || evop_directory_has_file_pattern "$target_dir" "*.cpp" "*.cc" "*.cxx" "*.hpp" "*.hh" "*.hxx"; then
+        || evop_directory_has_file_extension "$target_dir" "cpp" "cc" "cxx" "hpp" "hh" "hxx"; then
         evop_profile_candidate_append_unique candidates "cpp"
     fi
 
     if evop_directory_has_file_named "$target_dir" "Package.swift" \
-        || evop_directory_has_file_pattern "$target_dir" "*.swift"; then
+        || evop_directory_has_file_extension "$target_dir" "swift"; then
         evop_profile_candidate_append_unique candidates "swift"
     fi
 
     if evop_directory_has_file_named "$target_dir" "pubspec.yaml" \
-        || evop_directory_has_file_pattern "$target_dir" "*.dart"; then
+        || evop_directory_has_file_extension "$target_dir" "dart"; then
         evop_profile_candidate_append_unique candidates "dart"
     fi
 
     if evop_directory_has_file_named "$target_dir" "project.godot" \
-        || evop_directory_has_file_pattern "$target_dir" "*.gd"; then
+        || evop_directory_has_file_extension "$target_dir" "gd"; then
         evop_profile_candidate_append_unique candidates "gdscript"
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.sh" \
+    if evop_directory_has_file_named "$target_dir" "mix.exs" \
+        || evop_directory_has_file_extension "$target_dir" "ex" "exs"; then
+        evop_profile_candidate_append_unique candidates "elixir"
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "sh" \
         || evop_directory_has_file_named "$target_dir" ".zshrc" ".zprofile" ".bashrc" ".bash_profile"; then
         evop_profile_candidate_append_unique candidates "shell"
     fi
@@ -96,10 +106,12 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "java" "$prompt" "java"
     evop_profile_candidate_add_if_prompt_matches candidates "kotlin" "$prompt" "kotlin"
     evop_profile_candidate_add_if_prompt_matches candidates "csharp" "$prompt" "c#" "dotnet"
+    evop_profile_candidate_add_if_prompt_matches candidates "c" "$prompt" "language c" "ansi c" "embedded c"
     evop_profile_candidate_add_if_prompt_matches candidates "cpp" "$prompt" "c++" "cpp"
     evop_profile_candidate_add_if_prompt_matches candidates "swift" "$prompt" "swift"
     evop_profile_candidate_add_if_prompt_matches candidates "dart" "$prompt" "dart" "flutter"
     evop_profile_candidate_add_if_prompt_matches candidates "gdscript" "$prompt" "gdscript"
+    evop_profile_candidate_add_if_prompt_matches candidates "elixir" "$prompt" "elixir" "phoenix" "mix"
     evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "zsh" "bash" "shell" "shell script" "脚本"
 
     if [[ -n "$candidates" ]]; then

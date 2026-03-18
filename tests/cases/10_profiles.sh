@@ -11,8 +11,10 @@ printf 'frameworks=%s\n' "$(evop_supported_profiles_as_string frameworks)"
 printf 'project-types=%s\n' "$(evop_supported_profiles_as_string project-types)"
 EOF
 )"
-assert_contains "$profile_catalog_output" "languages=cpp" "Profile catalog should expose language profiles"
+assert_contains "$profile_catalog_output" " cpp " "Profile catalog should expose language profiles"
+assert_contains "$profile_catalog_output" "languages=c " "Profile catalog should expose the C language profile"
 assert_contains "$profile_catalog_output" "dart" "Profile catalog should expose the Dart language profile"
+assert_contains "$profile_catalog_output" "elixir" "Profile catalog should expose the Elixir language profile"
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
 assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
 assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose project-type profiles"
@@ -74,7 +76,7 @@ source "$ROOT_DIR/lib/profile.sh"
 printf 'languages=%s\n' "$(evop_supported_profiles_as_string languages)"
 EOF
 )"
-assert_contains "$profile_catalog_zsh_output" "languages=cpp" "Profile catalog should load cleanly under zsh"
+assert_contains "$profile_catalog_zsh_output" "languages=c " "Profile catalog should load cleanly under zsh"
 pass "Profile catalog zsh compatibility"
 
 profile_candidate_output="$(
@@ -213,6 +215,93 @@ assert_contains "$flutter_profile_output" "language=dart" "Flutter repos should 
 assert_contains "$flutter_profile_output" "framework=flutter" "Flutter repos should detect the Flutter framework profile"
 assert_contains "$flutter_profile_output" "project_type=mobile-app" "Flutter repos should detect the mobile-app project type"
 pass "Flutter profile detection"
+
+node_cli_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/src"
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "node-cli",
+  "bin": {
+    "node-cli": "dist/index.js"
+  },
+  "dependencies": {
+    "commander": "12.0.0"
+  }
+}
+JSON
+printf 'export {};\n' >"$tmpdir/src/index.ts"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$node_cli_profile_output" "project_type=cli-tool" "Non-shell CLI repos should detect the cli-tool project type"
+pass "Node CLI project detection"
+
+godot_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/scenes"
+printf '[application]\nconfig/name=\"TestGame\"\n' >"$tmpdir/project.godot"
+printf 'extends Node\n' >"$tmpdir/scenes/main.gd"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$godot_profile_output" "project_type=single-player-game" "Game-engine repos should default to single-player-game without mobile markers"
+pass "Game project detection"
+
+elixir_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf 'defmodule Demo.MixProject do\nend\n' >"$tmpdir/mix.exs"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$elixir_profile_output" "language=elixir" "Elixir repos should detect the Elixir language profile"
+pass "Elixir profile detection"
+
+c_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf 'cmake_minimum_required(VERSION 3.20)\nproject(demo C)\n' >"$tmpdir/CMakeLists.txt"
+printf 'int main(void) { return 0; }\n' >"$tmpdir/main.c"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$c_profile_output" "language=c" "Pure C repos should detect the C language profile"
+pass "C profile detection"
 
 profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
 assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"
