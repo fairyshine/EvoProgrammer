@@ -74,7 +74,7 @@ evop_run_verify_step() {
     local log_file="$3"
     local exit_code=0
 
-    evop_log_info "Running $slot: $command"
+    evop_log_event "run" "Running $slot: $command"
     if [[ "$DRY_RUN" == "1" ]]; then
         return 0
     fi
@@ -205,7 +205,7 @@ if (( LIST_ONLY == 1 )); then
 fi
 
 if [[ "$DRY_RUN" == "1" ]]; then
-    printf 'Target directory: %s\n' "$TARGET_DIR"
+    evop_print_key_value "Target directory:" "$TARGET_DIR"
 fi
 
 verify_dir="$(evop_prepare_unique_dir "$artifacts_root" "verify")"
@@ -222,7 +222,7 @@ while IFS= read -r slot; do
     [[ -n "$slot" ]] || continue
     command="$(evop_get_project_command "$slot")"
     if [[ -z "$command" ]]; then
-        evop_log_info "Skipping $slot: no command detected."
+        evop_log_event "skip" "Skipping $slot: no command detected."
         evop_record_verify_step "$slot" "" "" "skipped" 0 0
         continue
     fi
@@ -236,12 +236,13 @@ while IFS= read -r slot; do
         if evop_run_verify_step "$slot" "$command" "$step_log_file"; then
             step_duration_ms="$(evop_elapsed_millis_since "$step_started_ms")"
             evop_record_verify_step "$slot" "$command" "$step_log_file" "passed" 0 "$step_duration_ms"
+            evop_log_event "pass" "Passed $slot in ${step_duration_ms}ms"
         else
             step_exit_code=$?
             step_duration_ms="$(evop_elapsed_millis_since "$step_started_ms")"
             evop_record_verify_step "$slot" "$command" "$step_log_file" "failed" "$step_exit_code" "$step_duration_ms"
             final_status=$step_exit_code
-            evop_print_stderr "Verification step '$slot' failed with exit code $final_status."
+            evop_log_event_stderr "fail" "Verification step '$slot' failed with exit code $final_status."
             if (( CONTINUE_ON_ERROR == 0 )); then
                 EVOP_VERIFY_REPORT_FINAL_STATUS="$final_status"
                 evop_write_verify_report "$REPORT_FILE" "$REPORT_FORMAT"
@@ -258,7 +259,7 @@ if (( ran_any == 0 )); then
 fi
 
 if [[ "$DRY_RUN" != "1" ]]; then
-    evop_log_info "Verification logs: $verify_dir"
+    evop_log_event "info" "Verification logs: $verify_dir"
 fi
 
 EVOP_VERIFY_REPORT_FINAL_STATUS="$final_status"

@@ -1,26 +1,34 @@
 #!/usr/bin/env zsh
 
 evop_print_project_command_report() {
-    [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
-    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
-    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
+    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && evop_print_key_value "Package manager:" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && evop_print_key_value "Workspace mode:" "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
     if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
-        printf 'Workspace packages:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+        evop_print_section "Workspace packages:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]]; then
-        printf 'Agent command surfaces:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+        evop_print_section "Agent command surfaces:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_TOOLS"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
-        printf 'Agent support tools:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+        evop_print_section "Agent support tools:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS"
     fi
-    printf 'Suggested commands:\n'
+    evop_print_section "Suggested commands:"
     if evop_project_has_any_command; then
-        printf '%s\n' "$(evop_append_project_command_lines "- " 1)"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done < <(evop_append_project_command_lines "" 1)
     else
-        printf -- '- none\n'
+        evop_print_list_item "none"
     fi
 }
 
@@ -30,21 +38,21 @@ evop_print_profile_detection_report() {
     local profile_name=""
     local score=""
 
-    [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
-    printf 'Profile detection report:\n'
+    [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
+    evop_print_section "Profile detection report:"
 
     for category_dir in languages frameworks project-types; do
         label="$(evop_profile_diagnostics_label "$category_dir")" || continue
-        printf '%s:\n' "$label"
+        evop_print_section "$label:"
 
         if ! evop_profile_detection_has_candidates "$category_dir"; then
-            printf -- '- none\n'
+            evop_print_list_item "none"
             continue
         fi
 
         while IFS=$'\t' read -r profile_name score; do
             [[ -n "$profile_name" ]] || continue
-            printf -- '- %s (score: %s)\n' "$profile_name" "$score"
+            evop_print_list_item "$profile_name (score: $score)"
         done < <(evop_profile_detection_candidates_sorted "$category_dir")
     done
 }
@@ -77,96 +85,122 @@ evop_print_project_context() {
         return 0
     fi
 
-    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
-    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && evop_print_key_value "Package manager:" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && evop_print_key_value "Workspace mode:" "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
     if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
-        printf 'Workspace packages:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+        evop_print_section "Workspace packages:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]]; then
-        printf 'Agent command surfaces:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+        evop_print_section "Agent command surfaces:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_TOOLS"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
-        printf 'Agent support tools:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+        evop_print_section "Agent support tools:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS"
     fi
     while IFS= read -r slot; do
         command="$(evop_get_project_command "$slot")"
         [[ -n "$command" ]] || continue
         label="$(evop_project_command_label "$slot")"
         source="$(evop_get_project_command_source "$slot")"
-        printf '%s command: %s' "$label" "$command"
+        printf '%s %s' "$(evop_style_text cyan "$label command:")" "$command"
         [[ -n "$source" && "$source" != "none" ]] && printf ' [%s]' "$source"
         printf '\n'
     done < <(evop_project_command_slots)
-    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] && printf 'Search roots: %s\n' "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS"
+    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS" ]] && evop_print_key_value "Search roots:" "$EVOP_PROJECT_CONTEXT_SEARCH_ROOTS"
     if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
-        printf 'Operational surfaces:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
+        evop_print_section "Operational surfaces:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AUTOMATION"
     fi
-    [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && printf 'Task kind: %s\n' "$EVOP_PROJECT_CONTEXT_TASK_KIND"
-    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && printf 'Search strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && printf 'Edit strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY" ]] && printf 'Verification strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_RISK_FOCUS" ]] && printf 'Risk focus: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_RISK_FOCUS")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && evop_print_key_value "Task kind:" "$EVOP_PROJECT_CONTEXT_TASK_KIND"
+    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && evop_print_key_value "Search strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && evop_print_key_value "Edit strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY" ]] && evop_print_key_value "Verification strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_RISK_FOCUS" ]] && evop_print_key_value "Risk focus:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_RISK_FOCUS")"
 }
 
 evop_print_project_inspection_report() {
-    [[ -n "${TARGET_DIR:-}" ]] && printf 'Target directory: %s\n' "$TARGET_DIR"
-    [[ -n "${AGENT:-}" ]] && printf 'Agent: %s\n' "$AGENT"
+    [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
+    [[ -n "${AGENT:-}" ]] && evop_print_key_value "Agent:" "$AGENT"
     evop_print_resolved_profile "Language profile" "$LANGUAGE_PROFILE" "$LANGUAGE_PROFILE_SOURCE"
     evop_print_resolved_profile "Framework profile" "$FRAMEWORK_PROFILE" "$FRAMEWORK_PROFILE_SOURCE"
     evop_print_resolved_profile "Project type" "$PROJECT_TYPE" "$PROJECT_TYPE_SOURCE"
 
-    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && printf 'Package manager: %s\n' "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
-    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'Workspace mode: %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
+    [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && evop_print_key_value "Package manager:" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && evop_print_key_value "Workspace mode:" "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
     if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
-        printf 'Workspace packages:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
+        evop_print_section "Workspace packages:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]]; then
-        printf 'Agent command surfaces:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+        evop_print_section "Agent command surfaces:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_TOOLS"
     fi
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
-        printf 'Agent support tools:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+        evop_print_section "Agent support tools:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS"
     fi
 
     if evop_project_has_any_command; then
-        printf 'Suggested commands:\n'
-        printf '%s\n' "$(evop_append_project_command_lines "- " 1)"
+        evop_print_section "Suggested commands:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done < <(evop_append_project_command_lines "" 1)
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_STRUCTURE" ]]; then
-        printf 'Architecture hints:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_STRUCTURE")"
+        evop_print_section "Architecture hints:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_STRUCTURE"
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_CONVENTIONS" ]]; then
-        printf 'Conventions:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_CONVENTIONS")"
+        evop_print_section "Conventions:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_CONVENTIONS"
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_RISK_AREAS" ]]; then
-        printf 'Risk areas:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_RISK_AREAS")"
+        evop_print_section "Risk areas:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_RISK_AREAS"
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_AUTOMATION" ]]; then
-        printf 'Operational surfaces:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AUTOMATION")"
+        evop_print_section "Operational surfaces:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_AUTOMATION"
     fi
 
     if [[ -n "$EVOP_PROJECT_CONTEXT_VALIDATION" ]]; then
-        printf 'Validation plan:\n'
-        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_VALIDATION")"
+        evop_print_section "Validation plan:"
+        while IFS= read -r line; do
+            evop_print_list_item "$line"
+        done <<<"$EVOP_PROJECT_CONTEXT_VALIDATION"
     fi
 
-    [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && printf 'Task kind: %s\n' "$EVOP_PROJECT_CONTEXT_TASK_KIND"
-    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && printf 'Search strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && printf 'Edit strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY" ]] && printf 'Verification strategy: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY")"
-    [[ -n "$EVOP_PROJECT_CONTEXT_RISK_FOCUS" ]] && printf 'Risk focus: %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_RISK_FOCUS")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_TASK_KIND" ]] && evop_print_key_value "Task kind:" "$EVOP_PROJECT_CONTEXT_TASK_KIND"
+    [[ -n "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY" ]] && evop_print_key_value "Search strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_SEARCH_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY" ]] && evop_print_key_value "Edit strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_EDIT_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY" ]] && evop_print_key_value "Verification strategy:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_VERIFICATION_STRATEGY")"
+    [[ -n "$EVOP_PROJECT_CONTEXT_RISK_FOCUS" ]] && evop_print_key_value "Risk focus:" "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_RISK_FOCUS")"
 }

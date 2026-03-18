@@ -36,18 +36,18 @@ evop_print_verify_plan_summary() {
     local command=""
     local source=""
 
-    printf 'Target directory: %s\n' "$target_dir"
-    printf 'Selected verification steps:\n'
+    evop_print_key_value "Target directory:" "$target_dir"
+    evop_print_section "Selected verification steps:"
     while IFS= read -r slot; do
         [[ -n "$slot" ]] || continue
         command="$(evop_get_project_command "$slot")"
         source="$(evop_get_project_command_source "$slot")"
         if [[ -n "$command" ]]; then
-            printf -- '- %s: %s' "$slot" "$command"
+            printf '  %s %s: %s' "$(evop_print_status_badge "ready")" "$slot" "$command"
             [[ -n "$source" && "$source" != "none" ]] && printf ' [%s]' "$source"
             printf '\n'
         else
-            printf -- '- %s: missing\n' "$slot"
+            printf '  %s %s: missing\n' "$(evop_print_status_badge "missing")" "$slot"
         fi
     done <<<"$selected_steps"
 }

@@ -128,23 +128,23 @@ evop_print_profiles_summary() {
     local path=""
     local count=0
 
-    printf 'Supported profiles'
-    if [[ "$selected_category" != "all" ]]; then
-        printf ' (%s)' "$(evop_profiles_category_label "$selected_category")"
+    if [[ "$selected_category" == "all" ]]; then
+        evop_print_section "Supported profiles:"
+    else
+        evop_print_section "Supported profiles ($(evop_profiles_category_label "$selected_category")):"
     fi
-    printf ':\n'
 
     while IFS= read -r category_dir; do
         [[ -n "$category_dir" ]] || continue
         category_label="$(evop_profiles_category_label "$category_dir")"
         count="$(evop_profiles_category_count "$category_dir")"
-        printf '%s (%s):\n' "$category_label" "$count"
+        evop_print_section "$category_label ($count):"
 
         while IFS= read -r profile_name; do
             [[ -n "$profile_name" ]] || continue
             summary="$(evop_profiles_summary_line "$category_dir" "$profile_name")"
             path="$(evop_profile_definition_path "$category_dir" "$profile_name")"
-            printf -- '- %s: %s [%s]\n' "$profile_name" "$summary" "$path"
+            evop_print_list_item "$profile_name: $summary [$path]"
         done < <(evop_supported_profiles_for_category "$category_dir")
     done < <(evop_profiles_selected_categories "$selected_category")
 }

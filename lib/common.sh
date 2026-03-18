@@ -4,6 +4,7 @@
 
 EVOPROGRAMMER_DEFAULT_PROMPT="improve this repo"
 EVOP_VERBOSITY="${EVOP_VERBOSITY:-1}"
+EVOP_TTY_COLORS_ENABLED=""
 
 evop_print_stderr() {
     printf '%s\n' "$*" >&2
@@ -158,9 +159,156 @@ evop_resolve_optional_prompt() {
 evop_print_command_preview() {
     local target_dir="$1"
     shift
+    local rendered_command=""
+    local arg=""
 
-    printf 'Target directory: %s\n' "$target_dir"
-    printf 'Command:'
-    printf ' %q' "$@"
-    printf '\n'
+    for arg in "$@"; do
+        if [[ -n "$rendered_command" ]]; then
+            rendered_command+=" "
+        fi
+        rendered_command+="$(printf '%q' "$arg")"
+    done
+
+    evop_print_key_value "Target directory:" "$target_dir"
+    evop_print_section "Command preview:"
+    evop_print_list_item "$rendered_command"
+}
+
+evop_enable_tty_colors() {
+    if [[ -n "$EVOP_TTY_COLORS_ENABLED" ]]; then
+        [[ "$EVOP_TTY_COLORS_ENABLED" == "1" ]]
+        return $?
+    fi
+
+    if [[ -n "${NO_COLOR:-}" ]]; then
+        EVOP_TTY_COLORS_ENABLED="0"
+    elif [[ -n "${CLICOLOR_FORCE:-}" && "${CLICOLOR_FORCE:-0}" != "0" ]]; then
+        EVOP_TTY_COLORS_ENABLED="1"
+    elif [[ -t 1 ]]; then
+        EVOP_TTY_COLORS_ENABLED="1"
+    else
+        EVOP_TTY_COLORS_ENABLED="0"
+    fi
+
+    [[ "$EVOP_TTY_COLORS_ENABLED" == "1" ]]
+}
+
+evop_color_code() {
+    case "$1" in
+        reset) printf '\033[0m' ;;
+        bold) printf '\033[1m' ;;
+        dim) printf '\033[2m' ;;
+        cyan) printf '\033[36m' ;;
+        blue) printf '\033[34m' ;;
+        green) printf '\033[32m' ;;
+        yellow) printf '\033[33m' ;;
+        red) printf '\033[31m' ;;
+        magenta) printf '\033[35m' ;;
+        gray) printf '\033[90m' ;;
+        *) return 1 ;;
+    esac
+}
+
+evop_style_text() {
+    local style="$1"
+    local text="$2"
+
+    if ! evop_enable_tty_colors; then
+        printf '%s' "$text"
+        return 0
+    fi
+
+    printf '%b%s%b' "$(evop_color_code "$style")" "$text" "$(evop_color_code reset)"
+}
+
+evop_print_section() {
+    local title="$1"
+
+    if evop_enable_tty_colors; then
+        printf '\n%b %s %b\n' "$(evop_color_code blue)$(evop_color_code bold)" "$title" "$(evop_color_code reset)"
+    else
+        printf '\n%s\n' "$title"
+    fi
+}
+
+evop_print_key_value() {
+    local key="$1"
+    local value="$2"
+    local key_text=""
+
+    [[ -n "$value" ]] || return 0
+
+    key_text="$(evop_style_text cyan "$key")"
+    printf '%s %s\n' "$key_text" "$value"
+}
+
+evop_print_list_item() {
+    local value="$1"
+    local bullet=""
+
+    [[ -n "$value" ]] || return 0
+
+    bullet="$(evop_style_text magenta "•")"
+    printf '  %s %s\n' "$bullet" "$value"
+}
+
+evop_print_status_badge() {
+    local badge_text="$1"
+    local normalized="${1:l}"
+    local style="gray"
+
+    case "$normalized" in
+        passed|success|completed|done)
+            style="green"
+            ;;
+        failed|error)
+            style="red"
+            ;;
+        running|active|in_progress|in-progress)
+            style="yellow"
+            ;;
+        skipped|missing|dry_run|dry-run)
+            style="gray"
+            ;;
+    esac
+
+    if evop_enable_tty_colors; then
+        printf '%b[%s]%b' "$(evop_color_code "$style")$(evop_color_code bold)" "$badge_text" "$(evop_color_code reset)"
+    else
+        printf '[%s]' "$badge_text"
+    fi
+}
+
+evop_print_event_line() {
+    local level="$1"
+    local message="$2"
+    local badge=""
+
+    case "$level" in
+        info) badge="$(evop_print_status_badge "info")" ;;
+        run) badge="$(evop_print_status_badge "run")" ;;
+        ready) badge="$(evop_print_status_badge "ready")" ;;
+        skip) badge="$(evop_print_status_badge "skip")" ;;
+        pass) badge="$(evop_print_status_badge "passed")" ;;
+        fail) badge="$(evop_print_status_badge "failed")" ;;
+        warn) badge="$(evop_print_status_badge "warn")" ;;
+        *) badge="$(evop_print_status_badge "$level")" ;;
+    esac
+
+    printf '%s %s\n' "$badge" "$message"
+}
+
+evop_log_event() {
+    local level="$1"
+    shift
+
+    if (( EVOP_VERBOSITY >= 1 )); then
+        evop_print_event_line "$level" "$*"
+    fi
+}
+
+evop_log_event_stderr() {
+    local level="$1"
+    shift
+    evop_print_event_line "$level" "$*" >&2
 }

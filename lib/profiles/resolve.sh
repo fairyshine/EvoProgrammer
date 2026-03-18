@@ -110,6 +110,7 @@ evop_print_resolved_profile() {
     local value="${2:-}"
     local source="${3:-none}"
     local separator=": "
+    local rendered_label="$label"
 
     if [[ -z "$value" ]]; then
         return 0
@@ -117,9 +118,12 @@ evop_print_resolved_profile() {
 
     if [[ "$label" == OK\ * ]]; then
         separator=" "
+    else
+        rendered_label="$(evop_style_text cyan "$label$separator")"
+        separator=""
     fi
 
-    printf '%s%s%s' "$label" "$separator" "$value"
+    printf '%s%s%s' "$rendered_label" "$separator" "$value"
     if [[ "$source" == "auto" ]]; then
         printf ' (auto-detected)'
     elif [[ "$source" == "context-file" ]]; then

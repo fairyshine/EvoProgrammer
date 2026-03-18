@@ -165,12 +165,12 @@ fi
 agent_cmd=("${EVOP_AGENT_COMMAND[@]}")
 
 if [[ "$DRY_RUN" == "1" ]]; then
-    printf 'Agent: %s\n' "$AGENT"
+    evop_print_key_value "Agent:" "$AGENT"
     evop_print_current_profiles
-    printf 'Artifacts root: %s\n' "$artifacts_root"
-    printf 'Auto commit: %s\n' "$AUTO_COMMIT"
+    evop_print_key_value "Artifacts root:" "$artifacts_root"
+    evop_print_key_value "Auto commit:" "$AUTO_COMMIT"
     if [[ -n "$AUTO_COMMIT_MESSAGE" ]]; then
-        printf 'Auto commit message: %s\n' "$AUTO_COMMIT_MESSAGE"
+        evop_print_key_value "Auto commit message:" "$AUTO_COMMIT_MESSAGE"
     fi
     evop_print_command_preview "$TARGET_DIR" "${agent_cmd[@]}"
     exit 0
@@ -191,9 +191,9 @@ printf '%s' "$final_prompt" >"$prompt_file_path"
 evop_write_command_file "$command_file" "${agent_cmd[@]}"
 write_run_metadata "$metadata_file" "running" "$started_at" "" "$prompt_source" "$artifacts_root" "$run_dir" "$output_file"
 
-evop_log_info "Agent: $agent_display_name"
+evop_log_event "info" "Agent: $agent_display_name"
 evop_print_current_profiles
-evop_log_info "Artifacts directory: $run_dir"
+evop_log_event "info" "Artifacts directory: $run_dir"
 
 if [[ "$AUTO_COMMIT" == "1" ]]; then
     evop_git_snapshot_iteration_baseline "$TARGET_DIR" || true

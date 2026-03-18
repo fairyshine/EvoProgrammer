@@ -182,16 +182,16 @@ evop_validate_zero_or_one "EVOPROGRAMMER_AUTO_COMMIT" "$AUTO_COMMIT"
 evop_require_executable_file "$LOOP_SCRIPT" "Loop script"
 
 if [[ "$DRY_RUN" == "1" ]]; then
-    printf 'Agent: %s\n' "$AGENT"
+    evop_print_key_value "Agent:" "$AGENT"
     evop_print_current_profiles
-    printf 'Max iterations: %s\n' "$MAX_ITERATIONS"
-    printf 'Delay seconds: %s\n' "$DELAY_SECONDS"
-    printf 'Continue on error: %s\n' "$CONTINUE_ON_ERROR"
-    printf 'Auto commit: %s\n' "$AUTO_COMMIT"
+    evop_print_key_value "Max iterations:" "$MAX_ITERATIONS"
+    evop_print_key_value "Delay seconds:" "$DELAY_SECONDS"
+    evop_print_key_value "Continue on error:" "$CONTINUE_ON_ERROR"
+    evop_print_key_value "Auto commit:" "$AUTO_COMMIT"
     if [[ -n "$AUTO_COMMIT_MESSAGE" ]]; then
-        printf 'Auto commit message: %s\n' "$AUTO_COMMIT_MESSAGE"
+        evop_print_key_value "Auto commit message:" "$AUTO_COMMIT_MESSAGE"
     fi
-    printf 'Artifacts root: %s\n' "$artifacts_root"
+    evop_print_key_value "Artifacts root:" "$artifacts_root"
     build_loop_command "$artifacts_root"
     evop_print_command_preview "$TARGET_DIR" "${loop_cmd[@]}"
     exit 0
@@ -213,7 +213,7 @@ mkdir -p "$session_dir/iterations"
 started_at="$(evop_timestamp_utc)"
 write_session_metadata "$session_metadata" "running" "$started_at" "" "$prompt_source" "$artifacts_root" "$session_dir" 0 ""
 
-evop_log_info "Session artifacts directory: $session_dir"
+evop_log_event "info" "Session artifacts directory: $session_dir"
 evop_print_current_profiles
 
 iteration=1
@@ -223,25 +223,26 @@ while (( MAX_ITERATIONS == 0 || iteration <= MAX_ITERATIONS )); do
     if (( stop_requested == 1 )); then
         finished_at="$(evop_timestamp_utc)"
         write_session_metadata "$session_metadata" "stopped" "$started_at" "$finished_at" "$prompt_source" "$artifacts_root" "$session_dir" "$last_iteration" "$final_status"
-        evop_log_info "Stop requested. Exiting before iteration $iteration."
+        evop_log_event "warn" "Stop requested. Exiting before iteration $iteration."
         exit 0
     fi
 
     if [[ -n "$PROMPT_FILE" ]]; then
-        evop_log_info "Starting iteration $iteration with prompt file: $PROMPT_FILE"
+        evop_log_event "run" "Starting iteration $iteration with prompt file: $PROMPT_FILE"
     else
-        evop_log_info "Starting iteration $iteration with prompt: $resolved_prompt"
+        evop_log_event "run" "Starting iteration $iteration with prompt: $resolved_prompt"
     fi
     build_loop_command "$session_dir/iterations"
 
     if EVOPROGRAMMER_TARGET_DIR="$TARGET_DIR" "${loop_cmd[@]}"; then
         last_iteration="$iteration"
         final_status=0
+        evop_log_event "pass" "Iteration $iteration completed successfully."
     else
         exit_code=$?
         last_iteration="$iteration"
         final_status="$exit_code"
-        echo "Iteration $iteration failed with exit code $exit_code." >&2
+        evop_log_event_stderr "fail" "Iteration $iteration failed with exit code $exit_code."
 
         if [[ "$CONTINUE_ON_ERROR" != "1" ]]; then
             finished_at="$(evop_timestamp_utc)"

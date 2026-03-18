@@ -69,19 +69,21 @@ evop_print_status_summary() {
         return 0
     fi
 
+    evop_print_key_value "Target directory:" "${TARGET_DIR:-}"
+    evop_print_key_value "Artifacts root:" "${artifacts_root:-}"
+    evop_print_section "Recent entries:"
+
     while IFS="$EVOP_STATUS_ENTRY_SEPARATOR" read -r name kind started_at agent display_status last_iteration final_status path; do
         [[ -n "$name" ]] || continue
 
         if [[ "$kind" == "session" ]]; then
-            printf '%s  %s  agent=%s  state=%s  iterations=%s  final_status=%s\n' \
-                "$name" "$started_at" "$agent" "$display_status" "$last_iteration" "$final_status"
+            evop_print_list_item "$name  $started_at  agent=$agent  state=$display_status  iterations=$last_iteration  final_status=$final_status"
         else
-            printf '%s  %s  agent=%s  status=%s\n' \
-                "$name" "$started_at" "$agent" "$display_status"
+            evop_print_list_item "$name  $started_at  agent=$agent  status=$display_status"
         fi
     done <<<"$EVOP_STATUS_ENTRIES"
 
-    printf '\n%d of %d matching entries shown.\n' "$EVOP_STATUS_SHOWN_COUNT" "$EVOP_STATUS_MATCHED_COUNT"
+    printf '\n%s %d of %d matching entries shown.\n' "$(evop_print_status_badge "shown")" "$EVOP_STATUS_SHOWN_COUNT" "$EVOP_STATUS_MATCHED_COUNT"
 }
 
 evop_print_status_json() {

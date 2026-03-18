@@ -257,8 +257,20 @@ evop_run_and_capture() {
     local output_file="$2"
     shift 2
     local exit_code
+    local rendered_command=""
+    local arg=""
 
     mkdir -p "$(dirname "$output_file")"
+
+    for arg in "$@"; do
+        if [[ -n "$rendered_command" ]]; then
+            rendered_command+=" "
+        fi
+        rendered_command+="$(printf '%q' "$arg")"
+    done
+
+    evop_log_event "ready" "Executing in $target_dir"
+    evop_log_event "ready" "Command: $rendered_command"
 
     set +e
     (

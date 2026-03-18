@@ -183,7 +183,7 @@ evop_git_auto_commit_iteration() {
         commit_message="$(evop_git_default_commit_message "${1:-}")"
     fi
 
-    evop_log_info "Auto-committing iteration changes."
+    evop_log_event "info" "Auto-committing iteration changes."
 
     (
         cd "$target_dir"
