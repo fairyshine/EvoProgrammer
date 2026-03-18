@@ -81,6 +81,9 @@ evop_agent_command_runner() {
         make_target)
             printf 'make'
             ;;
+        just_target|taskfile_target)
+            printf 'task-runner'
+            ;;
         *)
             printf 'runtime'
             ;;
@@ -185,7 +188,7 @@ evop_agent_command_capability() {
             repo_executable)
                 capability="task"
                 ;;
-            make_target|package_script)
+            make_target|just_target|taskfile_target|package_script)
                 case "$command" in
                     *inspect*)
                         capability="inspect"
@@ -329,6 +332,12 @@ evop_agent_command_usage() {
                 make_target)
                     printf 'invoke a declared Makefile target'
                     ;;
+                just_target)
+                    printf 'invoke a declared Justfile recipe'
+                    ;;
+                taskfile_target)
+                    printf 'invoke a declared Taskfile task'
+                    ;;
                 repo_helper_program|repo_helper_executable)
                     printf 'invoke a repo-local helper program'
                     ;;
@@ -376,6 +385,12 @@ evop_agent_command_kind_rank() {
             ;;
         package_script)
             printf '50'
+            ;;
+        just_target)
+            printf '55'
+            ;;
+        taskfile_target)
+            printf '57'
             ;;
         make_target)
             printf '60'
@@ -757,6 +772,8 @@ evop_project_agent_local_command_catalog_cached() {
     local output=""
     local top_level_script=""
     local makefile=""
+    local justfile=""
+    local taskfile=""
     local target=""
 
     EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT=""
@@ -796,6 +813,40 @@ evop_project_agent_local_command_catalog_cached() {
         for target in inspect verify doctor clean status profiles catalog install bootstrap ci release format fmt; do
             if evop_makefile_has_target "$makefile" "$target"; then
                 evop_append_agent_command_catalog_entry output "make_target" "make $target" "make target"
+            fi
+        done
+    fi
+
+    if [[ -f "$target_dir/Justfile" ]]; then
+        justfile="$target_dir/Justfile"
+    elif [[ -f "$target_dir/justfile" ]]; then
+        justfile="$target_dir/justfile"
+    elif [[ -f "$target_dir/.justfile" ]]; then
+        justfile="$target_dir/.justfile"
+    fi
+
+    if [[ -n "$justfile" ]]; then
+        for target in inspect verify doctor clean status profiles catalog install bootstrap setup ci release generate codegen format fmt dev start build test lint typecheck; do
+            if evop_justfile_has_target "$justfile" "$target"; then
+                evop_append_agent_command_catalog_entry output "just_target" "$(evop_just_recipe_command "$justfile" "$target")" "Justfile recipe"
+            fi
+        done
+    fi
+
+    if [[ -f "$target_dir/Taskfile.yml" ]]; then
+        taskfile="$target_dir/Taskfile.yml"
+    elif [[ -f "$target_dir/Taskfile.yaml" ]]; then
+        taskfile="$target_dir/Taskfile.yaml"
+    elif [[ -f "$target_dir/taskfile.yml" ]]; then
+        taskfile="$target_dir/taskfile.yml"
+    elif [[ -f "$target_dir/taskfile.yaml" ]]; then
+        taskfile="$target_dir/taskfile.yaml"
+    fi
+
+    if [[ -n "$taskfile" ]]; then
+        for target in inspect verify doctor clean status profiles catalog install bootstrap setup ci release generate codegen format fmt dev start build test lint typecheck; do
+            if evop_taskfile_has_target "$taskfile" "$target"; then
+                evop_append_agent_command_catalog_entry output "taskfile_target" "$(evop_taskfile_task_command "$taskfile" "$target")" "Taskfile task"
             fi
         done
     fi

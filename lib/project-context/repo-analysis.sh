@@ -49,6 +49,34 @@ evop_makefile_has_target() {
     return 1
 }
 
+evop_justfile_has_target() {
+    local justfile="$1"
+    local target="$2"
+
+    evop_project_justfile_targets_cached "$justfile" >/dev/null
+    case $'\n'"$EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT"$'\n' in
+        *$'\n'"$target"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    return 1
+}
+
+evop_taskfile_has_target() {
+    local taskfile="$1"
+    local target="$2"
+
+    evop_project_taskfile_targets_cached "$taskfile" >/dev/null
+    case $'\n'"$EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT"$'\n' in
+        *$'\n'"$target"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    return 1
+}
+
 evop_existing_relative_path() {
     local target_dir="$1"
     shift

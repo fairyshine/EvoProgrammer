@@ -230,6 +230,24 @@ setup_context_workspace() {
     printf '#!/usr/bin/env zsh\nprint sync-context\n' >"$TEST_CONTEXT_DIR/tools/sync-context"
     chmod +x "$TEST_CONTEXT_DIR/tools/sync-context"
     printf '#!/usr/bin/env zsh\nprint tests\n' >"$TEST_CONTEXT_DIR/tests/run_tests.sh"
+    cat >"$TEST_CONTEXT_DIR/Justfile" <<'EOF'
+inspect:
+  @echo inspect
+bootstrap:
+  @echo bootstrap
+lint:
+  @echo lint
+EOF
+    cat >"$TEST_CONTEXT_DIR/Taskfile.yml" <<'EOF'
+version: '3'
+tasks:
+  verify:
+    cmds:
+      - echo verify
+  build:
+    cmds:
+      - echo build
+EOF
     printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
 }
 
@@ -246,7 +264,7 @@ setup_context_support_tools() {
     TEST_CONTEXT_TOOLS_DIR="$TEST_TMPDIR/context-tools-bin"
     mkdir -p "$TEST_CONTEXT_TOOLS_DIR"
 
-    for tool_name in gh jq yq curl fd sqlite3; do
+    for tool_name in gh jq yq curl fd sqlite3 just task; do
         cat >"$TEST_CONTEXT_TOOLS_DIR/$tool_name" <<EOF
 #!/usr/bin/env zsh
 set -euo pipefail

@@ -156,6 +156,117 @@ evop_project_makefile_targets_cached() {
     printf '%s' "$EVOP_PROJECT_CONTEXT_MAKEFILE_TARGETS_RESULT"
 }
 
+evop_project_justfile_targets_cached() {
+    local file_path="$1"
+    local file_text=""
+    local line=""
+    local target_name=""
+    local targets=""
+
+    EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        evop_project_file_text_cached "$file_path" >/dev/null
+        file_text="$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        while IFS= read -r line; do
+            line="${line%$'\r'}"
+            [[ -z "$line" ]] && continue
+            [[ "$line" == '#'* || "$line" == ' '* || "$line" == $'\t'* || "$line" == '['* ]] && continue
+            if [[ "$line" =~ '^([A-Za-z0-9_.-]+)([[:space:]][^:]*)?:([[:space:]]|$)' ]]; then
+                target_name="${match[1]}"
+            else
+                continue
+            fi
+            case $'\n'"$targets"$'\n' in
+                *$'\n'"$target_name"$'\n'*)
+                    ;;
+                *)
+                    [[ -n "$targets" ]] && targets+=$'\n'
+                    targets+="$target_name"
+                    ;;
+            esac
+        done <<<"$file_text"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_CACHE "$file_path" "$targets"
+    EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT="$targets"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_RESULT"
+}
+
+evop_project_taskfile_targets_cached() {
+    local file_path="$1"
+    local file_text=""
+    local line=""
+    local stripped_line=""
+    local target_name=""
+    local targets=""
+    local in_tasks=0
+    local tasks_indent=0
+    local indent=0
+
+    EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]]; then
+        evop_project_file_text_cached "$file_path" >/dev/null
+        file_text="$EVOP_PROJECT_CONTEXT_FILE_TEXT_RESULT"
+        while IFS= read -r line; do
+            line="${line%$'\r'}"
+            stripped_line="${line#"${line%%[![:space:]]*}"}"
+
+            if (( in_tasks == 0 )); then
+                if [[ "$line" =~ '^([[:space:]]*)tasks:[[:space:]]*$' ]]; then
+                    in_tasks=1
+                    tasks_indent=${#match[1]}
+                fi
+                continue
+            fi
+
+            [[ -z "$stripped_line" || "$stripped_line" == \#* ]] && continue
+
+            indent=$(( ${#line} - ${#stripped_line} ))
+            if (( indent <= tasks_indent )); then
+                in_tasks=0
+                if [[ "$line" =~ '^([[:space:]]*)tasks:[[:space:]]*$' ]]; then
+                    in_tasks=1
+                    tasks_indent=${#match[1]}
+                fi
+                continue
+            fi
+
+            if [[ "$line" =~ '^[[:space:]]+([A-Za-z0-9_.-]+):([[:space:]]|$)' ]]; then
+                target_name="${match[1]}"
+            else
+                continue
+            fi
+
+            case $'\n'"$targets"$'\n' in
+                *$'\n'"$target_name"$'\n'*)
+                    ;;
+                *)
+                    [[ -n "$targets" ]] && targets+=$'\n'
+                    targets+="$target_name"
+                    ;;
+            esac
+        done <<<"$file_text"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_CACHE "$file_path" "$targets"
+    EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT="$targets"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_RESULT"
+}
+
 evop_project_package_json_scripts_cached() {
     local file_path="$1"
     local script_names=""
@@ -708,6 +819,14 @@ evop_collect_agent_support_tool_candidates() {
 
     if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
         evop_append_agent_support_tool_candidate output make "build tool" "automation" "invoke declared Makefile targets directly"
+    fi
+
+    if [[ -f "$target_dir/Justfile" || -f "$target_dir/justfile" || -f "$target_dir/.justfile" ]]; then
+        evop_append_agent_support_tool_candidate output just "build tool" "automation" "invoke declared Justfile recipes directly"
+    fi
+
+    if [[ -f "$target_dir/Taskfile.yml" || -f "$target_dir/Taskfile.yaml" || -f "$target_dir/taskfile.yml" || -f "$target_dir/taskfile.yaml" ]]; then
+        evop_append_agent_support_tool_candidate output task "build tool" "automation" "invoke declared Taskfile tasks directly"
     fi
 
     if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then

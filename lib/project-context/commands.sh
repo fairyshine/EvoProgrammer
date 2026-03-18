@@ -72,6 +72,34 @@ evop_maven_task_command() {
     printf 'mvn %s' "$task_name"
 }
 
+evop_just_recipe_command() {
+    local justfile="$1"
+    local recipe_name="$2"
+    local rel_justfile="${justfile#"$EVOP_PROJECT_CONTEXT_FACTS_DIR"/}"
+
+    if [[ "$rel_justfile" == "$justfile" ]]; then
+        rel_justfile="./${justfile##*/}"
+    else
+        rel_justfile="./${rel_justfile#/}"
+    fi
+
+    printf 'just --justfile %s %s' "$rel_justfile" "$recipe_name"
+}
+
+evop_taskfile_task_command() {
+    local taskfile="$1"
+    local task_name="$2"
+    local rel_taskfile="${taskfile#"$EVOP_PROJECT_CONTEXT_FACTS_DIR"/}"
+
+    if [[ "$rel_taskfile" == "$taskfile" ]]; then
+        rel_taskfile="./${taskfile##*/}"
+    else
+        rel_taskfile="./${rel_taskfile#/}"
+    fi
+
+    printf 'task --taskfile %s %s' "$rel_taskfile" "$task_name"
+}
+
 evop_choose_package_manager() {
     local target_dir="$1"
     local language_profile="${2:-}"
@@ -567,6 +595,54 @@ evop_detect_makefile_commands() {
     fi
 }
 
+evop_detect_justfile_commands() {
+    local justfile="$1"
+
+    [[ -n "$justfile" ]] || return 0
+
+    if evop_justfile_has_target "$justfile" dev; then
+        evop_set_project_command_if_empty dev "$(evop_just_recipe_command "$justfile" dev)" "Justfile recipe"
+    elif evop_justfile_has_target "$justfile" start; then
+        evop_set_project_command_if_empty dev "$(evop_just_recipe_command "$justfile" start)" "Justfile recipe"
+    fi
+    if evop_justfile_has_target "$justfile" build; then
+        evop_set_project_command_if_empty build "$(evop_just_recipe_command "$justfile" build)" "Justfile recipe"
+    fi
+    if evop_justfile_has_target "$justfile" test; then
+        evop_set_project_command_if_empty test "$(evop_just_recipe_command "$justfile" test)" "Justfile recipe"
+    fi
+    if evop_justfile_has_target "$justfile" lint; then
+        evop_set_project_command_if_empty lint "$(evop_just_recipe_command "$justfile" lint)" "Justfile recipe"
+    fi
+    if evop_justfile_has_target "$justfile" typecheck; then
+        evop_set_project_command_if_empty typecheck "$(evop_just_recipe_command "$justfile" typecheck)" "Justfile recipe"
+    fi
+}
+
+evop_detect_taskfile_commands() {
+    local taskfile="$1"
+
+    [[ -n "$taskfile" ]] || return 0
+
+    if evop_taskfile_has_target "$taskfile" dev; then
+        evop_set_project_command_if_empty dev "$(evop_taskfile_task_command "$taskfile" dev)" "Taskfile task"
+    elif evop_taskfile_has_target "$taskfile" start; then
+        evop_set_project_command_if_empty dev "$(evop_taskfile_task_command "$taskfile" start)" "Taskfile task"
+    fi
+    if evop_taskfile_has_target "$taskfile" build; then
+        evop_set_project_command_if_empty build "$(evop_taskfile_task_command "$taskfile" build)" "Taskfile task"
+    fi
+    if evop_taskfile_has_target "$taskfile" test; then
+        evop_set_project_command_if_empty test "$(evop_taskfile_task_command "$taskfile" test)" "Taskfile task"
+    fi
+    if evop_taskfile_has_target "$taskfile" lint; then
+        evop_set_project_command_if_empty lint "$(evop_taskfile_task_command "$taskfile" lint)" "Taskfile task"
+    fi
+    if evop_taskfile_has_target "$taskfile" typecheck; then
+        evop_set_project_command_if_empty typecheck "$(evop_taskfile_task_command "$taskfile" typecheck)" "Taskfile task"
+    fi
+}
+
 evop_detect_language_default_commands() {
     local target_dir="$1"
     local package_manager="$2"
@@ -773,6 +849,8 @@ evop_detect_command_hints() {
     local project_type="${5:-}"
     local package_json="$target_dir/package.json"
     local makefile=""
+    local justfile=""
+    local taskfile=""
 
     if [[ -f "$target_dir/Makefile" ]]; then
         makefile="$target_dir/Makefile"
@@ -780,9 +858,29 @@ evop_detect_command_hints() {
         makefile="$target_dir/makefile"
     fi
 
+    if [[ -f "$target_dir/Justfile" ]]; then
+        justfile="$target_dir/Justfile"
+    elif [[ -f "$target_dir/justfile" ]]; then
+        justfile="$target_dir/justfile"
+    elif [[ -f "$target_dir/.justfile" ]]; then
+        justfile="$target_dir/.justfile"
+    fi
+
+    if [[ -f "$target_dir/Taskfile.yml" ]]; then
+        taskfile="$target_dir/Taskfile.yml"
+    elif [[ -f "$target_dir/Taskfile.yaml" ]]; then
+        taskfile="$target_dir/Taskfile.yaml"
+    elif [[ -f "$target_dir/taskfile.yml" ]]; then
+        taskfile="$target_dir/taskfile.yml"
+    elif [[ -f "$target_dir/taskfile.yaml" ]]; then
+        taskfile="$target_dir/taskfile.yaml"
+    fi
+
     evop_detect_package_json_commands "$package_json" "$package_manager"
     evop_detect_workspace_package_json_commands "$target_dir" "$package_manager"
     evop_detect_makefile_commands "$makefile"
+    evop_detect_justfile_commands "$justfile"
+    evop_detect_taskfile_commands "$taskfile"
     evop_detect_language_default_commands "$target_dir" "$package_manager" "$language_profile" "$framework_profile" "$project_type"
     evop_detect_shell_project_commands "$target_dir" "$language_profile" "$project_type"
 }

@@ -202,12 +202,13 @@ from `package.json` or `Makefile`. It now also includes executable helper
 programs under common repo-local automation directories such as `scripts/`,
 `tools/`, `hack/`, and `dev/`, plus runtime-invocable helper programs such as
 non-executable shell, Python, and Node scripts and common `tests/run*.sh`
-harnesses, so coding agents can discover more of the commands the repository
-already exposes. The same pass now also materializes a structured agent command
-catalog with command kind, invocation, and source metadata. That gives coding
-agents and wrappers a clearer tool menu without forcing prompt generation, JSON
-export, env snapshots, and human-readable inspection output to rescan or
-re-derive the same command surfaces.
+harnesses, plus declared `Justfile` recipes and `Taskfile` tasks, so coding
+agents can discover more of the commands the repository already exposes. The
+same pass now also materializes a structured agent command catalog with command
+kind, invocation, and source metadata. That gives coding agents and wrappers a
+clearer tool menu without forcing prompt generation, JSON export, env snapshots,
+and human-readable inspection output to rescan or re-derive the same command
+surfaces.
 
 Package-script discovery in the same layer now also uses a dedicated cached
 script-name index per `package.json`. That lets command planning, workspace
@@ -222,6 +223,9 @@ operations without repeating `command -v` probes across the same execution.
 The same pass now also materializes a structured support-tool catalog with
 resolved executable paths, so wrappers can invoke discovered machine tools
 without reparsing human-readable output or paying for duplicate path lookups.
+Repo-local task runners such as `just` and `task` now flow through the same
+support-tool path when matching task-definition files are present, so agents can
+see both the declared repo tasks and the host binary needed to execute them.
 
 `INSPECT.sh` now also exposes that agent-facing tool menu through dedicated
 `agent`, `agent-json`, and `agent-env` output modes. `CATALOG.sh` builds on the
