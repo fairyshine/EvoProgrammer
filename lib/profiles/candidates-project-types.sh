@@ -32,6 +32,7 @@ evop_prepare_project_type_candidates() {
     fi
 
     if evop_directory_has_file_extension "$target_dir" "ipynb" \
+        || evop_directory_has_file_pattern "$target_dir" "*.Rmd" \
         || evop_directory_has_path_named "$target_dir" "notebooks" \
         || evop_directory_has_path_named "$target_dir" "datasets"; then
         evop_profile_candidate_append_unique candidates "scientific-experiment"

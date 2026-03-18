@@ -7,6 +7,7 @@ evop_profile_detect() {
     local prompt="${2:-}"
 
     evop_profile_match_file_pattern 98 "$target_dir" "*.ipynb" && return 0
+    evop_profile_match_file_pattern 96 "$target_dir" "*.Rmd" && return 0
     evop_profile_match_path_named 98 "$target_dir" "notebooks" "datasets" && return 0
     evop_profile_match_prompt 98 "$prompt" "experiment" "scientific experiment" "benchmark" "dataset" "analysis pipeline" "实验" && return 0
     return 1

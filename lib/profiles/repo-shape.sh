@@ -379,6 +379,13 @@ evop_repo_looks_like_web_app() {
         return 0
     fi
 
+    if evop_directory_has_file_named "$target_dir" "app.R" "ui.R" "server.R" \
+        && evop_directory_contains_text "$target_dir" "shiny" "DESCRIPTION" "app.R" "ui.R" "server.R"; then
+        EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE="1"
+        return 0
+    fi
+
     if evop_directory_has_file_named "$target_dir" "package.json" \
         && evop_repo_has_node_package "$target_dir" "next" "react" "vue" "svelte" "nuxt" "astro"; then
         EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR="$target_dir"

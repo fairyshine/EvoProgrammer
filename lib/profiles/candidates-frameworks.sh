@@ -77,6 +77,11 @@ evop_prepare_framework_profile_candidates() {
         fi
     fi
 
+    if evop_directory_has_file_named "$target_dir" "DESCRIPTION" "app.R" "ui.R" "server.R" \
+        && evop_directory_contains_text "$target_dir" "shiny" "DESCRIPTION" "app.R" "ui.R" "server.R"; then
+        evop_profile_candidate_append_unique candidates "shiny"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "Cargo.toml"; then
         has_cargo=1
 
@@ -170,6 +175,7 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "qt" "$prompt" "qt"
     evop_profile_candidate_add_if_prompt_matches candidates "rails" "$prompt" "rails"
     evop_profile_candidate_add_if_prompt_matches candidates "react" "$prompt" "react"
+    evop_profile_candidate_add_if_prompt_matches candidates "shiny" "$prompt" "shiny"
     evop_profile_candidate_add_if_prompt_matches candidates "spring" "$prompt" "spring"
     evop_profile_candidate_add_if_prompt_matches candidates "streamlit" "$prompt" "streamlit"
     evop_profile_candidate_add_if_prompt_matches candidates "svelte" "$prompt" "svelte"

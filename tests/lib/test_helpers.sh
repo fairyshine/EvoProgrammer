@@ -635,6 +635,84 @@ def test_ingest():
 EOF
 }
 
+setup_r_shiny_workspace() {
+    if [[ -n "${TEST_R_SHINY_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_R_SHINY_DIR="$TEST_TMPDIR/r-shiny-app"
+    mkdir -p "$TEST_R_SHINY_DIR/R" "$TEST_R_SHINY_DIR/tests/testthat"
+
+    cat >"$TEST_R_SHINY_DIR/DESCRIPTION" <<'EOF'
+Package: shinydemo
+Title: Demo Shiny App
+Version: 0.1.0
+Imports:
+    shiny,
+    testthat,
+    lintr
+EOF
+
+    cat >"$TEST_R_SHINY_DIR/app.R" <<'EOF'
+library(shiny)
+
+ui <- fluidPage("demo")
+server <- function(input, output, session) {}
+
+shinyApp(ui, server)
+EOF
+
+    cat >"$TEST_R_SHINY_DIR/R/helpers.R" <<'EOF'
+build_message <- function() {
+  "demo"
+}
+EOF
+
+    cat >"$TEST_R_SHINY_DIR/tests/testthat.R" <<'EOF'
+library(testthat)
+test_check("shinydemo")
+EOF
+
+    cat >"$TEST_R_SHINY_DIR/tests/testthat/test-app.R" <<'EOF'
+test_that("app is configured", {
+  expect_true(TRUE)
+})
+EOF
+
+    cat >"$TEST_R_SHINY_DIR/.lintr" <<'EOF'
+linters: linters_with_defaults()
+EOF
+}
+
+setup_terraform_workspace() {
+    if [[ -n "${TEST_TERRAFORM_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_TERRAFORM_DIR="$TEST_TMPDIR/terraform-infra"
+    mkdir -p "$TEST_TERRAFORM_DIR/modules/network" "$TEST_TERRAFORM_DIR/tests"
+
+    cat >"$TEST_TERRAFORM_DIR/main.tf" <<'EOF'
+terraform {
+  required_version = ">= 1.6.0"
+}
+
+module "network" {
+  source = "./modules/network"
+}
+EOF
+
+    cat >"$TEST_TERRAFORM_DIR/modules/network/main.tf" <<'EOF'
+resource "null_resource" "demo" {}
+EOF
+
+    cat >"$TEST_TERRAFORM_DIR/tests/basic.tftest.hcl" <<'EOF'
+run "plan" {
+  command = plan
+}
+EOF
+}
+
 setup_plugin_workspace() {
     if [[ -n "${TEST_PLUGIN_DIR:-}" ]]; then
         return 0

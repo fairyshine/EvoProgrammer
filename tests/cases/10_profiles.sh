@@ -21,11 +21,14 @@ assert_contains "$profile_catalog_output" "clojure" "Profile catalog should expo
 assert_contains "$profile_catalog_output" "haskell" "Profile catalog should expose the Haskell language profile"
 assert_contains "$profile_catalog_output" "julia" "Profile catalog should expose the Julia language profile"
 assert_contains "$profile_catalog_output" "zig" "Profile catalog should expose the Zig language profile"
+assert_contains "$profile_catalog_output" "r" "Profile catalog should expose the R language profile"
+assert_contains "$profile_catalog_output" "terraform" "Profile catalog should expose the Terraform language profile"
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
 assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
 assert_contains "$profile_catalog_output" "astro" "Profile catalog should expose the Astro framework profile"
 assert_contains "$profile_catalog_output" "nuxt" "Profile catalog should expose the Nuxt framework profile"
 assert_contains "$profile_catalog_output" "phoenix" "Profile catalog should expose the Phoenix framework profile"
+assert_contains "$profile_catalog_output" "shiny" "Profile catalog should expose the Shiny framework profile"
 assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose project-type profiles"
 assert_contains "$profile_catalog_output" "mobile-app" "Profile catalog should expose the mobile-app project type"
 assert_contains "$profile_catalog_output" "infrastructure" "Profile catalog should expose the infrastructure project type"
@@ -255,6 +258,76 @@ EOF
 )"
 assert_contains "$node_cli_profile_output" "project_type=cli-tool" "Non-shell CLI repos should detect the cli-tool project type"
 pass "Node CLI project detection"
+
+r_shiny_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/R" "$tmpdir/tests/testthat"
+cat >"$tmpdir/DESCRIPTION" <<'DESC'
+Package: shinydemo
+Imports:
+    shiny,
+    testthat,
+    lintr
+DESC
+cat >"$tmpdir/app.R" <<'APP'
+library(shiny)
+shinyApp(fluidPage("demo"), function(input, output, session) {})
+APP
+printf 'testthat::test_local()\n' >"$tmpdir/tests/testthat/test-app.R"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$r_shiny_profile_output" "language=r" "R repositories should detect the R language profile"
+assert_contains "$r_shiny_profile_output" "framework=shiny" "Shiny repositories should detect the Shiny framework profile"
+assert_contains "$r_shiny_profile_output" "project_type=web-app" "Shiny repositories should detect the web-app project type"
+pass "R Shiny profile detection"
+
+terraform_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/tests"
+cat >"$tmpdir/main.tf" <<'TF'
+terraform {
+  required_version = ">= 1.6.0"
+}
+TF
+cat >"$tmpdir/tests/basic.tftest.hcl" <<'TEST'
+run "plan" {
+  command = plan
+}
+TEST
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$terraform_profile_output" "language=terraform" "Terraform repositories should detect the Terraform language profile"
+assert_contains "$terraform_profile_output" "project_type=infrastructure" "Terraform repositories should detect the infrastructure project type"
+pass "Terraform profile detection"
 
 godot_profile_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'

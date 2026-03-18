@@ -140,6 +140,12 @@ are cached as first-class candidate facts now, which avoids recomputing the
 same shell-CLI classification across language, framework, and project-type
 detection passes in one inspection run.
 
+Prompt keyword matching now also reuses a normalized lowercase prompt context
+across candidate planning and hook-based detection. That keeps language,
+framework, and project-type passes from repeatedly lowercasing the same prompt
+dozens of times in one inspection run, which trims the hot path for prompt-rich
+invocations without changing detection behavior.
+
 The detection facts layer now also indexes file extensions directly. That keeps
 common candidate checks such as `.kt`, `.csproj`, `.ipynb`, `.tex`, and similar
 signals on top of set lookups instead of repeatedly scanning every collected

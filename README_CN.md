@@ -10,13 +10,13 @@
 
 **自迭代代码演进** — 不同于一次性的 agent 调用，EvoProgrammer 会把 agent 反复投入同一个仓库（它实际上也在迭代这个代码仓库，它本身的仓库）。每一轮都建立在上一轮的基础上：第 1 轮搭脚手架，第 2 轮写测试，第 3 轮修 bug，第 4 轮打磨细节……循环持续进行，直到代码库收敛或达到你设定的上限。
 
-**广泛的语言、框架和项目覆盖** — 开箱即用支持 18 种语言、28 个框架、19 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Flutter 移动应用、Bevy 多人游戏、FastAPI 微服务、Spring 后端、Phoenix 服务、Astro 或 Nuxt 前端，还是基于 CMake 的原生工具，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
+**广泛的语言、框架和项目覆盖** — 开箱即用支持 20 种语言、29 个框架、19 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Flutter 移动应用、Bevy 多人游戏、FastAPI 微服务、Spring 后端、Phoenix 服务、Astro 或 Nuxt 前端、Shiny 应用、Terraform 基础设施，还是基于 CMake 的原生工具，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
 
-| 语言 (18) | 框架 (28) | 项目类型 (19) |
+| 语言 (20) | 框架 (29) | 项目类型 (19) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua | React, Next.js, Vue, Svelte, Nuxt, Astro, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 基础设施, 论文, 科学实验, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 基础设施, 论文, 科学实验, PPT, Office |
 
-最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、基础设施仓库、以及游戏引擎仓库都会更准确地命中；同时 `inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix、sbt、LuaRocks 和 CMake 项目推导出更完整的默认命令。
+最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、Shiny Web 应用、Terraform 基础设施仓库、以及游戏引擎仓库都会更准确地命中；同时 `inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix、sbt、LuaRocks、R、Terraform 和 CMake 项目推导出更完整的默认命令。
 
 ## 快速开始
 

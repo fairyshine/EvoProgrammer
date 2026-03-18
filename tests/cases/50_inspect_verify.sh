@@ -317,6 +317,28 @@ assert_contains "$data_pipeline_inspect_output" "dags: scheduled DAG definitions
 assert_contains "$data_pipeline_inspect_output" "Scheduling, idempotency, backfill behavior, and data contracts can fail long after a code change lands." "INSPECT should surface pipeline risk areas"
 pass "INSPECT data pipeline summary"
 
+setup_r_shiny_workspace
+r_shiny_inspect_output="$(run_expect_success "INSPECT should summarize R Shiny projects" "$INSPECT_SCRIPT" --target-dir "$TEST_R_SHINY_DIR")"
+assert_contains "$r_shiny_inspect_output" "Language profile: r (auto-detected)" "INSPECT should detect R projects"
+assert_contains "$r_shiny_inspect_output" "Framework profile: shiny (auto-detected)" "INSPECT should detect Shiny apps"
+assert_contains "$r_shiny_inspect_output" "Project type: web-app (auto-detected)" "INSPECT should classify Shiny apps as web apps"
+assert_contains "$r_shiny_inspect_output" "Package manager: r" "INSPECT should surface the R package manager"
+assert_contains "$r_shiny_inspect_output" 'Dev: Rscript -e "shiny::runApp(\".\", launch.browser = FALSE)"' "INSPECT should infer a Shiny dev command"
+assert_contains "$r_shiny_inspect_output" 'Test: Rscript -e "testthat::test_local()"' "INSPECT should infer testthat commands"
+assert_contains "$r_shiny_inspect_output" 'Lint: Rscript -e "lintr::lint_dir(\".\")"' "INSPECT should infer lintr commands"
+pass "INSPECT R Shiny summary"
+
+setup_terraform_workspace
+terraform_inspect_output="$(run_expect_success "INSPECT should summarize Terraform infrastructure projects" "$INSPECT_SCRIPT" --target-dir "$TEST_TERRAFORM_DIR")"
+assert_contains "$terraform_inspect_output" "Language profile: terraform (auto-detected)" "INSPECT should detect Terraform projects"
+assert_contains "$terraform_inspect_output" "Project type: infrastructure (auto-detected)" "INSPECT should classify Terraform repos as infrastructure"
+assert_contains "$terraform_inspect_output" "Package manager: terraform" "INSPECT should surface the Terraform package manager"
+assert_contains "$terraform_inspect_output" "Workspace mode: single-package" "INSPECT should classify Terraform repos as package-oriented repos"
+assert_contains "$terraform_inspect_output" "Lint: terraform fmt -check -recursive" "INSPECT should infer terraform fmt checks"
+assert_contains "$terraform_inspect_output" "Typecheck: terraform validate" "INSPECT should infer terraform validation commands"
+assert_contains "$terraform_inspect_output" "Test: terraform test" "INSPECT should infer terraform test commands"
+pass "INSPECT Terraform summary"
+
 setup_agent_test_workspace
 mkdir -p "$TEST_TARGET_DIR/.evoprogrammer/hooks"
 cat >"$TEST_TARGET_DIR/.evoprogrammer/hooks/post-iteration" <<'EOF'

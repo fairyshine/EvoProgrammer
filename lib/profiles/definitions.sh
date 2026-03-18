@@ -135,7 +135,7 @@ evop_profile_match_prompt() {
     local prompt="${2:-}"
     shift 2
 
-    if evop_text_contains_any "$prompt" "$@"; then
+    if evop_prompt_contains_any "$prompt" "$@"; then
         EVOP_PROFILE_DETECT_SCORE="$score"
         return 0
     fi
@@ -303,6 +303,7 @@ evop_detect_profile_via_hooks() {
     local candidate_profiles=""
 
     EVOP_DETECTED_PROFILE=""
+    evop_prepare_text_match_context "$prompt"
     evop_prepare_profile_detection_candidates "$category_dir" "$target_dir" "$prompt"
     candidate_mode="$EVOP_PROFILE_CANDIDATE_MODE"
     candidate_profiles="$EVOP_PROFILE_CANDIDATE_LIST"

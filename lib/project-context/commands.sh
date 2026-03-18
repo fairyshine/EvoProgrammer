@@ -91,6 +91,13 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        r)
+            if [[ -f "$target_dir/DESCRIPTION" || -f "$target_dir/renv.lock" || -f "$target_dir/NAMESPACE" ]] \
+                || evop_directory_has_file_pattern "$target_dir" "*.Rproj"; then
+                printf 'r'
+                return 0
+            fi
+            ;;
         rust)
             if [[ -f "$target_dir/Cargo.toml" ]]; then
                 printf 'cargo'
@@ -197,6 +204,13 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
+        terraform)
+            if [[ -f "$target_dir/main.tf" || -f "$target_dir/terraform.tfvars" || -f "$target_dir/terragrunt.hcl" ]] \
+                || evop_directory_has_file_pattern "$target_dir" "*.tf" "*.tfvars" "*.tftest.hcl"; then
+                printf 'terraform'
+                return 0
+            fi
+            ;;
         dart)
             if [[ -f "$target_dir/pubspec.yaml" ]]; then
                 if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
@@ -242,6 +256,12 @@ evop_choose_package_manager() {
 
     if [[ -f "$target_dir/pyproject.toml" ]]; then
         printf 'python'
+        return 0
+    fi
+
+    if [[ -f "$target_dir/DESCRIPTION" || -f "$target_dir/renv.lock" || -f "$target_dir/NAMESPACE" ]] \
+        || evop_directory_has_file_pattern "$target_dir" "*.Rproj"; then
+        printf 'r'
         return 0
     fi
 
@@ -340,6 +360,12 @@ evop_choose_package_manager() {
         return 0
     fi
 
+    if [[ -f "$target_dir/main.tf" || -f "$target_dir/terraform.tfvars" || -f "$target_dir/terragrunt.hcl" ]] \
+        || evop_directory_has_file_pattern "$target_dir" "*.tf" "*.tfvars" "*.tftest.hcl"; then
+        printf 'terraform'
+        return 0
+    fi
+
     if [[ -f "$target_dir/pubspec.yaml" ]]; then
         if evop_file_contains_literal "$target_dir/pubspec.yaml" "flutter:" \
             || evop_file_contains_literal "$target_dir/pubspec.yaml" "sdk: flutter"; then
@@ -383,8 +409,8 @@ evop_detect_workspace_mode() {
         return 0
     fi
 
-    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/Cargo.toml" || -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" ]] \
-        || evop_directory_has_file_pattern "$target_dir" "*.cabal" "*.rockspec" \
+    if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/DESCRIPTION" || -f "$target_dir/renv.lock" || -f "$target_dir/NAMESPACE" || -f "$target_dir/Cargo.toml" || -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" || -f "$target_dir/main.tf" || -f "$target_dir/terraform.tfvars" || -f "$target_dir/terragrunt.hcl" ]] \
+        || evop_directory_has_file_pattern "$target_dir" "*.Rproj" "*.cabal" "*.rockspec" "*.tf" "*.tfvars" "*.tftest.hcl" \
         || evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
         printf 'single-package'
         return 0
@@ -507,6 +533,28 @@ evop_detect_language_default_commands() {
                 evop_set_project_command_if_empty typecheck "$(evop_python_tool_command "$package_manager" mypy .)" "Python conventions"
             fi
             ;;
+        r)
+            if [[ -f "$target_dir/DESCRIPTION" ]]; then
+                evop_set_project_command_if_empty build "R CMD build ." "R defaults"
+            fi
+            if [[ -f "$target_dir/app.R" || -f "$target_dir/ui.R" || -f "$target_dir/server.R" ]] \
+                && {
+                    evop_file_contains_literal "$target_dir/DESCRIPTION" "shiny" \
+                        || evop_file_contains_literal "$target_dir/app.R" "shiny" \
+                        || evop_file_contains_literal "$target_dir/ui.R" "shiny" \
+                        || evop_file_contains_literal "$target_dir/server.R" "shiny";
+                }; then
+                evop_set_project_command_if_empty dev 'Rscript -e "shiny::runApp(\".\", launch.browser = FALSE)"' "R Shiny conventions"
+            fi
+            if [[ -d "$target_dir/tests/testthat" || -f "$target_dir/tests/testthat.R" ]] \
+                || evop_file_contains_literal "$target_dir/DESCRIPTION" "testthat"; then
+                evop_set_project_command_if_empty test 'Rscript -e "testthat::test_local()"' "R defaults"
+            fi
+            if [[ -f "$target_dir/.lintr" || -f "$target_dir/lintr.R" ]] \
+                || evop_file_contains_literal "$target_dir/DESCRIPTION" "lintr"; then
+                evop_set_project_command_if_empty lint 'Rscript -e "lintr::lint_dir(\".\")"' "R defaults"
+            fi
+            ;;
         typescript|javascript)
             if [[ -f "$target_dir/tsconfig.json" ]]; then
                 evop_set_project_command_if_empty typecheck "tsc --noEmit" "TypeScript defaults"
@@ -581,6 +629,15 @@ evop_detect_language_default_commands() {
             if [[ "$package_manager" == "zig" ]]; then
                 evop_set_project_command_if_empty build "zig build" "Zig defaults"
                 evop_set_project_command_if_empty test "zig build test" "Zig defaults"
+            fi
+            ;;
+        terraform)
+            if [[ "$package_manager" == "terraform" ]]; then
+                evop_set_project_command_if_empty lint "terraform fmt -check -recursive" "Terraform defaults"
+                evop_set_project_command_if_empty typecheck "terraform validate" "Terraform defaults"
+                if [[ -d "$target_dir/tests" ]] || evop_directory_has_file_pattern "$target_dir" "*.tftest.hcl"; then
+                    evop_set_project_command_if_empty test "terraform test" "Terraform defaults"
+                fi
             fi
             ;;
     esac

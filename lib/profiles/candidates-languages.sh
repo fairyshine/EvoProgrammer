@@ -28,6 +28,12 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "python"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "DESCRIPTION" "renv.lock" "NAMESPACE" \
+        || evop_directory_has_file_pattern "$target_dir" "*.Rproj" \
+        || evop_directory_has_file_extension "$target_dir" "R" "r" "Rmd"; then
+        evop_profile_candidate_append_unique candidates "r"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "Cargo.toml" \
         || evop_directory_has_file_extension "$target_dir" "rs"; then
         evop_profile_candidate_append_unique candidates "rust"
@@ -122,6 +128,11 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "zig"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "main.tf" "terraform.tfvars" "terragrunt.hcl" \
+        || evop_directory_has_file_pattern "$target_dir" "*.tf" "*.tfvars"; then
+        evop_profile_candidate_append_unique candidates "terraform"
+    fi
+
     if evop_directory_has_file_extension "$target_dir" "sh" \
         || evop_directory_has_file_named "$target_dir" ".zshrc" ".zprofile" ".bashrc" ".bash_profile"; then
         evop_profile_candidate_append_unique candidates "shell"
@@ -130,6 +141,7 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "typescript" "$prompt" "typescript"
     evop_profile_candidate_add_if_prompt_matches candidates "javascript" "$prompt" "javascript" "node.js" "nodejs"
     evop_profile_candidate_add_if_prompt_matches candidates "python" "$prompt" "python"
+    evop_profile_candidate_add_if_prompt_matches candidates "r" "$prompt" "r language" "rscript" "tidyverse" "ggplot2" "shiny" "rstats"
     evop_profile_candidate_add_if_prompt_matches candidates "rust" "$prompt" "rust"
     evop_profile_candidate_add_if_prompt_matches candidates "scala" "$prompt" "scala" "sbt"
     evop_profile_candidate_add_if_prompt_matches candidates "go" "$prompt" "golang" " go "
@@ -149,6 +161,7 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "haskell" "$prompt" "haskell" "cabal" "stack"
     evop_profile_candidate_add_if_prompt_matches candidates "julia" "$prompt" "julia"
     evop_profile_candidate_add_if_prompt_matches candidates "zig" "$prompt" "zig"
+    evop_profile_candidate_add_if_prompt_matches candidates "terraform" "$prompt" "terraform" "terragrunt" "hcl" "infrastructure as code"
     evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "zsh" "bash" "shell" "shell script" "脚本"
 
     if [[ -n "$candidates" ]]; then

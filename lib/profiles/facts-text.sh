@@ -1,23 +1,77 @@
 #!/usr/bin/env zsh
 
+EVOP_TEXT_MATCH_CONTEXT=""
+EVOP_TEXT_MATCH_CONTEXT_LOWERED=""
+typeset -A EVOP_TEXT_MATCH_NEEDLE_CACHE=()
+
 evop_lowercase() {
     local lowered_text="${(L)1}"
     printf '%s' "$lowered_text"
+}
+
+evop_prepare_text_match_context() {
+    local text="${1:-}"
+
+    if [[ "$EVOP_TEXT_MATCH_CONTEXT" == "$text" ]]; then
+        return 0
+    fi
+
+    EVOP_TEXT_MATCH_CONTEXT="$text"
+    EVOP_TEXT_MATCH_CONTEXT_LOWERED="$(evop_lowercase "$text")"
+}
+
+evop_lowercase_match_needle() {
+    local text="${1:-}"
+    local lowered_text=""
+
+    if [[ -n ${EVOP_TEXT_MATCH_NEEDLE_CACHE[$text]+set} ]]; then
+        printf '%s' "${EVOP_TEXT_MATCH_NEEDLE_CACHE[$text]}"
+        return 0
+    fi
+
+    lowered_text="$(evop_lowercase "$text")"
+    EVOP_TEXT_MATCH_NEEDLE_CACHE[$text]="$lowered_text"
+    printf '%s' "$lowered_text"
+}
+
+evop_lowered_text_contains_any() {
+    local lowered_text="${1:-}"
+    shift
+    local needle=""
+    local lowered_needle=""
+
+    for needle in "$@"; do
+        lowered_needle="$(evop_lowercase_match_needle "$needle")"
+        if [[ "$lowered_text" == *"$lowered_needle"* ]]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 evop_text_contains_any() {
     local text
     text="$(evop_lowercase "$1")"
     shift
-    local needle
 
-    for needle in "$@"; do
-        if [[ "$text" == *"$(evop_lowercase "$needle")"* ]]; then
-            return 0
-        fi
-    done
+    evop_lowered_text_contains_any "$text" "$@"
+}
 
-    return 1
+evop_prompt_contains_any() {
+    local prompt="${1:-}"
+    shift
+    local lowered_prompt=""
+
+    [[ -n "$prompt" ]] || return 1
+
+    if [[ "$prompt" == "$EVOP_TEXT_MATCH_CONTEXT" ]]; then
+        lowered_prompt="$EVOP_TEXT_MATCH_CONTEXT_LOWERED"
+    else
+        lowered_prompt="$(evop_lowercase "$prompt")"
+    fi
+
+    evop_lowered_text_contains_any "$lowered_prompt" "$@"
 }
 
 evop_detection_file_text() {

@@ -46,7 +46,7 @@ evop_profile_candidate_add_if_prompt_matches() {
     shift 3
 
     [[ -n "$prompt" ]] || return 0
-    if evop_text_contains_any "$prompt" "$@"; then
+    if evop_prompt_contains_any "$prompt" "$@"; then
         evop_profile_candidate_append_unique "$var_name" "$candidate"
     fi
 }
@@ -64,6 +64,9 @@ evop_repo_has_non_shell_runtime_markers() {
         "pyproject.toml" \
         "requirements.txt" \
         "setup.py" \
+        "DESCRIPTION" \
+        "renv.lock" \
+        "NAMESPACE" \
         "Cargo.toml" \
         "go.mod" \
         "Gemfile" \
@@ -76,13 +79,16 @@ evop_repo_has_non_shell_runtime_markers() {
         "pubspec.yaml" \
         "AndroidManifest.xml" \
         "Info.plist" \
-        "CMakeLists.txt"; then
+        "CMakeLists.txt" \
+        "main.tf" \
+        "terraform.tfvars" \
+        "terragrunt.hcl"; then
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_VALUE="1"
         return 0
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.uproject"; then
+    if evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.uproject" "*.Rproj" "*.tf" "*.tfvars"; then
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_VALUE="1"
         return 0
