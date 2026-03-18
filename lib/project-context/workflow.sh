@@ -3,6 +3,35 @@
 evop_detect_task_workflow() {
     local prompt="${1:-}"
 
+    evop_prepare_prompt_facts "$prompt"
+    case "${EVOP_PROMPT_FACTS_TASK_KIND:-}" in
+        review)
+            EVOP_PROJECT_CONTEXT_TASK_KIND="review"
+            EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Inspect the touched paths first, prioritize bugs, regressions, and missing tests, and keep summaries secondary."
+            return 0
+            ;;
+        bugfix)
+            EVOP_PROJECT_CONTEXT_TASK_KIND="bugfix"
+            EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Reproduce or localize the failure path first, apply the smallest coherent fix, and add targeted verification."
+            return 0
+            ;;
+        refactor)
+            EVOP_PROJECT_CONTEXT_TASK_KIND="refactor"
+            EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Preserve behavior, move one boundary at a time, and compare against existing call sites before broad cleanup."
+            return 0
+            ;;
+        performance)
+            EVOP_PROJECT_CONTEXT_TASK_KIND="performance"
+            EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Measure or localize the hotspot first, optimize the smallest hot path, and re-verify correctness after the change."
+            return 0
+            ;;
+        feature)
+            EVOP_PROJECT_CONTEXT_TASK_KIND="feature"
+            EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Find the nearest existing implementation first, extend types, data flow, and tests together, and avoid inventing a parallel pattern."
+            return 0
+            ;;
+    esac
+
     if evop_text_contains_any "$prompt" "review" "code review" "审查" "评审"; then
         EVOP_PROJECT_CONTEXT_TASK_KIND="review"
         EVOP_PROJECT_CONTEXT_TASK_WORKFLOW="Inspect the touched paths first, prioritize bugs, regressions, and missing tests, and keep summaries secondary."
@@ -137,7 +166,7 @@ evop_analyze_project_context() {
     EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER="$(evop_choose_package_manager "$target_dir" "$language_profile" || true)"
     EVOP_PROJECT_CONTEXT_WORKSPACE_MODE="$(evop_detect_workspace_mode "$target_dir")"
 
-    evop_detect_command_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile" "$project_type"
+    evop_detect_command_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile" "$framework_profile" "$project_type"
     evop_detect_structure_hints "$target_dir"
     evop_detect_conventions "$target_dir" "$language_profile"
     evop_detect_automation_hints "$target_dir"

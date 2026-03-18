@@ -794,6 +794,49 @@ assert_contains "$expanded_project_type_output" "pipeline=data-pipeline" "Pipeli
 assert_contains "$expanded_project_type_output" "embedded=embedded-system" "Embedded repos should detect the embedded-system project type"
 pass "Expanded project-type detection"
 
+structured_prompt_fact_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+structured_prompt=$'[Language Adaptation]\nTarget language: csharp\n\n[Project-Type Adaptation]\nTarget project type: cli-tool\n\n[Recommended Workflow]\nTask kind: performance\n'
+
+evop_prepare_profile_detection_candidates "languages" "$tmpdir" "$structured_prompt"
+printf 'languages_mode=%s\n' "$EVOP_PROFILE_CANDIDATE_MODE"
+printf 'languages_candidates=%s\n' "$EVOP_PROFILE_CANDIDATE_LIST"
+
+evop_prepare_profile_detection_candidates "project-types" "$tmpdir" "$structured_prompt"
+printf 'project_types_mode=%s\n' "$EVOP_PROFILE_CANDIDATE_MODE"
+printf 'project_types_candidates=%s\n' "$EVOP_PROFILE_CANDIDATE_LIST"
+
+if evop_detect_language_profile "$tmpdir" "$structured_prompt"; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+
+if evop_detect_project_type "$tmpdir" "$structured_prompt"; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+
+evop_resolve_profiles "$tmpdir" "$structured_prompt" "" "" ""
+printf 'resolved_language_source=%s\n' "$EVOP_RESOLVED_LANGUAGE_SOURCE"
+printf 'resolved_project_source=%s\n' "$EVOP_RESOLVED_PROJECT_SOURCE"
+printf 'task_kind=%s\n' "$EVOP_PROJECT_CONTEXT_TASK_KIND"
+EOF
+)"
+assert_contains "$structured_prompt_fact_output" "languages_mode=filtered" "Structured prompt facts should narrow language candidates"
+assert_contains "$structured_prompt_fact_output" "languages_candidates=csharp" "Structured prompt facts should support exact language profile ids"
+assert_contains "$structured_prompt_fact_output" "project_types_mode=filtered" "Structured prompt facts should narrow project-type candidates"
+assert_contains "$structured_prompt_fact_output" "project_types_candidates=cli-tool" "Structured prompt facts should support exact project-type profile ids"
+assert_contains "$structured_prompt_fact_output" "language=csharp" "Structured prompt facts should drive direct language detection"
+assert_contains "$structured_prompt_fact_output" "project_type=cli-tool" "Structured prompt facts should drive direct project-type detection"
+assert_contains "$structured_prompt_fact_output" "resolved_language_source=prompt" "Structured prompt facts should mark resolved language profiles as prompt-derived"
+assert_contains "$structured_prompt_fact_output" "resolved_project_source=prompt" "Structured prompt facts should mark resolved project types as prompt-derived"
+assert_contains "$structured_prompt_fact_output" "task_kind=performance" "Structured prompt facts should drive workflow task-kind detection"
+pass "Structured prompt facts"
+
 profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
 assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"
 assert_contains "$profiles_summary_output" "shell:" "PROFILES summary should include language entries"

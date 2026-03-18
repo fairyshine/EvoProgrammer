@@ -9,6 +9,8 @@ evop_prepare_framework_profile_candidates() {
     local has_cargo=0
     local has_dotnet=0
 
+    evop_profile_candidate_add_prompt_fact candidates "frameworks" "$prompt"
+
     if evop_directory_has_file_named "$target_dir" "package.json"; then
         has_package_json=1
 

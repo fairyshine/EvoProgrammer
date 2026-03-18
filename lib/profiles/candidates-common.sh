@@ -51,6 +51,34 @@ evop_profile_candidate_add_if_prompt_matches() {
     fi
 }
 
+evop_profile_candidate_add_prompt_fact() {
+    local var_name="$1"
+    local category_dir="$2"
+    local prompt="${3:-}"
+    local candidate=""
+
+    [[ -n "$prompt" ]] || return 0
+    evop_prepare_prompt_facts "$prompt"
+
+    case "$category_dir" in
+        languages)
+            candidate="${EVOP_PROMPT_FACTS_TARGET_LANGUAGE:-}"
+            ;;
+        frameworks)
+            candidate="${EVOP_PROMPT_FACTS_TARGET_FRAMEWORK:-}"
+            ;;
+        project-types)
+            candidate="${EVOP_PROMPT_FACTS_TARGET_PROJECT_TYPE:-}"
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+
+    [[ -n "$candidate" ]] || return 0
+    evop_profile_candidate_append_unique "$var_name" "$candidate"
+}
+
 evop_repo_has_non_shell_runtime_markers() {
     local target_dir="$1"
 

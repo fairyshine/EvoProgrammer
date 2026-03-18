@@ -33,6 +33,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 - `lib/runtime.sh`: filesystem, artifacts, command capture, and path helpers
 - `lib/git.sh`: iteration-scoped git diff snapshots and safe auto-commit helpers
 - `lib/config.sh`: `.evoprogrammer.conf` loading
+- `lib/prompt-facts.sh`: cached structured prompt-fact extraction shared by profile resolution and workflow rebuilding
 - `lib/inspect.sh`: inspect-format validation and stdout/report-file dispatch
 - `lib/status-collect.sh`: status filtering and metadata collection
 - `lib/status-render.sh`: summary/json/env rendering for status output
@@ -146,6 +147,13 @@ detection do not source unrelated profile definitions. Repository-shape checks
 are cached as first-class candidate facts now, which avoids recomputing the
 same shell-CLI classification across language, framework, and project-type
 detection passes in one inspection run.
+
+Structured prompt facts now also live in a small shared helper layer instead of
+being reparsed independently by profile resolution, candidate planning, and
+workflow rebuilding. That lets explicit prompt sections such as
+`[Language Adaptation]`, `[Project-Type Adaptation]`, and
+`[Recommended Workflow]` act as first-class hints for exact profile IDs and task
+kinds, while keeping that parsing work cached to a single pass per prompt.
 
 Prompt keyword matching now also reuses a normalized lowercase prompt context
 across candidate planning and hook-based detection. That keeps language,

@@ -5,6 +5,8 @@ evop_prepare_language_profile_candidates() {
     local prompt="${2:-}"
     local candidates=""
 
+    evop_profile_candidate_add_prompt_fact candidates "languages" "$prompt"
+
     if evop_repo_looks_like_shell_cli "$target_dir"; then
         evop_profile_candidate_append_unique candidates "shell"
         evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "bash" "shell" "shell script" "脚本"

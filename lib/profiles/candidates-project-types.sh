@@ -5,6 +5,8 @@ evop_prepare_project_type_candidates() {
     local prompt="${2:-}"
     local candidates=""
 
+    evop_profile_candidate_add_prompt_fact candidates "project-types" "$prompt"
+
     if evop_repo_looks_like_mobile_app "$target_dir"; then
         evop_profile_candidate_append_unique candidates "mobile-app"
     fi

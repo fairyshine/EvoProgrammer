@@ -15,8 +15,16 @@ evop_resolve_profiles() {
     local requested_language_profile="${3:-}"
     local requested_framework_profile="${4:-}"
     local requested_project_type="${5:-}"
+    local prompt_language_profile=""
+    local prompt_framework_profile=""
+    local prompt_project_type=""
     local started_ms=0
     local total_started_ms=0
+
+    evop_prepare_prompt_facts "$prompt"
+    prompt_language_profile="${EVOP_PROMPT_FACTS_TARGET_LANGUAGE:-}"
+    prompt_framework_profile="${EVOP_PROMPT_FACTS_TARGET_FRAMEWORK:-}"
+    prompt_project_type="${EVOP_PROMPT_FACTS_TARGET_PROJECT_TYPE:-}"
 
     EVOP_RESOLVED_LANGUAGE_PROFILE="$requested_language_profile"
     EVOP_RESOLVED_LANGUAGE_SOURCE="none"
@@ -35,6 +43,9 @@ evop_resolve_profiles() {
 
     if [[ -n "$requested_language_profile" ]]; then
         EVOP_RESOLVED_LANGUAGE_SOURCE="explicit"
+    elif [[ -n "$prompt_language_profile" ]]; then
+        EVOP_RESOLVED_LANGUAGE_PROFILE="$prompt_language_profile"
+        EVOP_RESOLVED_LANGUAGE_SOURCE="prompt"
     else
         started_ms="$(evop_now_millis)"
         if evop_detect_language_profile "$target_dir" "$prompt"; then
@@ -48,6 +59,9 @@ evop_resolve_profiles() {
 
     if [[ -n "$requested_framework_profile" ]]; then
         EVOP_RESOLVED_FRAMEWORK_SOURCE="explicit"
+    elif [[ -n "$prompt_framework_profile" ]]; then
+        EVOP_RESOLVED_FRAMEWORK_PROFILE="$prompt_framework_profile"
+        EVOP_RESOLVED_FRAMEWORK_SOURCE="prompt"
     else
         started_ms="$(evop_now_millis)"
         if evop_detect_framework_profile "$target_dir" "$prompt"; then
@@ -61,6 +75,9 @@ evop_resolve_profiles() {
 
     if [[ -n "$requested_project_type" ]]; then
         EVOP_RESOLVED_PROJECT_SOURCE="explicit"
+    elif [[ -n "$prompt_project_type" ]]; then
+        EVOP_RESOLVED_PROJECT_TYPE="$prompt_project_type"
+        EVOP_RESOLVED_PROJECT_SOURCE="prompt"
     else
         started_ms="$(evop_now_millis)"
         if evop_detect_project_type "$target_dir" "$prompt"; then
@@ -107,6 +124,8 @@ evop_print_resolved_profile() {
         printf ' (auto-detected)'
     elif [[ "$source" == "context-file" ]]; then
         printf ' (from context file)'
+    elif [[ "$source" == "prompt" ]]; then
+        printf ' (from prompt)'
     fi
     printf '\n'
 }

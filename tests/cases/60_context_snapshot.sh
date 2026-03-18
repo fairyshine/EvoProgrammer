@@ -17,6 +17,11 @@ assert_contains "$inspect_snapshot_prompt_output" "Measure or localize the hotsp
 assert_contains "$inspect_snapshot_prompt_output" "Package manager: pnpm" "INSPECT prompt should retain repo context from the snapshot"
 pass "INSPECT context snapshot reuse"
 
+inspect_snapshot_structured_prompt_output="$(run_expect_success "INSPECT should honor structured task-kind hints when reusing a context snapshot" "$INSPECT_SCRIPT" --context-file "$context_snapshot" --prompt $'[Recommended Workflow]\nTask kind: performance\n' --format prompt)"
+assert_contains "$inspect_snapshot_structured_prompt_output" "Task kind: performance" "INSPECT prompt should honor structured task kinds from the current prompt"
+assert_contains "$inspect_snapshot_structured_prompt_output" "Measure or localize the hotspot first" "INSPECT prompt should rebuild performance guidance from structured prompt facts"
+pass "INSPECT structured snapshot prompt reuse"
+
 verify_snapshot_output="$(run_expect_success "VERIFY should reuse a context snapshot without an explicit target dir" "$VERIFY_SCRIPT" --context-file "$context_snapshot" --list)"
 assert_contains "$verify_snapshot_output" "Target directory: $TEST_CONTEXT_DIR" "VERIFY should adopt the target directory from the context snapshot"
 assert_contains "$verify_snapshot_output" "lint: pnpm lint" "VERIFY should reuse the detected lint command from the snapshot"

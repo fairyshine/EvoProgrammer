@@ -17,6 +17,14 @@ assert_contains "$inspect_prompt_output" "[Recommended Workflow]" "INSPECT promp
 assert_contains "$inspect_prompt_output" "Operational surfaces:" "INSPECT prompt mode should render operational surfaces"
 pass "INSPECT prompt"
 
+prompt_adaptation_dir="$TEST_TMPDIR/prompt-adaptation"
+mkdir -p "$prompt_adaptation_dir"
+inspect_prompt_adaptation_output="$(run_expect_success "INSPECT should honor structured prompt adaptations" "$INSPECT_SCRIPT" --target-dir "$prompt_adaptation_dir" --prompt $'[Language Adaptation]\nTarget language: csharp\n\n[Project-Type Adaptation]\nTarget project type: cli-tool\n\n[Recommended Workflow]\nTask kind: performance\n')"
+assert_contains "$inspect_prompt_adaptation_output" "Language profile: csharp (from prompt)" "INSPECT should surface prompt-derived language profiles"
+assert_contains "$inspect_prompt_adaptation_output" "Project type: cli-tool (from prompt)" "INSPECT should surface prompt-derived project types"
+assert_contains "$inspect_prompt_adaptation_output" "Task kind: performance" "INSPECT should honor structured prompt task kinds"
+pass "INSPECT structured prompt adaptations"
+
 inspect_commands_output="$(run_expect_success "INSPECT should render a focused command report" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format commands)"
 assert_contains "$inspect_commands_output" "Suggested commands:" "INSPECT commands mode should print the command heading"
 assert_contains "$inspect_commands_output" "Lint: pnpm lint [package.json script]" "INSPECT commands mode should include command sources"

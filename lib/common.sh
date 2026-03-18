@@ -111,6 +111,14 @@ evop_is_blank() {
     [[ "$value" =~ ^[[:space:]]*$ ]]
 }
 
+evop_trim_whitespace() {
+    local value="${1:-}"
+
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
 evop_decode_env_value() {
     local encoded_value="$1"
     local decoded_value=""
