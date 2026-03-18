@@ -2,7 +2,7 @@
 
 evop_validate_inspect_format() {
     case "$1" in
-        summary|commands|diagnostics|profiles|doctor|prompt|timings|json|env)
+        summary|commands|diagnostics|profiles|doctor|prompt|timings|json|env|agent|agent-json|agent-env)
             return 0
             ;;
         *)
@@ -43,6 +43,15 @@ evop_print_project_inspection_output() {
             ;;
         env)
             evop_print_project_inspection_env
+            ;;
+        agent)
+            evop_print_project_agent_catalog_report
+            ;;
+        agent-json)
+            evop_render_agent_catalog_bundle_json
+            ;;
+        agent-env)
+            evop_print_project_agent_catalog_env
             ;;
     esac
 }

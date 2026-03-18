@@ -105,6 +105,8 @@ EvoProgrammer doctor --target-dir /path/to/project
 # Inspect what EvoProgrammer detected in a repo
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format commands
+EvoProgrammer inspect --target-dir /path/to/project --format agent
+EvoProgrammer inspect --target-dir /path/to/project --format agent-json
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
@@ -199,6 +201,9 @@ calls an agent:
 ```zsh
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --format commands
+EvoProgrammer inspect --target-dir /path/to/project --format agent
+EvoProgrammer inspect --target-dir /path/to/project --format agent-json
+EvoProgrammer inspect --target-dir /path/to/project --format agent-env
 EvoProgrammer inspect --target-dir /path/to/project --prompt "fix the failing tests" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
@@ -234,6 +239,12 @@ want to understand or debug auto-detection decisions.
 `inspect --format commands` prints a tighter command-only view when you just
 want the inferred dev/build/test/lint/typecheck plan without the rest of the
 repository analysis.
+
+`inspect --format agent`, `agent-json`, and `agent-env` expose a lighter-weight
+agent-facing catalog of repo command surfaces, invocable helper programs, test
+harnesses, and support CLIs. Those formats intentionally skip the broader
+architecture and workflow report so wrappers can fetch the callable tool menu
+with less detection work.
 
 `inspect --format env` exports the same resolved context as shell-safe
 `EVOP_INSPECT_*` assignments, including detected workspace packages for

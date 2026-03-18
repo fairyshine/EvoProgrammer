@@ -44,6 +44,14 @@ assert_contains "$inspect_commands_output" "Lint: pnpm lint [package.json script
 assert_not_contains "$inspect_commands_output" "Architecture hints:" "INSPECT commands mode should stay focused on commands"
 pass "INSPECT commands"
 
+inspect_agent_output="$(run_expect_success "INSPECT should render an agent-facing command catalog" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format agent)"
+assert_contains "$inspect_agent_output" "Agent command catalog:" "INSPECT agent mode should print the agent command catalog heading"
+assert_contains "$inspect_agent_output" "./bin/context-tool [repo_executable; repo executable]" "INSPECT agent mode should show structured repo executable entries"
+assert_contains "$inspect_agent_output" "sh ./scripts/bootstrap.sh [repo_helper_program; repo helper program]" "INSPECT agent mode should show structured helper program entries"
+assert_contains "$inspect_agent_output" "git [host cli]" "INSPECT agent mode should include agent support tools"
+assert_not_contains "$inspect_agent_output" "Suggested commands:" "INSPECT agent mode should skip the general command plan"
+pass "INSPECT agent"
+
 inspect_json_output="$(run_expect_success "INSPECT should render machine-readable json context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format json)"
 inspect_json_summary="$(INSPECT_JSON="$inspect_json_output" python3 - <<'PY'
 import json
@@ -84,6 +92,28 @@ assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should i
 assert_contains "$inspect_json_summary" "profile_detection_ok=True" "INSPECT json should include profile-detection candidates"
 pass "INSPECT json"
 
+inspect_agent_json_output="$(run_expect_success "INSPECT should render agent-catalog json context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format agent-json)"
+inspect_agent_json_summary="$(INSPECT_AGENT_JSON="$inspect_agent_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["INSPECT_AGENT_JSON"])
+print(data["language_profile"]["name"])
+print(data["package_manager"])
+print("\n".join(f"{item['kind']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
+print("\n".join(data["agent_support_tools"]))
+print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
+print(f"commands_key={'commands' in data}")
+PY
+)"
+assert_contains "$inspect_agent_json_summary" "typescript" "INSPECT agent-json should include the detected language profile"
+assert_contains "$inspect_agent_json_summary" "pnpm" "INSPECT agent-json should include the package manager"
+assert_contains "$inspect_agent_json_summary" "repo_helper_program|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT agent-json should include structured helper program entries"
+assert_contains "$inspect_agent_json_summary" "git [host cli]" "INSPECT agent-json should include support tools"
+assert_contains "$inspect_agent_json_summary" "timings_ok=True" "INSPECT agent-json should include timing diagnostics"
+assert_contains "$inspect_agent_json_summary" "commands_key=False" "INSPECT agent-json should stay focused on agent-facing data"
+pass "INSPECT agent-json"
+
 inspect_env_summary="$(
     ROOT_DIR="$ROOT_DIR" INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
 set -euo pipefail
@@ -116,6 +146,25 @@ assert_contains "$inspect_env_summary" "text_cache_ok=true" "INSPECT env should 
 assert_contains "$inspect_env_summary" "command_cache_ok=true" "INSPECT env should export command-availability cache entry counts"
 assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
 pass "INSPECT env"
+
+inspect_agent_env_summary="$(
+    ROOT_DIR="$ROOT_DIR" INSPECT_SCRIPT="$INSPECT_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format agent-env)"
+
+printf '%s\n' "$EVOP_AGENT_CATALOG_LANGUAGE_PROFILE"
+printf '%s\n' "$EVOP_AGENT_CATALOG_PACKAGE_MANAGER"
+printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_CATALOG"
+printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOLS"
+printf 'timings_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_TIMING_ANALYZE_CONTEXT_MS" =~ ^[0-9]+$ && "$EVOP_AGENT_CATALOG_TIMING_FINALIZE_ANALYSIS_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$inspect_agent_env_summary" "typescript" "INSPECT agent-env should export the detected language profile"
+assert_contains "$inspect_agent_env_summary" "pnpm" "INSPECT agent-env should export the package manager"
+assert_contains "$inspect_agent_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT agent-env should export the structured command catalog"
+assert_contains "$inspect_agent_env_summary" "git [host cli]" "INSPECT agent-env should export support tools"
+assert_contains "$inspect_agent_env_summary" "timings_ok=true" "INSPECT agent-env should export timing diagnostics"
+pass "INSPECT agent-env"
 
 setup_node_monorepo_workspace
 monorepo_inspect_output="$(run_expect_success "INSPECT should surface workspace package roots and recursive commands" "$INSPECT_SCRIPT" --target-dir "$TEST_NODE_MONOREPO_DIR")"

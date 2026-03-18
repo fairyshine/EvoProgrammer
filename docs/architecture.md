@@ -217,6 +217,12 @@ reports, and snapshot reuse aligned on which host CLIs are actually callable
 for search, shell scripting, package management, runtimes, and container
 operations without repeating `command -v` probes across the same execution.
 
+`INSPECT.sh` now also exposes that agent-facing tool menu through dedicated
+`agent`, `agent-json`, and `agent-env` output modes. Those modes use a reduced
+analysis path that only resolves the package manager, workspace package roots,
+agent command catalog, and support tools, so wrappers can fetch callable
+surfaces without paying for the full repository architecture report.
+
 ## Command Model
 
 Commands are treated as first-class slots:

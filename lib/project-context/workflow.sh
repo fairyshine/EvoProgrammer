@@ -187,3 +187,17 @@ evop_analyze_project_context() {
 
     evop_rebuild_project_context_workflow "$target_dir" "$prompt" "$language_profile" "$framework_profile" "$project_type"
 }
+
+evop_analyze_agent_context() {
+    local target_dir="$1"
+    local language_profile="${2:-}"
+
+    evop_reset_project_context
+    evop_use_project_context_facts_dir "$target_dir"
+    EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER="$(evop_choose_package_manager "$target_dir" "$language_profile" || true)"
+    EVOP_PROJECT_CONTEXT_WORKSPACE_MODE="$(evop_detect_workspace_mode "$target_dir")"
+
+    evop_detect_workspace_package_hints "$target_dir"
+    evop_detect_agent_tool_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    evop_detect_agent_support_tool_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile"
+}

@@ -219,3 +219,53 @@ evop_finalize_analysis_context() {
     artifacts_root="$(evop_resolve_artifacts_root "$TARGET_DIR" "$ARTIFACTS_DIR")"
     EVOP_PROJECT_CONTEXT_TIMING_FINALIZE_ANALYSIS_MS="$(evop_elapsed_millis_since "$started_ms")"
 }
+
+evop_finalize_agent_analysis_context() {
+    local function_started_ms=0
+    local started_ms=0
+    local resolved_prompt=""
+
+    evop_reset_project_context_timings
+    function_started_ms="$(evop_now_millis)"
+    evop_load_project_config "$TARGET_DIR"
+    resolved_prompt="$(evop_resolve_optional_prompt "$PROMPT" "$PROMPT_FILE")"
+    if evop_try_finalize_context_from_snapshot "$resolved_prompt"; then
+        return 0
+    fi
+
+    evop_validate_agent "$AGENT"
+    evop_validate_language_profile "$LANGUAGE_PROFILE"
+    evop_validate_framework_profile "$FRAMEWORK_PROFILE"
+    evop_validate_project_type "$PROJECT_TYPE"
+    evop_require_directory "$TARGET_DIR"
+    target_dir_abs="$(evop_resolve_physical_dir "$TARGET_DIR")"
+
+    EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS=0
+    EVOP_PROJECT_CONTEXT_TIMING_RESOLVE_PROFILES_MS=0
+
+    if [[ -n "$LANGUAGE_PROFILE" ]]; then
+        LANGUAGE_PROFILE_SOURCE="explicit"
+    else
+        if evop_detect_language_profile "$target_dir_abs" "$resolved_prompt"; then
+            LANGUAGE_PROFILE="$EVOP_DETECTED_PROFILE"
+            if [[ -n "${EVOP_PROMPT_FACTS_TARGET_LANGUAGE:-}" ]]; then
+                LANGUAGE_PROFILE_SOURCE="prompt"
+            else
+                LANGUAGE_PROFILE_SOURCE="auto"
+            fi
+        else
+            LANGUAGE_PROFILE=""
+            LANGUAGE_PROFILE_SOURCE="none"
+        fi
+    fi
+
+    artifacts_root="$(evop_resolve_artifacts_root "$TARGET_DIR" "$ARTIFACTS_DIR")"
+
+    started_ms="$(evop_now_millis)"
+    evop_analyze_agent_context "$target_dir_abs" "$LANGUAGE_PROFILE"
+    EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS="$(evop_elapsed_millis_since "$started_ms")"
+    EVOP_PROJECT_CONTEXT_TIMING_FINALIZE_ANALYSIS_MS="$(evop_elapsed_millis_since "$function_started_ms")"
+}

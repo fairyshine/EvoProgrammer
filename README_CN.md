@@ -105,6 +105,8 @@ EvoProgrammer doctor --target-dir /path/to/project
 # 查看仓库自动检测结果
 EvoProgrammer inspect --target-dir /path/to/project
 EvoProgrammer inspect --target-dir /path/to/project --format commands
+EvoProgrammer inspect --target-dir /path/to/project --format agent
+EvoProgrammer inspect --target-dir /path/to/project --format agent-json
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
 EvoProgrammer inspect --target-dir /path/to/project --format profiles
@@ -198,6 +200,9 @@ bootstrap shim 运行 `shellcheck`，其余脚本统一使用 `zsh -n` 做语法
 ```zsh
 EvoProgrammer inspect --target-dir /path/to/project --format summary
 EvoProgrammer inspect --target-dir /path/to/project --format commands
+EvoProgrammer inspect --target-dir /path/to/project --format agent
+EvoProgrammer inspect --target-dir /path/to/project --format agent-json
+EvoProgrammer inspect --target-dir /path/to/project --format agent-env
 EvoProgrammer inspect --target-dir /path/to/project --prompt "修复失败测试" --format prompt
 EvoProgrammer inspect --target-dir /path/to/project --format json
 EvoProgrammer inspect --target-dir /path/to/project --format diagnostics
@@ -229,6 +234,11 @@ EvoProgrammer verify --target-dir /path/to/project --report-file ./verify-report
 
 `inspect --format commands` 会输出一个更聚焦的命令视图，适合只看
 dev/build/test/lint/typecheck 计划而不关心完整仓库分析的时候使用。
+
+`inspect --format agent`、`agent-json` 和 `agent-env` 会输出更轻量的
+agent 命令目录，聚焦仓库可调用入口、辅助程序、测试脚本和宿主 CLI。
+这些格式会跳过更宽的架构和工作流报告，方便 wrapper 或 coding agent
+更快拿到可执行工具清单。
 
 `inspect --format env` 会把同一份检测上下文导出为可直接 `source` 的
 `EVOP_INSPECT_*` 环境变量，monorepo 下还会带上检测到的 workspace packages，
