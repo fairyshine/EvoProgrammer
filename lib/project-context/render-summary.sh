@@ -35,10 +35,14 @@ evop_print_project_command_report() {
 evop_print_project_agent_catalog_report() {
     local output_kind="${1:-all}"
     local capability_filter="${2:-all}"
+    local filtered_catalog=""
     local kind=""
     local capability=""
     local command=""
     local source=""
+    local name=""
+    local path=""
+    local usage=""
 
     [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
     [[ -n "${AGENT:-}" ]] && evop_print_key_value "Agent:" "$AGENT"
@@ -52,13 +56,14 @@ evop_print_project_agent_catalog_report() {
             evop_print_list_item "$line"
         done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
+    filtered_catalog="$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
     if [[ "$output_kind" != "support" && -n "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" ]]; then
         evop_print_section "Agent command catalog:"
-        if [[ -n "$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")" ]]; then
+        if [[ -n "$filtered_catalog" ]]; then
             while IFS=$'\t' read -r kind capability command source; do
                 [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
                 evop_print_list_item "$command [$kind; $capability; $source]"
-            done <<<"$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
+            done <<<"$filtered_catalog"
         else
             evop_print_list_item "none"
         fi
@@ -71,9 +76,9 @@ evop_print_project_agent_catalog_report() {
     fi
     if [[ "$output_kind" != "commands" && -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG" ]]; then
         evop_print_section "Agent support tool catalog:"
-        while IFS=$'\t' read -r name path source; do
-            [[ -n "$name" && -n "$path" && -n "$source" ]] || continue
-            evop_print_list_item "$name -> $path [$source]"
+        while IFS=$'\t' read -r name path source capability usage; do
+            [[ -n "$name" && -n "$path" && -n "$source" && -n "$capability" && -n "$usage" ]] || continue
+            evop_print_list_item "$name -> $path [$capability; $source; $usage]"
         done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG"
     fi
 }

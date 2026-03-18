@@ -239,7 +239,11 @@ The support-tool path now also shares one candidate-collection pass between the
 structured catalog and the flattened support-tool list. That keeps agent-facing
 summary output, JSON/env export, and wrapper-oriented catalog output aligned
 while trimming duplicate command-probe logic from the reduced inspection hot
-path.
+path. The structured catalog now also carries a capability label and short
+usage hint per tool, so coding agents and wrappers can tell which discovered
+CLI is meant for search, filesystem inspection, shell execution, JSON
+inspection, package management, and similar tasks without relying on brittle
+name heuristics.
 
 ## Command Model
 

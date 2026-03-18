@@ -101,15 +101,21 @@ evop_filter_agent_command_catalog_lines() {
 evop_render_agent_command_catalog_json() {
     local text="$1"
     local capability_filter="${2:-all}"
-    local output="["
     local filtered_text=""
+
+    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
+    evop_render_agent_command_catalog_json_from_filtered "$filtered_text"
+}
+
+evop_render_agent_command_catalog_json_from_filtered() {
+    local filtered_text="$1"
+    local output="["
     local kind=""
     local capability=""
     local command=""
     local source=""
     local needs_comma=0
 
-    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
     while IFS=$'\t' read -r kind capability command source; do
         [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
         if (( needs_comma == 1 )); then
@@ -130,13 +136,19 @@ evop_render_agent_tool_lines_from_catalog() {
     local text="$1"
     local capability_filter="${2:-all}"
     local filtered_text=""
+
+    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
+    evop_render_agent_tool_lines_from_filtered_catalog "$filtered_text"
+}
+
+evop_render_agent_tool_lines_from_filtered_catalog() {
+    local filtered_text="$1"
     local kind=""
     local capability=""
     local command=""
     local source=""
     local output=""
 
-    filtered_text="$(evop_filter_agent_command_catalog_lines "$text" "$capability_filter")"
     while IFS=$'\t' read -r kind capability command source; do
         [[ -n "$command" && -n "$source" ]] || continue
         output+="$command [$source]"$'\n'
@@ -151,16 +163,20 @@ evop_render_agent_support_tool_catalog_json() {
     local name=""
     local path=""
     local source=""
+    local capability=""
+    local usage=""
     local needs_comma=0
 
-    while IFS=$'\t' read -r name path source; do
-        [[ -n "$name" && -n "$path" && -n "$source" ]] || continue
+    while IFS=$'\t' read -r name path source capability usage; do
+        [[ -n "$name" && -n "$path" && -n "$source" && -n "$capability" && -n "$usage" ]] || continue
         if (( needs_comma == 1 )); then
             output+=", "
         fi
         output+="{\"name\": $(evop_render_json_string "$name"), \"path\": "
         output+="$(evop_render_json_string "$path")"
-        output+=", \"source\": $(evop_render_json_string "$source")}"
+        output+=", \"source\": $(evop_render_json_string "$source")"
+        output+=", \"capability\": $(evop_render_json_string "$capability")"
+        output+=", \"usage\": $(evop_render_json_string "$usage")}"
         needs_comma=1
     done <<<"$text"
 
@@ -171,6 +187,7 @@ evop_render_agent_support_tool_catalog_json() {
 evop_render_agent_catalog_bundle_json() {
     local output_kind="${1:-all}"
     local capability_filter="${2:-all}"
+    local filtered_command_catalog=""
 
     printf '{\n'
     printf '  "target_dir": %s,\n' "$(evop_render_json_string_or_null "${TARGET_DIR:-}")"
@@ -187,8 +204,9 @@ evop_render_agent_catalog_bundle_json() {
         printf '  "agent_command_catalog": [],\n'
         printf '  "agent_tools": [],\n'
     else
-        printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
-        printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$(evop_render_agent_tool_lines_from_catalog "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")")"
+        filtered_command_catalog="$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
+        printf '  "agent_command_catalog": %s,\n' "$(evop_render_agent_command_catalog_json_from_filtered "$filtered_command_catalog")"
+        printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$(evop_render_agent_tool_lines_from_filtered_catalog "$filtered_command_catalog")")"
     fi
     if [[ "$output_kind" == "commands" ]]; then
         printf '  "agent_support_tool_catalog": [],\n'

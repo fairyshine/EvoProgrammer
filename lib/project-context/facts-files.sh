@@ -529,6 +529,8 @@ evop_append_agent_support_tool_catalog_entry() {
     local var_name="$1"
     local command_name="$2"
     local source_label="$3"
+    local capability="$4"
+    local usage_hint="$5"
     local current="${(P)var_name:-}"
     local entry=""
 
@@ -536,7 +538,7 @@ evop_append_agent_support_tool_catalog_entry() {
         return 0
     fi
 
-    entry="$command_name"$'\t'"$EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT"$'\t'"$source_label"
+    entry="$command_name"$'\t'"$EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT"$'\t'"$source_label"$'\t'"$capability"$'\t'"$usage_hint"
     case $'\n'"$current"$'\n' in
         *$'\n'"$entry"$'\n'*)
             return 0
@@ -554,12 +556,14 @@ evop_append_agent_support_tool_candidate() {
     local var_name="$1"
     local command_name="$2"
     local source_label="$3"
+    local capability="$4"
+    local usage_hint="$5"
     local current="${(P)var_name:-}"
     local entry=""
 
-    [[ -n "$command_name" && -n "$source_label" ]] || return 0
+    [[ -n "$command_name" && -n "$source_label" && -n "$capability" && -n "$usage_hint" ]] || return 0
 
-    entry="$command_name"$'\t'"$source_label"
+    entry="$command_name"$'\t'"$source_label"$'\t'"$capability"$'\t'"$usage_hint"
     case $'\n'"$current"$'\n' in
         *$'\n'"$entry"$'\n'*)
             return 0
@@ -579,78 +583,78 @@ evop_collect_agent_support_tool_candidates() {
     local language_profile="${3:-}"
     local output=""
 
-    evop_append_agent_support_tool_candidate output git "host cli"
-    evop_append_agent_support_tool_candidate output zsh "shell runtime"
-    evop_append_agent_support_tool_candidate output sh "shell runtime"
-    evop_append_agent_support_tool_candidate output find "filesystem cli"
-    evop_append_agent_support_tool_candidate output xargs "pipeline cli"
-    evop_append_agent_support_tool_candidate output sed "text cli"
-    evop_append_agent_support_tool_candidate output awk "text cli"
+    evop_append_agent_support_tool_candidate output git "host cli" "vcs" "inspect repository state and record commits"
+    evop_append_agent_support_tool_candidate output zsh "shell runtime" "shell" "run repo shell entrypoints and zsh automation"
+    evop_append_agent_support_tool_candidate output sh "shell runtime" "shell" "run POSIX shell scripts and portable snippets"
+    evop_append_agent_support_tool_candidate output find "filesystem cli" "filesystem" "walk the repository tree by path or type"
+    evop_append_agent_support_tool_candidate output xargs "pipeline cli" "pipeline" "fan commands out across piped file lists"
+    evop_append_agent_support_tool_candidate output sed "text cli" "text" "apply focused line-oriented text transforms"
+    evop_append_agent_support_tool_candidate output awk "text cli" "text" "extract or reshape structured text output"
 
     if evop_command_available_cached rg; then
-        evop_append_agent_support_tool_candidate output rg "search cli"
+        evop_append_agent_support_tool_candidate output rg "search cli" "search" "prefer for fast text and file discovery"
     else
-        evop_append_agent_support_tool_candidate output grep "search cli"
+        evop_append_agent_support_tool_candidate output grep "search cli" "search" "fallback text search when rg is unavailable"
     fi
 
     if [[ -f "$target_dir/package.json" ]]; then
-        evop_append_agent_support_tool_candidate output jq "json cli"
-        evop_append_agent_support_tool_candidate output node "language runtime"
+        evop_append_agent_support_tool_candidate output jq "json cli" "json" "inspect or rewrite JSON command output"
+        evop_append_agent_support_tool_candidate output node "language runtime" "runtime" "run JavaScript helpers and repo-local Node programs"
     fi
 
     if [[ -f "$target_dir/Makefile" || -f "$target_dir/makefile" ]]; then
-        evop_append_agent_support_tool_candidate output make "build tool"
+        evop_append_agent_support_tool_candidate output make "build tool" "automation" "invoke declared Makefile targets directly"
     fi
 
     if [[ -f "$target_dir/Dockerfile" || -f "$target_dir/docker-compose.yml" || -f "$target_dir/docker-compose.yaml" || -f "$target_dir/compose.yml" || -f "$target_dir/compose.yaml" ]]; then
-        evop_append_agent_support_tool_candidate output docker "container cli"
+        evop_append_agent_support_tool_candidate output docker "container cli" "container" "build images or run declared container workflows"
     fi
 
     case "$package_manager" in
         pnpm|yarn|npm|bun|poetry|uv|cargo|go|composer|gradle|maven|dotnet|flutter|dart|mix|clojure|leiningen|stack|cabal|julia|luarocks|lua|zig|terraform|swift|bundler|cmake|r|python)
-            evop_append_agent_support_tool_candidate output "$package_manager" "package manager"
+            evop_append_agent_support_tool_candidate output "$package_manager" "package manager" "package-manager" "install dependencies and run repository-managed tasks"
             ;;
     esac
 
     case "$language_profile" in
         javascript|typescript)
-            evop_append_agent_support_tool_candidate output node "language runtime"
+            evop_append_agent_support_tool_candidate output node "language runtime" "runtime" "run JavaScript helpers and repo-local Node programs"
             ;;
         python)
-            evop_append_agent_support_tool_candidate output python3 "language runtime"
+            evop_append_agent_support_tool_candidate output python3 "language runtime" "runtime" "run Python helpers and one-off diagnostics"
             ;;
         ruby)
-            evop_append_agent_support_tool_candidate output ruby "language runtime"
+            evop_append_agent_support_tool_candidate output ruby "language runtime" "runtime" "run Ruby helpers and task scripts"
             ;;
         php)
-            evop_append_agent_support_tool_candidate output php "language runtime"
+            evop_append_agent_support_tool_candidate output php "language runtime" "runtime" "run PHP entrypoints and utilities"
             ;;
         go)
-            evop_append_agent_support_tool_candidate output go "language runtime"
+            evop_append_agent_support_tool_candidate output go "language runtime" "runtime" "run Go tools or module-aware commands"
             ;;
         rust)
-            evop_append_agent_support_tool_candidate output cargo "language runtime"
+            evop_append_agent_support_tool_candidate output cargo "language runtime" "runtime" "run Cargo-managed tools and Rust automation"
             ;;
         java|kotlin)
-            evop_append_agent_support_tool_candidate output java "language runtime"
+            evop_append_agent_support_tool_candidate output java "language runtime" "runtime" "run JVM utilities and generated tooling"
             ;;
         csharp|fsharp|visual-basic)
-            evop_append_agent_support_tool_candidate output dotnet "language runtime"
+            evop_append_agent_support_tool_candidate output dotnet "language runtime" "runtime" "run dotnet tools and project entrypoints"
             ;;
         dart)
-            evop_append_agent_support_tool_candidate output dart "language runtime"
+            evop_append_agent_support_tool_candidate output dart "language runtime" "runtime" "run Dart tooling and scripts"
             ;;
         elixir)
-            evop_append_agent_support_tool_candidate output elixir "language runtime"
+            evop_append_agent_support_tool_candidate output elixir "language runtime" "runtime" "run Elixir scripts and Mix-backed helpers"
             ;;
         swift)
-            evop_append_agent_support_tool_candidate output swift "language runtime"
+            evop_append_agent_support_tool_candidate output swift "language runtime" "runtime" "run Swift package tools and scripts"
             ;;
         lua)
-            evop_append_agent_support_tool_candidate output lua "language runtime"
+            evop_append_agent_support_tool_candidate output lua "language runtime" "runtime" "run Lua scripts and helper programs"
             ;;
         terraform)
-            evop_append_agent_support_tool_candidate output terraform "language runtime"
+            evop_append_agent_support_tool_candidate output terraform "language runtime" "runtime" "run Terraform planning and validation commands"
             ;;
     esac
 
@@ -675,10 +679,11 @@ evop_project_agent_support_tools_cached() {
         return 0
     fi
 
-    while IFS=$'\t' read -r tool_name source_label; do
+    evop_project_agent_support_tool_catalog_cached "$target_dir" "$package_manager" "$language_profile" >/dev/null
+    while IFS=$'\t' read -r tool_name resolved_path source_label capability usage_hint; do
         [[ -n "$tool_name" && -n "$source_label" ]] || continue
-        evop_append_agent_support_tool_if_available output "$tool_name" "$source_label"
-    done <<<"$(evop_collect_agent_support_tool_candidates "$target_dir" "$package_manager" "$language_profile")"
+        evop_append_unique_multiline_value output "$tool_name [$source_label]"
+    done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT"
 
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT="$output"
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_CACHE "$cache_key" "$output"
@@ -701,9 +706,9 @@ evop_project_agent_support_tool_catalog_cached() {
         return 0
     fi
 
-    while IFS=$'\t' read -r tool_name source_label; do
-        [[ -n "$tool_name" && -n "$source_label" ]] || continue
-        evop_append_agent_support_tool_catalog_entry output "$tool_name" "$source_label"
+    while IFS=$'\t' read -r tool_name source_label capability usage_hint; do
+        [[ -n "$tool_name" && -n "$source_label" && -n "$capability" && -n "$usage_hint" ]] || continue
+        evop_append_agent_support_tool_catalog_entry output "$tool_name" "$source_label" "$capability" "$usage_hint"
     done <<<"$(evop_collect_agent_support_tool_candidates "$target_dir" "$package_manager" "$language_profile")"
 
     EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG_RESULT="$output"

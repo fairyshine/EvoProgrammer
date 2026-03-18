@@ -25,6 +25,12 @@ evop_print_project_inspection_env() {
         done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
     )"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOL_CAPABILITIES" "$(
+        while IFS=$'\t' read -r name path source capability usage; do
+            [[ -n "$name" && -n "$capability" ]] || continue
+            printf '%s\t%s\n' "$name" "$capability"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
+    )"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
 
@@ -106,9 +112,16 @@ evop_print_project_agent_catalog_env() {
     fi
     if [[ "$output_kind" == "commands" ]]; then
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CAPABILITIES" ""
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOLS" ""
     else
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CAPABILITIES" "$(
+            while IFS=$'\t' read -r name path source capability usage; do
+                [[ -n "$name" && -n "$capability" ]] || continue
+                printf '%s\t%s\n' "$name" "$capability"
+            done <<<"${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
+        )"
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
     fi
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TIMING_ANALYZE_CONTEXT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_ANALYZE_CONTEXT_MS:-0}"
