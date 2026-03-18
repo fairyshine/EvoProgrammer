@@ -47,6 +47,7 @@ mixing detection, prompt rendering, and command execution in the same path.
 
 - `lib/profiles/detect.sh`: profile entrypoints
 - `lib/profiles/candidates-common.sh`: shared candidate state and shell-CLI prefilters
+- `lib/profiles/ecosystem-facts.sh`: cached manifest-text probes shared by candidate planning and repo-shape heuristics
 - `lib/profiles/repo-shape.sh`: cached repository-shape heuristics shared by candidate planning and detect hooks
 - `lib/profiles/candidates-languages.sh`: language candidate planning
 - `lib/profiles/candidates-frameworks.sh`: framework candidate planning
@@ -73,6 +74,12 @@ duplicated across project-type candidate planning and individual detect hooks.
 That keeps CLI-tool, backend-service, desktop-app, and game-project
 classification aligned while still allowing prompt-driven overrides when the
 repo shape is ambiguous.
+
+Manifest-level ecosystem probes now also live in their own helper layer. That
+keeps Node, Python, Cargo, Go, Composer, Gem, Mix, and JVM dependency checks
+cached and reusable across framework detection, repo-shape inference, and new
+ecosystem support such as Astro, Nuxt, Phoenix, Scala, Lua, and infrastructure
+repositories without scattering repeated text scans through multiple modules.
 
 ### 4. Project inspection
 

@@ -15,10 +15,16 @@ assert_contains "$profile_catalog_output" " cpp " "Profile catalog should expose
 assert_contains "$profile_catalog_output" "languages=c " "Profile catalog should expose the C language profile"
 assert_contains "$profile_catalog_output" "dart" "Profile catalog should expose the Dart language profile"
 assert_contains "$profile_catalog_output" "elixir" "Profile catalog should expose the Elixir language profile"
+assert_contains "$profile_catalog_output" "scala" "Profile catalog should expose the Scala language profile"
+assert_contains "$profile_catalog_output" "lua" "Profile catalog should expose the Lua language profile"
 assert_contains "$profile_catalog_output" "frameworks=actix-web" "Profile catalog should expose framework profiles"
 assert_contains "$profile_catalog_output" "flutter" "Profile catalog should expose the Flutter framework profile"
+assert_contains "$profile_catalog_output" "astro" "Profile catalog should expose the Astro framework profile"
+assert_contains "$profile_catalog_output" "nuxt" "Profile catalog should expose the Nuxt framework profile"
+assert_contains "$profile_catalog_output" "phoenix" "Profile catalog should expose the Phoenix framework profile"
 assert_contains "$profile_catalog_output" "project-types=ai-agent" "Profile catalog should expose project-type profiles"
 assert_contains "$profile_catalog_output" "mobile-app" "Profile catalog should expose the mobile-app project type"
+assert_contains "$profile_catalog_output" "infrastructure" "Profile catalog should expose the infrastructure project type"
 pass "Profile catalog"
 
 profile_hook_output="$(
@@ -284,6 +290,49 @@ EOF
 assert_contains "$elixir_profile_output" "language=elixir" "Elixir repos should detect the Elixir language profile"
 pass "Elixir profile detection"
 
+phoenix_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/lib/demo_web"
+cat >"$tmpdir/mix.exs" <<'MIX'
+defmodule Demo.MixProject do
+  def project do
+    [
+      app: :demo,
+      deps: deps()
+    ]
+  end
+
+  defp deps do
+    [
+      {:phoenix, "~> 1.7"}
+    ]
+  end
+end
+MIX
+printf 'defmodule DemoWeb.Router do\nend\n' >"$tmpdir/lib/demo_web/router.ex"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$phoenix_profile_output" "language=elixir" "Phoenix repos should keep the Elixir language profile"
+assert_contains "$phoenix_profile_output" "framework=phoenix" "Phoenix repos should detect the Phoenix framework profile"
+assert_contains "$phoenix_profile_output" "project_type=backend-service" "Phoenix repos should detect the backend-service project type"
+pass "Phoenix profile detection"
+
 c_profile_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail
@@ -302,6 +351,94 @@ EOF
 )"
 assert_contains "$c_profile_output" "language=c" "Pure C repos should detect the C language profile"
 pass "C profile detection"
+
+scala_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf 'scalaVersion := "3.3.1"\n' >"$tmpdir/build.sbt"
+mkdir -p "$tmpdir/src/main/scala"
+printf 'object Main extends App { println("hello") }\n' >"$tmpdir/src/main/scala/Main.scala"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$scala_profile_output" "language=scala" "Scala repos should detect the Scala language profile"
+pass "Scala profile detection"
+
+lua_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+printf 'function love.load() end\n' >"$tmpdir/main.lua"
+
+if evop_detect_language_profile "$tmpdir" ""; then
+    printf 'language=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$lua_profile_output" "language=lua" "Lua repos should detect the Lua language profile"
+pass "Lua profile detection"
+
+nuxt_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "nuxt-app",
+  "dependencies": {
+    "nuxt": "3.15.0"
+  }
+}
+JSON
+printf 'export default defineNuxtConfig({})\n' >"$tmpdir/nuxt.config.ts"
+
+if evop_detect_framework_profile "$tmpdir" ""; then
+    printf 'framework=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$nuxt_profile_output" "framework=nuxt" "Nuxt repos should detect the Nuxt framework profile"
+assert_contains "$nuxt_profile_output" "project_type=web-app" "Nuxt repos should detect the web-app project type"
+pass "Nuxt profile detection"
+
+infrastructure_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/terraform"
+printf 'terraform {\n  required_version = ">= 1.6.0"\n}\n' >"$tmpdir/main.tf"
+printf 'resource "aws_s3_bucket" "assets" {}\n' >"$tmpdir/terraform/storage.tf"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$infrastructure_profile_output" "project_type=infrastructure" "Terraform repos should detect the infrastructure project type"
+pass "Infrastructure profile detection"
 
 profiles_summary_output="$(run_expect_success "PROFILES should summarize supported profiles" "$PROFILES_SCRIPT" --category languages)"
 assert_contains "$profiles_summary_output" "Supported profiles (Languages):" "PROFILES summary should print the selected category"

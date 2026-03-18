@@ -13,7 +13,11 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    evop_profile_match_path_named 60 "$target_dir" "public" "src" && return 0
+    if evop_repo_looks_like_web_app "$target_dir"; then
+        EVOP_PROFILE_DETECT_SCORE=64
+        return 0
+    fi
+
     evop_profile_match_prompt 60 "$prompt" "web app" "website" "landing page" "dashboard" "frontend" && return 0
     return 1
 }

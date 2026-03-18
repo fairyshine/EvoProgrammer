@@ -12,32 +12,42 @@ evop_prepare_framework_profile_candidates() {
         has_package_json=1
 
         if evop_directory_has_file_named "$target_dir" "next.config.js" "next.config.mjs" "next.config.ts" \
-            || evop_directory_contains_text "$target_dir" "\"next\"" "package.json"; then
+            || evop_repo_has_node_package "$target_dir" "next"; then
             evop_profile_candidate_append_unique candidates "nextjs"
         fi
 
-        if evop_directory_contains_text "$target_dir" "\"react\"" "package.json"; then
+        if evop_repo_has_node_package "$target_dir" "react"; then
             evop_profile_candidate_append_unique candidates "react"
         fi
 
-        if evop_directory_contains_text "$target_dir" "\"vue\"" "package.json"; then
+        if evop_repo_has_node_package "$target_dir" "vue"; then
             evop_profile_candidate_append_unique candidates "vue"
         fi
 
         if evop_directory_has_file_named "$target_dir" "svelte.config.js" "svelte.config.cjs" "svelte.config.ts" \
-            || evop_directory_contains_text "$target_dir" "\"svelte\"" "package.json"; then
+            || evop_repo_has_node_package "$target_dir" "svelte"; then
             evop_profile_candidate_append_unique candidates "svelte"
         fi
 
-        if evop_directory_contains_text "$target_dir" "\"@nestjs/core\"" "package.json"; then
+        if evop_directory_has_file_named "$target_dir" "nuxt.config.js" "nuxt.config.mjs" "nuxt.config.ts" \
+            || evop_repo_has_node_package "$target_dir" "nuxt"; then
+            evop_profile_candidate_append_unique candidates "nuxt"
+        fi
+
+        if evop_directory_has_file_named "$target_dir" "astro.config.js" "astro.config.mjs" "astro.config.ts" \
+            || evop_repo_has_node_package "$target_dir" "astro" "@astrojs/node" "@astrojs/vercel"; then
+            evop_profile_candidate_append_unique candidates "astro"
+        fi
+
+        if evop_repo_has_node_package "$target_dir" "@nestjs/core"; then
             evop_profile_candidate_append_unique candidates "nestjs"
         fi
 
-        if evop_directory_contains_text "$target_dir" "\"express\"" "package.json"; then
+        if evop_repo_has_node_package "$target_dir" "express"; then
             evop_profile_candidate_append_unique candidates "express"
         fi
 
-        if evop_directory_contains_text "$target_dir" "\"electron\"" "package.json"; then
+        if evop_repo_has_node_package "$target_dir" "electron"; then
             evop_profile_candidate_append_unique candidates "electron"
         fi
     fi
@@ -46,23 +56,23 @@ evop_prepare_framework_profile_candidates() {
         has_python_project=1
 
         if evop_directory_has_file_named "$target_dir" "manage.py" \
-            || evop_directory_contains_text "$target_dir" "django" "pyproject.toml" "requirements.txt" "requirements-dev.txt"; then
+            || evop_repo_has_python_package "$target_dir" "django"; then
             evop_profile_candidate_append_unique candidates "django"
         fi
 
-        if evop_directory_contains_text "$target_dir" "fastapi" "pyproject.toml" "requirements.txt" "requirements-dev.txt"; then
+        if evop_repo_has_python_package "$target_dir" "fastapi"; then
             evop_profile_candidate_append_unique candidates "fastapi"
         fi
 
-        if evop_directory_contains_text "$target_dir" "flask" "pyproject.toml" "requirements.txt" "requirements-dev.txt"; then
+        if evop_repo_has_python_package "$target_dir" "flask"; then
             evop_profile_candidate_append_unique candidates "flask"
         fi
 
-        if evop_directory_contains_text "$target_dir" "streamlit" "pyproject.toml" "requirements.txt"; then
+        if evop_repo_has_python_package "$target_dir" "streamlit"; then
             evop_profile_candidate_append_unique candidates "streamlit"
         fi
 
-        if evop_directory_contains_text "$target_dir" "pygame" "pyproject.toml" "requirements.txt"; then
+        if evop_repo_has_python_package "$target_dir" "pygame"; then
             evop_profile_candidate_append_unique candidates "pygame"
         fi
     fi
@@ -70,27 +80,26 @@ evop_prepare_framework_profile_candidates() {
     if evop_directory_has_file_named "$target_dir" "Cargo.toml"; then
         has_cargo=1
 
-        if evop_directory_contains_text "$target_dir" "actix-web" "Cargo.toml"; then
+        if evop_repo_has_cargo_crate "$target_dir" "actix-web"; then
             evop_profile_candidate_append_unique candidates "actix-web"
         fi
 
-        if evop_directory_contains_text "$target_dir" "axum" "Cargo.toml"; then
+        if evop_repo_has_cargo_crate "$target_dir" "axum"; then
             evop_profile_candidate_append_unique candidates "axum"
         fi
 
-        if evop_directory_contains_text "$target_dir" "bevy" "Cargo.toml"; then
+        if evop_repo_has_cargo_crate "$target_dir" "bevy"; then
             evop_profile_candidate_append_unique candidates "bevy"
         fi
     fi
 
     if evop_directory_has_file_named "$target_dir" "go.mod" \
-        && evop_directory_contains_text "$target_dir" "gin-gonic/gin" "go.mod" "*.go"; then
+        && evop_repo_has_go_module "$target_dir" "gin-gonic/gin"; then
         evop_profile_candidate_append_unique candidates "gin"
     fi
 
     if evop_directory_has_file_named "$target_dir" "pubspec.yaml"; then
-        if evop_directory_contains_text "$target_dir" "flutter:" "pubspec.yaml" \
-            || evop_directory_contains_text "$target_dir" "sdk: flutter" "pubspec.yaml" \
+        if evop_repo_has_pubspec_dependency "$target_dir" "flutter:" "sdk: flutter" \
             || { evop_directory_has_path_named "$target_dir" "android" && evop_directory_has_path_named "$target_dir" "ios"; }; then
             evop_profile_candidate_append_unique candidates "flutter"
         fi
@@ -102,13 +111,18 @@ evop_prepare_framework_profile_candidates() {
     fi
 
     if evop_directory_has_file_named "$target_dir" "artisan" \
-        || evop_directory_contains_text "$target_dir" "laravel/framework" "composer.json"; then
+        || evop_repo_has_composer_package "$target_dir" "laravel/framework"; then
         evop_profile_candidate_append_unique candidates "laravel"
     fi
 
     if evop_directory_has_file_named "$target_dir" "Gemfile" \
-        && evop_directory_contains_text "$target_dir" "rails" "Gemfile"; then
+        && evop_repo_has_gem "$target_dir" "rails"; then
         evop_profile_candidate_append_unique candidates "rails"
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "mix.exs" \
+        && evop_repo_has_mix_package "$target_dir" "phoenix"; then
+        evop_profile_candidate_append_unique candidates "phoenix"
     fi
 
     if evop_directory_has_path_named "$target_dir" "src-tauri" \
@@ -146,9 +160,12 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "flutter" "$prompt" "flutter"
     evop_profile_candidate_add_if_prompt_matches candidates "gin" "$prompt" "gin"
     evop_profile_candidate_add_if_prompt_matches candidates "godot" "$prompt" "godot"
+    evop_profile_candidate_add_if_prompt_matches candidates "astro" "$prompt" "astro"
     evop_profile_candidate_add_if_prompt_matches candidates "laravel" "$prompt" "laravel"
     evop_profile_candidate_add_if_prompt_matches candidates "nestjs" "$prompt" "nestjs" "nest.js"
     evop_profile_candidate_add_if_prompt_matches candidates "nextjs" "$prompt" "next.js" "nextjs"
+    evop_profile_candidate_add_if_prompt_matches candidates "nuxt" "$prompt" "nuxt" "nuxt.js"
+    evop_profile_candidate_add_if_prompt_matches candidates "phoenix" "$prompt" "phoenix"
     evop_profile_candidate_add_if_prompt_matches candidates "pygame" "$prompt" "pygame"
     evop_profile_candidate_add_if_prompt_matches candidates "qt" "$prompt" "qt"
     evop_profile_candidate_add_if_prompt_matches candidates "rails" "$prompt" "rails"
@@ -162,7 +179,7 @@ evop_prepare_framework_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "vue" "$prompt" "vue"
 
     if [[ -z "$candidates" && "$has_package_json" == "1" ]]; then
-        candidates=$'electron\nexpress\nnestjs\nnextjs\nreact\nsvelte\nvue'
+        candidates=$'astro\nelectron\nexpress\nnestjs\nnextjs\nnuxt\nreact\nsvelte\nvue'
     fi
 
     if [[ -z "$candidates" && "$has_python_project" == "1" ]]; then

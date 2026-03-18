@@ -37,8 +37,7 @@ evop_prepare_project_type_candidates() {
         evop_profile_candidate_append_unique candidates "scientific-experiment"
     fi
 
-    if evop_directory_has_path_named "$target_dir" "public" \
-        || evop_directory_has_path_named "$target_dir" "src"; then
+    if evop_repo_looks_like_web_app "$target_dir"; then
         evop_profile_candidate_append_unique candidates "web-app"
     fi
 
@@ -54,6 +53,10 @@ evop_prepare_project_type_candidates() {
         evop_profile_candidate_append_unique candidates "desktop-app"
     fi
 
+    if evop_repo_looks_like_infrastructure "$target_dir"; then
+        evop_profile_candidate_append_unique candidates "infrastructure"
+    fi
+
     evop_profile_candidate_add_if_prompt_matches candidates "ai-agent" "$prompt" "ai agent" "assistant" "tool-using agent" "workflow agent"
     evop_profile_candidate_add_if_prompt_matches candidates "backend-service" "$prompt" "backend service" "api service" "microservice" "rest api" "backend"
     evop_profile_candidate_add_if_prompt_matches candidates "browser-game" "$prompt" "browser game" "html5 game" "web game"
@@ -61,6 +64,7 @@ evop_prepare_project_type_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "data-pipeline" "$prompt" "data pipeline" "etl" "ingestion pipeline" "batch job"
     evop_profile_candidate_add_if_prompt_matches candidates "desktop-app" "$prompt" "desktop app" "desktop application" "桌面应用"
     evop_profile_candidate_add_if_prompt_matches candidates "embedded-system" "$prompt" "embedded" "firmware" "mcu" "microcontroller"
+    evop_profile_candidate_add_if_prompt_matches candidates "infrastructure" "$prompt" "terraform" "infra" "infrastructure" "helm" "kubernetes" "k8s" "ansible" "iac"
     evop_profile_candidate_add_if_prompt_matches candidates "library" "$prompt" "sdk" "library" "package" "crate" "module"
     evop_profile_candidate_add_if_prompt_matches candidates "mobile-app" "$prompt" "mobile app" "ios app" "android app" "flutter app" "手机应用" "移动应用"
     evop_profile_candidate_add_if_prompt_matches candidates "mobile-game" "$prompt" "mobile game" "ios game" "android game" "手机游戏"

@@ -17,6 +17,7 @@ if [[ -z "${PROJECT_CONTEXT_LIB:-}" ]]; then
 fi
 
 source "$PROFILE_LIB_DIR/diagnostics.sh"
+source "$PROFILE_LIB_DIR/ecosystem-facts.sh"
 source "$PROFILE_LIB_DIR/repo-shape.sh"
 source "$PROFILE_LIB_DIR/catalog.sh"
 source "$PROFILE_LIB_DIR/detect.sh"

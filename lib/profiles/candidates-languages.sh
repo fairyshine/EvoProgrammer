@@ -33,6 +33,11 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "rust"
     fi
 
+    if evop_directory_has_file_named "$target_dir" "build.sbt" \
+        || evop_directory_has_file_extension "$target_dir" "scala" "sc"; then
+        evop_profile_candidate_append_unique candidates "scala"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "go.mod" \
         || evop_directory_has_file_extension "$target_dir" "go"; then
         evop_profile_candidate_append_unique candidates "go"
@@ -81,6 +86,11 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "dart"
     fi
 
+    if evop_directory_has_file_pattern "$target_dir" "*.rockspec" \
+        || evop_directory_has_file_extension "$target_dir" "lua"; then
+        evop_profile_candidate_append_unique candidates "lua"
+    fi
+
     if evop_directory_has_file_named "$target_dir" "project.godot" \
         || evop_directory_has_file_extension "$target_dir" "gd"; then
         evop_profile_candidate_append_unique candidates "gdscript"
@@ -100,6 +110,7 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "javascript" "$prompt" "javascript" "node.js" "nodejs"
     evop_profile_candidate_add_if_prompt_matches candidates "python" "$prompt" "python"
     evop_profile_candidate_add_if_prompt_matches candidates "rust" "$prompt" "rust"
+    evop_profile_candidate_add_if_prompt_matches candidates "scala" "$prompt" "scala" "sbt"
     evop_profile_candidate_add_if_prompt_matches candidates "go" "$prompt" "golang" " go "
     evop_profile_candidate_add_if_prompt_matches candidates "ruby" "$prompt" "ruby"
     evop_profile_candidate_add_if_prompt_matches candidates "php" "$prompt" "php"
@@ -110,6 +121,7 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "cpp" "$prompt" "c++" "cpp"
     evop_profile_candidate_add_if_prompt_matches candidates "swift" "$prompt" "swift"
     evop_profile_candidate_add_if_prompt_matches candidates "dart" "$prompt" "dart" "flutter"
+    evop_profile_candidate_add_if_prompt_matches candidates "lua" "$prompt" "lua" "luajit"
     evop_profile_candidate_add_if_prompt_matches candidates "gdscript" "$prompt" "gdscript"
     evop_profile_candidate_add_if_prompt_matches candidates "elixir" "$prompt" "elixir" "phoenix" "mix"
     evop_profile_candidate_add_if_prompt_matches candidates "shell" "$prompt" "zsh" "bash" "shell" "shell script" "脚本"
