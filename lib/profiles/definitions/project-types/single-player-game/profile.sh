@@ -13,7 +13,10 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    if evop_repo_looks_like_game_project "$target_dir" && ! evop_repo_looks_like_mobile_game "$target_dir"; then
+    if evop_repo_looks_like_game_project "$target_dir" \
+        && ! evop_repo_looks_like_mobile_game "$target_dir" \
+        && ! evop_repo_looks_like_browser_game "$target_dir" \
+        && ! evop_repo_looks_like_online_game "$target_dir"; then
         EVOP_PROFILE_DETECT_SCORE=92
         return 0
     fi

@@ -20,12 +20,20 @@ EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_DATA_PIPELINE_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_EMBEDDED_SYSTEM_CACHE_VALUE=""
+EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_DIR=""
+EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_VALUE=""
+EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR=""
+EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_MOBILE_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_WEB_APP_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_INFRASTRUCTURE_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_INFRASTRUCTURE_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_VALUE=""
+EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_DIR=""
+EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_DIR=""
 EVOP_REPO_LOOKS_LIKE_ASPNET_CORE_CACHE_VALUE=""
 EVOP_REPO_LOOKS_LIKE_DOTNET_MAUI_CACHE_DIR=""
@@ -50,6 +58,108 @@ evop_repo_has_mobile_platform_markers() {
         return 0
     fi
 
+    return 1
+}
+
+evop_repo_has_browser_game_runtime_markers() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && evop_repo_has_node_package "$target_dir" \
+            "phaser" \
+            "kaboom" \
+            "melonjs" \
+            "playcanvas" \
+            "pixi.js" \
+            "pixi.js-legacy" \
+            "@pixi/app" \
+            "@pixi/core" \
+            "@pixi/react" \
+            "@babylonjs/core" \
+            "babylonjs"; then
+        EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+        EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_contains_text "$target_dir" "new phaser.game" "package.json" "index.html" "*.js" "*.jsx" "*.ts" "*.tsx" \
+        || evop_directory_contains_text "$target_dir" "kaboom(" "package.json" "index.html" "*.js" "*.jsx" "*.ts" "*.tsx" \
+        || evop_directory_contains_text "$target_dir" "pixi.application" "package.json" "index.html" "*.js" "*.jsx" "*.ts" "*.tsx" \
+        || evop_directory_contains_text "$target_dir" "babylon.engine" "package.json" "index.html" "*.js" "*.jsx" "*.ts" "*.tsx" \
+        || {
+            evop_directory_has_file_named "$target_dir" "index.html" \
+                && evop_directory_contains_text "$target_dir" "canvas.getcontext" "index.html" "*.js" "*.jsx" "*.ts" "*.tsx";
+        }; then
+        EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+        EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+    EVOP_REPO_HAS_BROWSER_GAME_RUNTIME_MARKERS_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_has_multiplayer_game_runtime_markers() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "package.json" \
+        && evop_repo_has_node_package "$target_dir" \
+            "socket.io" \
+            "socket.io-client" \
+            "colyseus" \
+            "@colyseus/schema" \
+            "nengi" \
+            "playroomkit"; then
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_has_file_named "$target_dir" "Cargo.toml" \
+        && evop_repo_has_cargo_crate "$target_dir" \
+            "renet" \
+            "bevy_renet" \
+            "bevy_quinnet" \
+            "lightyear" \
+            "naia-bevy-client" \
+            "naia-bevy-server"; then
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE="1"
+        return 0
+    fi
+
+    if evop_directory_contains_text "$target_dir" "enetmultiplayerpeer" "project.godot" "*.gd" "*.tscn" \
+        || evop_directory_contains_text "$target_dir" "multiplayersynchronizer" "project.godot" "*.gd" "*.tscn" \
+        || evop_directory_contains_text "$target_dir" "multiplayerspawner" "project.godot" "*.gd" "*.tscn" \
+        || evop_directory_contains_text "$target_dir" "websocketmultiplayerpeer" "project.godot" "*.gd" "*.tscn" \
+        || evop_directory_contains_text "$target_dir" "networkmanager" "Packages/manifest.json" "*.cs" \
+        || evop_directory_contains_text "$target_dir" "serverrpc" "Packages/manifest.json" "*.cs" \
+        || evop_directory_contains_text "$target_dir" "clientrpc" "Packages/manifest.json" "*.cs" \
+        || evop_directory_contains_text "$target_dir" "photonnetwork" "Packages/manifest.json" "*.cs" \
+        || evop_directory_contains_text "$target_dir" "mirror.network" "Packages/manifest.json" "*.cs" \
+        || evop_directory_contains_text "$target_dir" "netmulticast" "*.cpp" "*.h" "*.ini" \
+        || evop_directory_contains_text "$target_dir" "replicatedusing" "*.cpp" "*.h" \
+        || evop_directory_contains_text "$target_dir" "dedicated server" "package.json" "*.js" "*.jsx" "*.ts" "*.tsx" "*.gd" "*.cs" "*.cpp" "*.h" \
+        || evop_directory_contains_text "$target_dir" "server authoritative" "package.json" "*.js" "*.jsx" "*.ts" "*.tsx" "*.gd" "*.cs" "*.cpp" "*.h" \
+        || evop_directory_contains_text "$target_dir" "client sync" "package.json" "*.js" "*.jsx" "*.ts" "*.tsx" "*.gd" "*.cs" "*.cpp" "*.h"; then
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+        EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
+    EVOP_REPO_HAS_MULTIPLAYER_GAME_RUNTIME_MARKERS_CACHE_VALUE="0"
     return 1
 }
 
@@ -402,7 +512,8 @@ evop_repo_looks_like_game_project() {
         || { evop_directory_has_path_named "$target_dir" "Assets" && evop_directory_has_path_named "$target_dir" "ProjectSettings"; } \
         || evop_directory_has_file_extension "$target_dir" "uproject" \
         || evop_repo_has_cargo_crate "$target_dir" "bevy" \
-        || evop_repo_has_python_package "$target_dir" "pygame"; then
+        || evop_repo_has_python_package "$target_dir" "pygame" \
+        || evop_repo_has_browser_game_runtime_markers "$target_dir"; then
         EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_DIR="$target_dir"
         EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_VALUE="1"
         return 0
@@ -410,6 +521,28 @@ evop_repo_looks_like_game_project() {
 
     EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_DIR="$target_dir"
     EVOP_REPO_LOOKS_LIKE_GAME_PROJECT_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_browser_game() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_repo_has_browser_game_runtime_markers "$target_dir" \
+        && ! evop_repo_has_mobile_platform_markers "$target_dir" \
+        && ! evop_repo_looks_like_js_mobile_app "$target_dir" \
+        && ! evop_repo_looks_like_desktop_app "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_BROWSER_GAME_CACHE_VALUE="0"
     return 1
 }
 
@@ -456,6 +589,26 @@ evop_repo_looks_like_mobile_game() {
 
     EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_DIR="$target_dir"
     EVOP_REPO_LOOKS_LIKE_MOBILE_GAME_CACHE_VALUE="0"
+    return 1
+}
+
+evop_repo_looks_like_online_game() {
+    local target_dir="$1"
+
+    if [[ "$EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_DIR" == "$target_dir" ]]; then
+        evop_repo_shape_cache_value_matches "$EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_VALUE"
+        return $?
+    fi
+
+    if evop_repo_looks_like_game_project "$target_dir" \
+        && evop_repo_has_multiplayer_game_runtime_markers "$target_dir"; then
+        EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_VALUE="1"
+        return 0
+    fi
+
+    EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_DIR="$target_dir"
+    EVOP_REPO_LOOKS_LIKE_ONLINE_GAME_CACHE_VALUE="0"
     return 1
 }
 

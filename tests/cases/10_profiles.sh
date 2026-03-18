@@ -718,6 +718,63 @@ EOF
 assert_contains "$infrastructure_profile_output" "project_type=infrastructure" "Terraform repos should detect the infrastructure project type"
 pass "Infrastructure profile detection"
 
+browser_game_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/src"
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "browser-game",
+  "dependencies": {
+    "phaser": "3.80.1"
+  }
+}
+JSON
+printf '<!doctype html><canvas id="game"></canvas>\n' >"$tmpdir/index.html"
+printf 'import Phaser from \"phaser\";\nnew Phaser.Game({});\n' >"$tmpdir/src/game.ts"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$browser_game_profile_output" "project_type=browser-game" "Browser-first game repos should detect the browser-game project type"
+pass "Browser game profile detection"
+
+online_game_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/src"
+cat >"$tmpdir/package.json" <<'JSON'
+{
+  "name": "online-game",
+  "dependencies": {
+    "phaser": "3.80.1",
+    "socket.io-client": "4.8.1"
+  }
+}
+JSON
+printf '<!doctype html><canvas id="game"></canvas>\n' >"$tmpdir/index.html"
+printf 'import Phaser from \"phaser\";\nimport { io } from \"socket.io-client\";\nnew Phaser.Game({});\nconst socket = io();\n' >"$tmpdir/src/game.ts"
+
+if evop_detect_project_type "$tmpdir" ""; then
+    printf 'project_type=%s\n' "$EVOP_DETECTED_PROFILE"
+fi
+EOF
+)"
+assert_contains "$online_game_profile_output" "project_type=online-game" "Multiplayer game repos should detect the online-game project type"
+pass "Online game profile detection"
+
 expanded_language_profile_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
 set -euo pipefail

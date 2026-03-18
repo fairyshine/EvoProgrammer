@@ -4,18 +4,37 @@ evop_prepare_project_type_candidates() {
     local target_dir="$1"
     local prompt="${2:-}"
     local candidates=""
+    local looks_like_game_project=0
+    local looks_like_mobile_game=0
+    local looks_like_browser_game=0
+    local looks_like_online_game=0
 
     evop_profile_candidate_add_prompt_fact candidates "project-types" "$prompt"
+
+    if evop_repo_looks_like_mobile_game "$target_dir"; then
+        looks_like_mobile_game=1
+        evop_profile_candidate_append_unique candidates "mobile-game"
+    fi
+
+    if evop_repo_looks_like_browser_game "$target_dir"; then
+        looks_like_browser_game=1
+        evop_profile_candidate_append_unique candidates "browser-game"
+    fi
+
+    if evop_repo_looks_like_online_game "$target_dir"; then
+        looks_like_online_game=1
+        evop_profile_candidate_append_unique candidates "online-game"
+    fi
+
+    if evop_repo_looks_like_game_project "$target_dir"; then
+        looks_like_game_project=1
+    fi
 
     if evop_repo_looks_like_mobile_app "$target_dir"; then
         evop_profile_candidate_append_unique candidates "mobile-app"
     fi
 
-    if evop_repo_looks_like_mobile_game "$target_dir"; then
-        evop_profile_candidate_append_unique candidates "mobile-game"
-    fi
-
-    if evop_repo_looks_like_game_project "$target_dir" && ! evop_repo_looks_like_mobile_game "$target_dir"; then
+    if (( looks_like_game_project == 1 && looks_like_mobile_game == 0 && looks_like_browser_game == 0 && looks_like_online_game == 0 )); then
         evop_profile_candidate_append_unique candidates "single-player-game"
     fi
 
