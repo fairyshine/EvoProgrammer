@@ -16,6 +16,7 @@ assert_contains "$inspect_output" "./tools/sync-context [repo helper executable]
 assert_contains "$inspect_output" "zsh ./tests/run_tests.sh [test harness script]" "INSPECT should list test harness scripts as agent command surfaces"
 assert_contains "$inspect_output" "just --justfile ./Justfile inspect [Justfile recipe]" "INSPECT should list Justfile recipes as agent command surfaces"
 assert_contains "$inspect_output" "task --taskfile ./Taskfile.yml verify [Taskfile task]" "INSPECT should list Taskfile tasks as agent command surfaces"
+assert_contains "$inspect_output" "zsh ./INSPECT.sh --format json [VS Code task (inspect)]" "INSPECT should list invocable VS Code tasks as agent command surfaces"
 assert_contains "$inspect_output" "pnpm inspect [package.json script]" "INSPECT should list non-verification package scripts as agent command surfaces"
 assert_contains "$inspect_output" "pnpm generate [package.json script]" "INSPECT should list generation scripts as agent command surfaces"
 assert_contains "$inspect_output" "Agent support tools:" "INSPECT should print agent support tools"
@@ -52,12 +53,35 @@ assert_contains "$inspect_commands_output" "Lint: pnpm lint [package.json script
 assert_not_contains "$inspect_commands_output" "Architecture hints:" "INSPECT commands mode should stay focused on commands"
 pass "INSPECT commands"
 
+vscode_task_workspace="$TEST_TMPDIR/vscode-task-cli"
+mkdir -p "$vscode_task_workspace/.vscode" "$vscode_task_workspace/bin"
+printf '#!/usr/bin/env zsh\nprint tooling\n' >"$vscode_task_workspace/bin/tooling"
+chmod +x "$vscode_task_workspace/bin/tooling"
+cat >"$vscode_task_workspace/.vscode/tasks.json" <<'EOF'
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "build", "type": "shell", "command": "make", "args": ["build"] },
+    { "label": "test", "type": "shell", "command": "make", "args": ["test"] },
+    { "label": "lint", "type": "shell", "command": "make", "args": ["lint"] },
+    { "label": "typecheck", "type": "shell", "command": "make", "args": ["typecheck"] }
+  ]
+}
+EOF
+inspect_vscode_task_commands_output="$(run_expect_success "INSPECT should reuse VS Code tasks as command hints when dedicated repo commands are absent" "$INSPECT_SCRIPT" --target-dir "$vscode_task_workspace" --language shell --project-type cli-tool --format commands)"
+assert_contains "$inspect_vscode_task_commands_output" "Build: make build [VS Code task]" "INSPECT commands mode should use VS Code build tasks as command hints"
+assert_contains "$inspect_vscode_task_commands_output" "Test: make test [VS Code task]" "INSPECT commands mode should use VS Code test tasks as command hints"
+assert_contains "$inspect_vscode_task_commands_output" "Lint: make lint [VS Code task]" "INSPECT commands mode should use VS Code lint tasks as command hints"
+assert_contains "$inspect_vscode_task_commands_output" "Typecheck: make typecheck [VS Code task]" "INSPECT commands mode should use VS Code typecheck tasks as command hints"
+pass "INSPECT VS Code task command hints"
+
 inspect_agent_output="$(run_expect_success "INSPECT should render an agent-facing command catalog" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format agent)"
 assert_contains "$inspect_agent_output" "Agent command catalog:" "INSPECT agent mode should print the agent command catalog heading"
 assert_contains "$inspect_agent_output" "./bin/context-tool [repo_executable; context; repo executable; direct; high]" "INSPECT agent mode should show structured repo executable entries"
 assert_contains "$inspect_agent_output" "sh ./scripts/bootstrap.sh [repo_helper_program; bootstrap; repo helper program; shell-runtime; high]" "INSPECT agent mode should show structured helper program entries"
 assert_contains "$inspect_agent_output" "just --justfile ./Justfile inspect [just_target; inspect; Justfile recipe; task-runner; high]" "INSPECT agent mode should show structured Justfile entries"
 assert_contains "$inspect_agent_output" "task --taskfile ./Taskfile.yml verify [taskfile_target; verify; Taskfile task; task-runner; high]" "INSPECT agent mode should show structured Taskfile entries"
+assert_contains "$inspect_agent_output" "zsh ./INSPECT.sh --format json [vscode_task; inspect; VS Code task (inspect); task-config; high]" "INSPECT agent mode should show structured VS Code task entries"
 assert_contains "$inspect_agent_output" "git [host cli]" "INSPECT agent mode should include agent support tools"
 assert_contains "$inspect_agent_output" "Agent support tool catalog:" "INSPECT agent mode should print the structured support tool catalog"
 assert_contains "$inspect_agent_output" "git -> " "INSPECT agent mode should include resolved support tool paths"
@@ -91,6 +115,7 @@ print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'lin
 print(f"lookups_ok={data['facts_cache']['lookups'] > 0}")
 print(f"entries_ok={data['facts_cache']['relative_exists_entries'] > 0}")
 print(f"text_entries_ok={data['facts_cache']['file_text_entries'] > 0}")
+print(f"vscode_entries_ok={data['facts_cache']['vscode_task_entries'] > 0}")
 print(f"command_entries_ok={data['facts_cache']['command_availability_entries'] > 0}")
 print(f"command_path_entries_ok={data['facts_cache']['command_path_entries'] > 0}")
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
@@ -101,6 +126,7 @@ assert_contains "$inspect_json_summary" "typescript" "INSPECT json should includ
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
 assert_contains "$inspect_json_summary" "repo_helper_program|bootstrap|shell-runtime|repo-root|high|prepare the repository environment or setup workflow|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT json should include structured helper program entries"
 assert_contains "$inspect_json_summary" "test_harness_script|verify|shell-runtime|repo-root|high|run verification or quality gates through the repo workflow|zsh ./tests/run_tests.sh|test harness script" "INSPECT json should include structured test harness entries"
+assert_contains "$inspect_json_summary" "vscode_task|inspect|task-config|repo-root|high|inspect repository state or generate repo context|zsh ./INSPECT.sh --format json|VS Code task (inspect)" "INSPECT json should include structured VS Code task entries"
 assert_contains "$inspect_json_summary" "git|" "INSPECT json should include structured support tool catalog entries"
 assert_contains "$inspect_json_summary" "just|" "INSPECT json should include structured Just support tool catalog entries"
 assert_contains "$inspect_json_summary" "|build tool|automation|invoke declared Justfile recipes directly" "INSPECT json should include Just support tool metadata"
@@ -114,6 +140,7 @@ assert_contains "$inspect_json_summary" "|http cli|http|fetch APIs, docs, and he
 assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
 assert_contains "$inspect_json_summary" "just --justfile ./Justfile inspect [Justfile recipe]" "INSPECT json should include Justfile command surfaces"
 assert_contains "$inspect_json_summary" "task --taskfile ./Taskfile.yml verify [Taskfile task]" "INSPECT json should include Taskfile command surfaces"
+assert_contains "$inspect_json_summary" "zsh ./INSPECT.sh --format json [VS Code task (inspect)]" "INSPECT json should include VS Code task command surfaces"
 assert_contains "$inspect_json_summary" "./scripts/release [repo helper executable]" "INSPECT json should include repo helper executables"
 assert_contains "$inspect_json_summary" "git [host cli]" "INSPECT json should include agent support tools"
 assert_contains "$inspect_json_summary" "pnpm lint" "INSPECT json should include the lint command"
@@ -122,6 +149,7 @@ assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should i
 assert_contains "$inspect_json_summary" "lookups_ok=True" "INSPECT json should include facts-cache lookup diagnostics"
 assert_contains "$inspect_json_summary" "entries_ok=True" "INSPECT json should include facts-cache entry counts"
 assert_contains "$inspect_json_summary" "text_entries_ok=True" "INSPECT json should include file-text cache entry counts"
+assert_contains "$inspect_json_summary" "vscode_entries_ok=True" "INSPECT json should include VS Code task cache entry counts"
 assert_contains "$inspect_json_summary" "command_entries_ok=True" "INSPECT json should include command-availability cache entry counts"
 assert_contains "$inspect_json_summary" "command_path_entries_ok=True" "INSPECT json should include command-path cache entry counts"
 assert_contains "$inspect_json_summary" "timings_ok=True" "INSPECT json should include phase timings"
@@ -148,6 +176,7 @@ assert_contains "$inspect_agent_json_summary" "pnpm" "INSPECT agent-json should 
 assert_contains "$inspect_agent_json_summary" "repo_helper_program|bootstrap|shell-runtime|repo-root|high|prepare the repository environment or setup workflow|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT agent-json should include structured helper program entries"
 assert_contains "$inspect_agent_json_summary" "just_target|inspect|task-runner|repo-root|high|inspect repository state or generate repo context|just --justfile ./Justfile inspect|Justfile recipe" "INSPECT agent-json should include structured Justfile entries"
 assert_contains "$inspect_agent_json_summary" "taskfile_target|verify|task-runner|repo-root|high|run verification or quality gates through the repo workflow|task --taskfile ./Taskfile.yml verify|Taskfile task" "INSPECT agent-json should include structured Taskfile entries"
+assert_contains "$inspect_agent_json_summary" "vscode_task|inspect|task-config|repo-root|high|inspect repository state or generate repo context|zsh ./INSPECT.sh --format json|VS Code task (inspect)" "INSPECT agent-json should include structured VS Code task entries"
 assert_contains "$inspect_agent_json_summary" "git|" "INSPECT agent-json should include the structured support tool catalog"
 assert_contains "$inspect_agent_json_summary" "just|" "INSPECT agent-json should include the structured Just support tool catalog"
 assert_contains "$inspect_agent_json_summary" "task|" "INSPECT agent-json should include the structured Task support tool catalog"
@@ -180,6 +209,7 @@ printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
 printf 'automation_ok=%s\n' "$([[ "$EVOP_INSPECT_AUTOMATION" == *".github/workflows"* ]] && printf true || printf false)"
 printf 'workflow_ok=%s\n' "$([[ "$EVOP_INSPECT_TASK_WORKFLOW" == *"Reproduce or localize the failure path first"* ]] && printf true || printf false)"
 printf 'text_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_FILE_TEXT_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
+printf 'vscode_task_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_VSCODE_TASK_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'command_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_COMMAND_AVAILABILITY_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'command_path_cache_ok=%s\n' "$([[ "$EVOP_INSPECT_FACTS_CACHE_COMMAND_PATH_ENTRIES" =~ ^[1-9][0-9]*$ ]] && printf true || printf false)"
 printf 'timings_ok=%s\n' "$([[ "$EVOP_INSPECT_TIMING_RESOLVE_PROFILES_MS" =~ ^[0-9]+$ ]] && printf true || printf false)"
@@ -204,6 +234,7 @@ assert_contains "$inspect_env_summary" $'curl\thttp' "INSPECT env should export 
 assert_contains "$inspect_env_summary" $'test_harness_script\tzsh ./tests/run_tests.sh\ttest harness script' "INSPECT env should export structured test harness entries"
 assert_contains "$inspect_env_summary" $'just_target\tjust --justfile ./Justfile inspect\tJustfile recipe' "INSPECT env should export structured Justfile entries"
 assert_contains "$inspect_env_summary" $'taskfile_target\ttask --taskfile ./Taskfile.yml verify\tTaskfile task' "INSPECT env should export structured Taskfile entries"
+assert_contains "$inspect_env_summary" $'vscode_task\tzsh ./INSPECT.sh --format json\tVS Code task (inspect)' "INSPECT env should export structured VS Code task entries"
 assert_contains "$inspect_env_summary" "pnpm inspect [package.json script]" "INSPECT env should export agent command surfaces"
 assert_contains "$inspect_env_summary" "./tools/sync-context [repo helper executable]" "INSPECT env should export repo helper executables"
 assert_contains "$inspect_env_summary" "git [host cli]" "INSPECT env should export agent support tools"
@@ -211,6 +242,7 @@ assert_contains "$inspect_env_summary" "pnpm lint" "INSPECT env should export co
 assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should export automation surfaces"
 assert_contains "$inspect_env_summary" "workflow_ok=true" "INSPECT env should export workflow guidance"
 assert_contains "$inspect_env_summary" "text_cache_ok=true" "INSPECT env should export file-text cache entry counts"
+assert_contains "$inspect_env_summary" "vscode_task_cache_ok=true" "INSPECT env should export VS Code task cache entry counts"
 assert_contains "$inspect_env_summary" "command_cache_ok=true" "INSPECT env should export command-availability cache entry counts"
 assert_contains "$inspect_env_summary" "command_path_cache_ok=true" "INSPECT env should export command-path cache entry counts"
 assert_contains "$inspect_env_summary" "timings_ok=true" "INSPECT env should export timing diagnostics"
@@ -240,6 +272,7 @@ assert_contains "$inspect_agent_env_summary" "pnpm" "INSPECT agent-env should ex
 assert_contains "$inspect_agent_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT agent-env should export the structured command catalog"
 assert_contains "$inspect_agent_env_summary" $'just_target\tjust --justfile ./Justfile inspect\tJustfile recipe' "INSPECT agent-env should export structured Justfile entries"
 assert_contains "$inspect_agent_env_summary" $'taskfile_target\ttask --taskfile ./Taskfile.yml verify\tTaskfile task' "INSPECT agent-env should export structured Taskfile entries"
+assert_contains "$inspect_agent_env_summary" $'vscode_task\tzsh ./INSPECT.sh --format json\tVS Code task (inspect)' "INSPECT agent-env should export structured VS Code task entries"
 assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\tbootstrap' "INSPECT agent-env should export command capability mappings"
 assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\tshell-runtime' "INSPECT agent-env should export command runner mappings"
 assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\trepo-root' "INSPECT agent-env should export command workdir mappings"
@@ -533,7 +566,9 @@ printf 'helper_path_cache_entries=%s\n' "$(evop_project_context_cache_entry_coun
 printf 'harness_path_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_TEST_HARNESS_PATHS_CACHE)"
 printf 'justfile_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_JUSTFILE_TARGETS_CACHE)"
 printf 'taskfile_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_TASKFILE_TARGETS_CACHE)"
+printf 'vscode_task_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_CACHE)"
 printf 'make_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT" == *$'top_level_script\tzsh ./STATUS.sh\ttop-level script'* ]] && printf true || printf false)"
+printf 'vscode_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT" == *$'vscode_task\tzsh ./INSPECT.sh --format json\tVS Code task (inspect)'* ]] && printf true || printf false)"
 EOF
 )"
 assert_contains "$agent_local_command_catalog_cache_output" "first_cache_entries=1" "Repo-local agent command catalog should populate its dedicated cache on first access"
@@ -544,8 +579,30 @@ assert_contains "$agent_local_command_catalog_cache_output" "helper_path_cache_e
 assert_contains "$agent_local_command_catalog_cache_output" "harness_path_cache_entries=1" "Repo-local agent command discovery should cache test harness scans"
 assert_contains "$agent_local_command_catalog_cache_output" "justfile_cache_entries=1" "Repo-local agent command discovery should cache Justfile target scans"
 assert_contains "$agent_local_command_catalog_cache_output" "taskfile_cache_entries=1" "Repo-local agent command discovery should cache Taskfile target scans"
+assert_contains "$agent_local_command_catalog_cache_output" "vscode_task_cache_entries=1" "Repo-local agent command discovery should cache VS Code task parsing"
 assert_contains "$agent_local_command_catalog_cache_output" "make_ok=true" "Repo-local agent command catalog should include top-level scripts"
+assert_contains "$agent_local_command_catalog_cache_output" "vscode_ok=true" "Repo-local agent command catalog should include VS Code tasks"
 pass "Agent local command catalog cache reuse"
+
+vscode_task_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_vscode_task_commands_cached "$TEST_CONTEXT_DIR/.vscode/tasks.json" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_CACHE)"
+printf 'inspect_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT" == *$'inspect\tzsh ./INSPECT.sh --format json'* ]] && printf true || printf false)"
+printf 'typecheck_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT" == *$'typecheck\tpnpm typecheck -- --pretty false'* ]] && printf true || printf false)"
+evop_project_vscode_task_commands_cached "$TEST_CONTEXT_DIR/.vscode/tasks.json" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_CACHE)"
+EOF
+)"
+assert_contains "$vscode_task_cache_output" "first_cache_entries=1" "VS Code task discovery should populate the dedicated cache on first access"
+assert_contains "$vscode_task_cache_output" "inspect_ok=true" "VS Code task discovery should render shell-ready command lines"
+assert_contains "$vscode_task_cache_output" "typecheck_ok=true" "VS Code task discovery should include task arguments in command lines"
+assert_contains "$vscode_task_cache_output" "second_cache_entries=1" "VS Code task discovery should reuse the dedicated cache on repeated access"
+pass "VS Code task cache reuse"
 
 package_json_script_cache_output="$(
     ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
@@ -623,6 +680,7 @@ assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT di
 assert_contains "$inspect_diagnostics_output" "Facts cache lookups:" "INSPECT diagnostics should print cache lookup counts"
 assert_contains "$inspect_diagnostics_output" "Facts cache hit rate:" "INSPECT diagnostics should print cache hit rates"
 assert_contains "$inspect_diagnostics_output" "File-text cache entries:" "INSPECT diagnostics should print file-text cache entries"
+assert_contains "$inspect_diagnostics_output" "VS Code task cache entries:" "INSPECT diagnostics should print VS Code task cache entries"
 assert_contains "$inspect_diagnostics_output" "Command-availability cache entries:" "INSPECT diagnostics should print command-availability cache entries"
 assert_contains "$inspect_diagnostics_output" "Command-path cache entries:" "INSPECT diagnostics should print command-path cache entries"
 assert_contains "$inspect_diagnostics_output" "Timing resolve_profiles:" "INSPECT diagnostics should print timing diagnostics"

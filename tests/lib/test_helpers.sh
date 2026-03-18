@@ -190,6 +190,7 @@ setup_context_workspace() {
     mkdir -p \
         "$TEST_CONTEXT_DIR/.github/workflows" \
         "$TEST_CONTEXT_DIR/.devcontainer" \
+        "$TEST_CONTEXT_DIR/.vscode" \
         "$TEST_CONTEXT_DIR/bin" \
         "$TEST_CONTEXT_DIR/tools" \
         "$TEST_CONTEXT_DIR/src/app" \
@@ -247,6 +248,25 @@ tasks:
   build:
     cmds:
       - echo build
+EOF
+    cat >"$TEST_CONTEXT_DIR/.vscode/tasks.json" <<'EOF'
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "inspect",
+      "type": "shell",
+      "command": "zsh",
+      "args": ["./INSPECT.sh", "--format", "json"]
+    },
+    {
+      "label": "typecheck",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["typecheck", "--", "--pretty", "false"]
+    }
+  ]
+}
 EOF
     printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
 }

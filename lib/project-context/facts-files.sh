@@ -288,7 +288,7 @@ evop_project_package_json_scripts_cached() {
                     depth = 0
                     in_string = 0
                     escape = 0
-                    pending_key = 0
+                    pending_token = 0
                     want_scripts = 0
                     in_scripts = 0
                     scripts_depth = 0
@@ -393,6 +393,75 @@ evop_project_package_json_scripts_cached() {
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_CACHE "$file_path" "$script_names"
     EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT="$script_names"
     printf '%s' "$EVOP_PROJECT_CONTEXT_PACKAGE_JSON_SCRIPTS_RESULT"
+}
+
+evop_render_shell_command_from_words() {
+    local rendered_command=""
+    local arg=""
+
+    for arg in "$@"; do
+        [[ -n "$rendered_command" ]] && rendered_command+=" "
+        rendered_command+="$(printf '%q' "$arg")"
+    done
+
+    printf '%s' "$rendered_command"
+}
+
+evop_project_vscode_task_commands_cached() {
+    local file_path="$1"
+    local task_commands=""
+
+    EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT=""
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_CACHE "$file_path"; then
+        EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT"
+        return 0
+    fi
+
+    if [[ -f "$file_path" ]] && evop_command_available_cached python3; then
+        task_commands="$(
+            python3 - "$file_path" <<'PY'
+import json
+import shlex
+import sys
+
+path = sys.argv[1]
+
+try:
+    with open(path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+except Exception:
+    sys.exit(0)
+
+for task in data.get("tasks", []):
+    if not isinstance(task, dict):
+        continue
+
+    label = task.get("label")
+    command = task.get("command")
+    task_type = task.get("type")
+
+    if not isinstance(label, str) or not isinstance(command, str):
+        continue
+    if task_type not in (None, "shell", "process"):
+        continue
+
+    words = [command]
+    args = task.get("args", [])
+    if isinstance(args, list):
+        for arg in args:
+            if isinstance(arg, (str, int, float)):
+                words.append(str(arg))
+
+    print(f"{label}\t{' '.join(shlex.quote(word) for word in words)}")
+PY
+        )"
+    fi
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_CACHE "$file_path" "$task_commands"
+    EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT="$task_commands"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT"
 }
 
 evop_project_workspace_manifest_search_dirs() {

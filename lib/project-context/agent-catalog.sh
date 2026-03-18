@@ -65,6 +65,9 @@ evop_agent_command_runner() {
         top_level_script|test_harness_script)
             printf 'shell-runtime'
             ;;
+        vscode_task)
+            printf 'task-config'
+            ;;
         repo_helper_program)
             case "${command%% *}" in
                 sh|zsh)
@@ -96,6 +99,62 @@ evop_agent_command_capability() {
     local source="$3"
     local capability=""
     local token=""
+    local source_label=""
+
+    if [[ "$kind" == "vscode_task" && "$source" == "VS Code task ("*")" ]]; then
+        source_label="${source#VS Code task (}"
+        source_label="${source_label%)}"
+        case "$source_label" in
+            inspect)
+                printf 'inspect'
+                return 0
+                ;;
+            verify)
+                printf 'verify'
+                return 0
+                ;;
+            lint)
+                printf 'lint'
+                return 0
+                ;;
+            clean)
+                printf 'clean'
+                return 0
+                ;;
+            status)
+                printf 'status'
+                return 0
+                ;;
+            profiles)
+                printf 'profiles'
+                return 0
+                ;;
+            catalog)
+                printf 'catalog'
+                return 0
+                ;;
+            install|bootstrap|setup)
+                printf 'bootstrap'
+                return 0
+                ;;
+            release)
+                printf 'release'
+                return 0
+                ;;
+            generate|codegen)
+                printf 'generate'
+                return 0
+                ;;
+            format|fmt)
+                printf 'format'
+                return 0
+                ;;
+            doctor)
+                printf 'doctor'
+                return 0
+                ;;
+        esac
+    fi
 
     if [[ "$command" == ./* ]]; then
         token="${command##*/}"
@@ -157,38 +216,7 @@ evop_agent_command_capability() {
             test_harness_script)
                 capability="verify"
                 ;;
-            repo_helper_program|repo_helper_executable)
-                case "$command" in
-                    *bootstrap*|*setup*)
-                        capability="bootstrap"
-                        ;;
-                    *generate*|*codegen*)
-                        capability="generate"
-                        ;;
-                    *release*)
-                        capability="release"
-                        ;;
-                    *inspect*|*context*)
-                        capability="context"
-                        ;;
-                    *verify*|*test*)
-                        capability="verify"
-                        ;;
-                    *lint*)
-                        capability="lint"
-                        ;;
-                    *clean*)
-                        capability="clean"
-                        ;;
-                    *)
-                        capability="automation"
-                        ;;
-                esac
-                ;;
-            repo_executable)
-                capability="task"
-                ;;
-            make_target|just_target|taskfile_target|package_script)
+            vscode_task|make_target|just_target|taskfile_target|package_script)
                 case "$command" in
                     *inspect*)
                         capability="inspect"
@@ -224,6 +252,37 @@ evop_agent_command_capability() {
                         capability="automation"
                         ;;
                 esac
+                ;;
+            repo_helper_program|repo_helper_executable)
+                case "$command" in
+                    *bootstrap*|*setup*)
+                        capability="bootstrap"
+                        ;;
+                    *generate*|*codegen*)
+                        capability="generate"
+                        ;;
+                    *release*)
+                        capability="release"
+                        ;;
+                    *inspect*|*context*)
+                        capability="context"
+                        ;;
+                    *verify*|*test*)
+                        capability="verify"
+                        ;;
+                    *lint*)
+                        capability="lint"
+                        ;;
+                    *clean*)
+                        capability="clean"
+                        ;;
+                    *)
+                        capability="automation"
+                        ;;
+                esac
+                ;;
+            repo_executable)
+                capability="task"
                 ;;
             *)
                 capability="automation"
@@ -338,6 +397,9 @@ evop_agent_command_usage() {
                 taskfile_target)
                     printf 'invoke a declared Taskfile task'
                     ;;
+                vscode_task)
+                    printf 'run a repository task declared in VS Code task configuration'
+                    ;;
                 repo_helper_program|repo_helper_executable)
                     printf 'invoke a repo-local helper program'
                     ;;
@@ -391,6 +453,9 @@ evop_agent_command_kind_rank() {
             ;;
         taskfile_target)
             printf '57'
+            ;;
+        vscode_task)
+            printf '58'
             ;;
         make_target)
             printf '60'
@@ -774,7 +839,10 @@ evop_project_agent_local_command_catalog_cached() {
     local makefile=""
     local justfile=""
     local taskfile=""
+    local vscode_tasks_file=""
     local target=""
+    local label=""
+    local command=""
 
     EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT=""
     evop_use_project_context_facts_dir "$target_dir"
@@ -849,6 +917,22 @@ evop_project_agent_local_command_catalog_cached() {
                 evop_append_agent_command_catalog_entry output "taskfile_target" "$(evop_taskfile_task_command "$taskfile" "$target")" "Taskfile task"
             fi
         done
+    fi
+
+    if [[ -f "$target_dir/.vscode/tasks.json" ]]; then
+        vscode_tasks_file="$target_dir/.vscode/tasks.json"
+    fi
+
+    if [[ -n "$vscode_tasks_file" ]]; then
+        evop_project_vscode_task_commands_cached "$vscode_tasks_file" >/dev/null
+        while IFS=$'\t' read -r label command; do
+            [[ -n "$label" && -n "$command" ]] || continue
+            case "$label" in
+                inspect|verify|doctor|clean|status|profiles|catalog|install|bootstrap|setup|ci|release|generate|codegen|format|fmt|dev|start|build|test|lint|typecheck|check-types|types:check)
+                    evop_append_agent_command_catalog_entry output "vscode_task" "$command" "VS Code task ($label)"
+                    ;;
+            esac
+        done <<<"$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT"
     fi
 
     EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT="$output"

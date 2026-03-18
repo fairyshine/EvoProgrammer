@@ -643,6 +643,34 @@ evop_detect_taskfile_commands() {
     fi
 }
 
+evop_detect_vscode_task_commands() {
+    local tasks_file="$1"
+    local command=""
+
+    [[ -n "$tasks_file" ]] || return 0
+
+    command="$(evop_vscode_task_command "$tasks_file" dev || true)"
+    if [[ -n "$command" ]]; then
+        evop_set_project_command_if_empty dev "$command" "VS Code task"
+    else
+        command="$(evop_vscode_task_command "$tasks_file" start || true)"
+        [[ -n "$command" ]] && evop_set_project_command_if_empty dev "$command" "VS Code task"
+    fi
+
+    for slot in build test lint; do
+        command="$(evop_vscode_task_command "$tasks_file" "$slot" || true)"
+        [[ -n "$command" ]] && evop_set_project_command_if_empty "$slot" "$command" "VS Code task"
+    done
+
+    for task_name in typecheck check-types types:check; do
+        command="$(evop_vscode_task_command "$tasks_file" "$task_name" || true)"
+        if [[ -n "$command" ]]; then
+            evop_set_project_command_if_empty typecheck "$command" "VS Code task"
+            break
+        fi
+    done
+}
+
 evop_detect_language_default_commands() {
     local target_dir="$1"
     local package_manager="$2"
@@ -851,6 +879,7 @@ evop_detect_command_hints() {
     local makefile=""
     local justfile=""
     local taskfile=""
+    local vscode_tasks_file=""
 
     if [[ -f "$target_dir/Makefile" ]]; then
         makefile="$target_dir/Makefile"
@@ -876,11 +905,16 @@ evop_detect_command_hints() {
         taskfile="$target_dir/taskfile.yaml"
     fi
 
+    if [[ -f "$target_dir/.vscode/tasks.json" ]]; then
+        vscode_tasks_file="$target_dir/.vscode/tasks.json"
+    fi
+
     evop_detect_package_json_commands "$package_json" "$package_manager"
     evop_detect_workspace_package_json_commands "$target_dir" "$package_manager"
     evop_detect_makefile_commands "$makefile"
     evop_detect_justfile_commands "$justfile"
     evop_detect_taskfile_commands "$taskfile"
+    evop_detect_vscode_task_commands "$vscode_tasks_file"
     evop_detect_language_default_commands "$target_dir" "$package_manager" "$language_profile" "$framework_profile" "$project_type"
     evop_detect_shell_project_commands "$target_dir" "$language_profile" "$project_type"
 }

@@ -77,6 +77,24 @@ evop_taskfile_has_target() {
     return 1
 }
 
+evop_vscode_task_command() {
+    local tasks_file="$1"
+    local task_label="$2"
+    local label=""
+    local command=""
+
+    evop_project_vscode_task_commands_cached "$tasks_file" >/dev/null
+    while IFS=$'\t' read -r label command; do
+        [[ -n "$label" && -n "$command" ]] || continue
+        if [[ "$label" == "$task_label" ]]; then
+            printf '%s' "$command"
+            return 0
+        fi
+    done <<<"$EVOP_PROJECT_CONTEXT_VSCODE_TASK_COMMANDS_RESULT"
+
+    return 1
+}
+
 evop_existing_relative_path() {
     local target_dir="$1"
     shift
