@@ -37,16 +37,17 @@ evop_print_agent_catalog_output() {
     local output_format="$1"
     local output_kind="${2:-all}"
     local capability_filter="${3:-all}"
+    local recommend_for="${4:-none}"
 
     case "$output_format" in
         summary)
-            evop_print_project_agent_catalog_report "$output_kind" "$capability_filter"
+            evop_print_project_agent_catalog_report "$output_kind" "$capability_filter" "$recommend_for"
             ;;
         json)
-            evop_render_agent_catalog_bundle_json "$output_kind" "$capability_filter"
+            evop_render_agent_catalog_bundle_json "$output_kind" "$capability_filter" "$recommend_for"
             ;;
         env)
-            evop_print_project_agent_catalog_env "$output_kind" "$capability_filter"
+            evop_print_project_agent_catalog_env "$output_kind" "$capability_filter" "$recommend_for"
             ;;
     esac
 }
@@ -56,9 +57,10 @@ evop_write_agent_catalog_report() {
     local output_format="$2"
     local output_kind="${3:-all}"
     local capability_filter="${4:-all}"
+    local recommend_for="${5:-none}"
 
     [[ -n "$file_path" ]] || return 0
 
     mkdir -p "$(dirname "$file_path")"
-    evop_print_agent_catalog_output "$output_format" "$output_kind" "$capability_filter" >"$file_path"
+    evop_print_agent_catalog_output "$output_format" "$output_kind" "$capability_filter" "$recommend_for" >"$file_path"
 }

@@ -245,6 +245,24 @@ CLI is meant for search, filesystem inspection, shell execution, JSON
 inspection, package management, and similar tasks without relying on brittle
 name heuristics.
 
+Repo-local command discovery in the same layer now also exposes richer command
+execution metadata for wrappers: runner class, working-directory expectation,
+priority, and usage hint. That keeps command selection closer to "call this
+repo executable directly from the repo root" instead of forcing wrappers to
+reverse-engineer invocation style from raw shell strings. The repo-local scan
+is now also decomposed into small cached inventories for `bin/` executables,
+top-level shell scripts, helper directories, and test harnesses so command
+catalog rendering can reuse the same filesystem walk results instead of
+repeating glob expansion across adjacent report modes.
+
+The same command-catalog path now also materializes a cached metadata table and
+task-oriented recommendation slice. `inspect --format agent` and `catalog` can
+optionally resolve a `review`, `bugfix`, `refactor`, `performance`, or
+`feature` intent into a smaller recommended command subset while still keeping
+the full catalog available. That lets coding-agent wrappers ask for "best
+commands to start with for this task kind" without recomputing capability,
+runner, priority, and usage metadata across summary, JSON, and env renderers.
+
 ## Command Model
 
 Commands are treated as first-class slots:

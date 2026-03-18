@@ -46,8 +46,8 @@ pass "INSPECT commands"
 
 inspect_agent_output="$(run_expect_success "INSPECT should render an agent-facing command catalog" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format agent)"
 assert_contains "$inspect_agent_output" "Agent command catalog:" "INSPECT agent mode should print the agent command catalog heading"
-assert_contains "$inspect_agent_output" "./bin/context-tool [repo_executable; context; repo executable]" "INSPECT agent mode should show structured repo executable entries"
-assert_contains "$inspect_agent_output" "sh ./scripts/bootstrap.sh [repo_helper_program; bootstrap; repo helper program]" "INSPECT agent mode should show structured helper program entries"
+assert_contains "$inspect_agent_output" "./bin/context-tool [repo_executable; context; repo executable; direct; high]" "INSPECT agent mode should show structured repo executable entries"
+assert_contains "$inspect_agent_output" "sh ./scripts/bootstrap.sh [repo_helper_program; bootstrap; repo helper program; shell-runtime; high]" "INSPECT agent mode should show structured helper program entries"
 assert_contains "$inspect_agent_output" "git [host cli]" "INSPECT agent mode should include agent support tools"
 assert_contains "$inspect_agent_output" "Agent support tool catalog:" "INSPECT agent mode should print the structured support tool catalog"
 assert_contains "$inspect_agent_output" "git -> " "INSPECT agent mode should include resolved support tool paths"
@@ -63,7 +63,7 @@ import os
 data = json.loads(os.environ["INSPECT_JSON"])
 print(data["profiles"]["language"]["name"])
 print(data["package_manager"])
-print("\n".join(f"{item['kind']}|{item['capability']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
+print("\n".join(f"{item['kind']}|{item['capability']}|{item['runner']}|{item['workdir']}|{item['priority']}|{item['usage']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
 print("\n".join(f"{item['name']}|{item['path']}|{item['source']}|{item['capability']}|{item['usage']}" for item in data["agent_support_tool_catalog"]))
 print("\n".join(data["agent_tools"]))
 print("\n".join(data["agent_support_tools"]))
@@ -81,8 +81,8 @@ PY
 )"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
-assert_contains "$inspect_json_summary" "repo_helper_program|bootstrap|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT json should include structured helper program entries"
-assert_contains "$inspect_json_summary" "test_harness_script|verify|zsh ./tests/run_tests.sh|test harness script" "INSPECT json should include structured test harness entries"
+assert_contains "$inspect_json_summary" "repo_helper_program|bootstrap|shell-runtime|repo-root|high|prepare the repository environment or setup workflow|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT json should include structured helper program entries"
+assert_contains "$inspect_json_summary" "test_harness_script|verify|shell-runtime|repo-root|high|run verification or quality gates through the repo workflow|zsh ./tests/run_tests.sh|test harness script" "INSPECT json should include structured test harness entries"
 assert_contains "$inspect_json_summary" "git|" "INSPECT json should include structured support tool catalog entries"
 assert_contains "$inspect_json_summary" "|host cli|vcs|inspect repository state and record commits" "INSPECT json should include support tool capability and usage metadata"
 assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
@@ -108,7 +108,7 @@ import os
 data = json.loads(os.environ["INSPECT_AGENT_JSON"])
 print(data["language_profile"]["name"])
 print(data["package_manager"])
-print("\n".join(f"{item['kind']}|{item['capability']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
+print("\n".join(f"{item['kind']}|{item['capability']}|{item['runner']}|{item['workdir']}|{item['priority']}|{item['usage']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
 print("\n".join(f"{item['name']}|{item['path']}|{item['source']}|{item['capability']}|{item['usage']}" for item in data["agent_support_tool_catalog"]))
 print("\n".join(data["agent_support_tools"]))
 print(f"timings_ok={all(isinstance(data['timings'][key], int) and data['timings'][key] >= 0 for key in data['timings'])}")
@@ -117,7 +117,7 @@ PY
 )"
 assert_contains "$inspect_agent_json_summary" "typescript" "INSPECT agent-json should include the detected language profile"
 assert_contains "$inspect_agent_json_summary" "pnpm" "INSPECT agent-json should include the package manager"
-assert_contains "$inspect_agent_json_summary" "repo_helper_program|bootstrap|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT agent-json should include structured helper program entries"
+assert_contains "$inspect_agent_json_summary" "repo_helper_program|bootstrap|shell-runtime|repo-root|high|prepare the repository environment or setup workflow|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT agent-json should include structured helper program entries"
 assert_contains "$inspect_agent_json_summary" "git|" "INSPECT agent-json should include the structured support tool catalog"
 assert_contains "$inspect_agent_json_summary" "|host cli|vcs|inspect repository state and record commits" "INSPECT agent-json should include support tool capability and usage metadata"
 assert_contains "$inspect_agent_json_summary" "git [host cli]" "INSPECT agent-json should include support tools"
@@ -134,6 +134,10 @@ printf '%s\n' "$EVOP_INSPECT_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
 printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_CATALOG"
 printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_CAPABILITIES"
+printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_RUNNERS"
+printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_WORKDIRS"
+printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_PRIORITIES"
+printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_USAGES"
 printf '%s\n' "$EVOP_INSPECT_AGENT_SUPPORT_TOOL_CATALOG"
 printf '%s\n' "$EVOP_INSPECT_AGENT_SUPPORT_TOOL_CAPABILITIES"
 printf '%s\n' "$EVOP_INSPECT_AGENT_TOOLS"
@@ -151,6 +155,10 @@ assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export t
 assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
 assert_contains "$inspect_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT env should export the structured agent command catalog"
 assert_contains "$inspect_env_summary" $'sh ./scripts/bootstrap.sh\tbootstrap' "INSPECT env should export command capability mappings"
+assert_contains "$inspect_env_summary" $'sh ./scripts/bootstrap.sh\tshell-runtime' "INSPECT env should export command runner mappings"
+assert_contains "$inspect_env_summary" $'sh ./scripts/bootstrap.sh\trepo-root' "INSPECT env should export command workdir mappings"
+assert_contains "$inspect_env_summary" $'sh ./scripts/bootstrap.sh\thigh' "INSPECT env should export command priority mappings"
+assert_contains "$inspect_env_summary" $'sh ./scripts/bootstrap.sh\tprepare the repository environment or setup workflow' "INSPECT env should export command usage mappings"
 assert_contains "$inspect_env_summary" $'git\t' "INSPECT env should export the structured support tool catalog"
 assert_contains "$inspect_env_summary" $'git\tvcs' "INSPECT env should export support tool capability mappings"
 assert_contains "$inspect_env_summary" $'host cli\tvcs\tinspect repository state and record commits' "INSPECT env should export support tool usage metadata"
@@ -176,6 +184,10 @@ printf '%s\n' "$EVOP_AGENT_CATALOG_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_AGENT_CATALOG_PACKAGE_MANAGER"
 printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_CATALOG"
 printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES"
+printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_RUNNERS"
+printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_WORKDIRS"
+printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_PRIORITIES"
+printf '%s\n' "$EVOP_AGENT_CATALOG_COMMAND_USAGES"
 printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG"
 printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CAPABILITIES"
 printf '%s\n' "$EVOP_AGENT_CATALOG_SUPPORT_TOOLS"
@@ -186,6 +198,10 @@ assert_contains "$inspect_agent_env_summary" "typescript" "INSPECT agent-env sho
 assert_contains "$inspect_agent_env_summary" "pnpm" "INSPECT agent-env should export the package manager"
 assert_contains "$inspect_agent_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT agent-env should export the structured command catalog"
 assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\tbootstrap' "INSPECT agent-env should export command capability mappings"
+assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\tshell-runtime' "INSPECT agent-env should export command runner mappings"
+assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\trepo-root' "INSPECT agent-env should export command workdir mappings"
+assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\thigh' "INSPECT agent-env should export command priority mappings"
+assert_contains "$inspect_agent_env_summary" $'sh ./scripts/bootstrap.sh\tprepare the repository environment or setup workflow' "INSPECT agent-env should export command usage mappings"
 assert_contains "$inspect_agent_env_summary" $'git\t' "INSPECT agent-env should export the structured support tool catalog"
 assert_contains "$inspect_agent_env_summary" $'git\tvcs' "INSPECT agent-env should export support tool capability mappings"
 assert_contains "$inspect_agent_env_summary" "git [host cli]" "INSPECT agent-env should export support tools"
@@ -206,9 +222,34 @@ pass "CATALOG commands kind"
 
 catalog_capability_output="$(run_expect_success "CATALOG should filter command entries by capability" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --kind commands --capability bootstrap)"
 assert_contains "$catalog_capability_output" "Capability filter: bootstrap" "CATALOG summary should surface the applied capability filter"
-assert_contains "$catalog_capability_output" "sh ./scripts/bootstrap.sh [repo_helper_program; bootstrap; repo helper program]" "CATALOG capability view should keep matching helper programs"
+assert_contains "$catalog_capability_output" "sh ./scripts/bootstrap.sh [repo_helper_program; bootstrap; repo helper program; shell-runtime; high]" "CATALOG capability view should keep matching helper programs"
 assert_not_contains "$catalog_capability_output" "pnpm inspect [package_script; inspect; package.json script]" "CATALOG capability view should omit non-matching commands"
 pass "CATALOG capability filter"
+
+inspect_agent_recommend_output="$(run_expect_success "INSPECT agent should recommend task-oriented commands" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format agent --recommend-for performance)"
+assert_contains "$inspect_agent_recommend_output" "Recommended for: performance" "INSPECT agent should surface the requested recommendation task kind"
+assert_contains "$inspect_agent_recommend_output" "Recommended agent commands:" "INSPECT agent should print the recommended command section"
+assert_contains "$inspect_agent_recommend_output" "pnpm inspect [inspect; package_script; package.json script; package-manager; high]" "INSPECT agent should recommend inspect first for performance work"
+assert_contains "$inspect_agent_recommend_output" "./bin/context-tool [context; repo_executable; repo executable; direct; high]" "INSPECT agent should recommend repo context tools for performance work"
+pass "INSPECT agent recommendations"
+
+catalog_recommend_json_output="$(run_expect_success "CATALOG should render recommended commands in json output" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format json --kind commands --recommend-for performance)"
+catalog_recommend_json_summary="$(CATALOG_JSON="$catalog_recommend_json_output" python3 - <<'PY'
+import json
+import os
+
+data = json.loads(os.environ["CATALOG_JSON"])
+print(data["recommend_for"])
+print(f"inspect_ok={any(item['command'] == 'pnpm inspect' and item['capability'] == 'inspect' for item in data['recommended_agent_command_catalog'])}")
+print(f"context_ok={any(item['command'] == './bin/context-tool' and item['capability'] == 'context' for item in data['recommended_agent_command_catalog'])}")
+print(f"tools_ok={'pnpm inspect [package.json script]' in data['recommended_agent_tools']}")
+PY
+)"
+assert_contains "$catalog_recommend_json_summary" "performance" "CATALOG json should expose the resolved recommendation task kind"
+assert_contains "$catalog_recommend_json_summary" "inspect_ok=True" "CATALOG json should include an inspect recommendation"
+assert_contains "$catalog_recommend_json_summary" "context_ok=True" "CATALOG json should include a context recommendation"
+assert_contains "$catalog_recommend_json_summary" "tools_ok=True" "CATALOG json should include flattened recommended tool lines"
+pass "CATALOG recommendations json"
 
 catalog_support_json_output="$(run_expect_success "CATALOG should render support-only json output" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format json --kind support)"
 catalog_support_json_summary="$(CATALOG_JSON="$catalog_support_json_output" python3 - <<'PY'
@@ -241,6 +282,9 @@ printf '%s\n' "$EVOP_AGENT_CATALOG_KIND"
 printf '%s\n' "$EVOP_AGENT_CATALOG_CAPABILITY_FILTER"
 printf 'commands_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_CATALOG" == *$'repo_executable\t./bin/context-tool\trepo executable'* ]] && printf true || printf false)"
 printf 'capabilities_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES" == *$'sh ./scripts/bootstrap.sh\tbootstrap'* ]] && printf true || printf false)"
+printf 'runners_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_RUNNERS" == *$'sh ./scripts/bootstrap.sh\tshell-runtime'* ]] && printf true || printf false)"
+printf 'workdirs_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_WORKDIRS" == *$'sh ./scripts/bootstrap.sh\trepo-root'* ]] && printf true || printf false)"
+printf 'priorities_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_COMMAND_PRIORITIES" == *$'sh ./scripts/bootstrap.sh\thigh'* ]] && printf true || printf false)"
 printf 'support_empty_ok=%s\n' "$([[ -z "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" && -z "$EVOP_AGENT_CATALOG_SUPPORT_TOOL_CAPABILITIES" && -z "$EVOP_AGENT_CATALOG_SUPPORT_TOOLS" ]] && printf true || printf false)"
 EOF
 )"
@@ -248,8 +292,28 @@ assert_contains "$catalog_env_summary" "commands" "CATALOG env should export the
 assert_contains "$catalog_env_summary" "all" "CATALOG env should export the selected capability filter"
 assert_contains "$catalog_env_summary" "commands_ok=true" "CATALOG env commands view should export structured command entries"
 assert_contains "$catalog_env_summary" "capabilities_ok=true" "CATALOG env commands view should export command capability mappings"
+assert_contains "$catalog_env_summary" "runners_ok=true" "CATALOG env commands view should export command runner mappings"
+assert_contains "$catalog_env_summary" "workdirs_ok=true" "CATALOG env commands view should export command workdir mappings"
+assert_contains "$catalog_env_summary" "priorities_ok=true" "CATALOG env commands view should export command priority mappings"
 assert_contains "$catalog_env_summary" "support_empty_ok=true" "CATALOG env commands view should clear support-tool exports"
 pass "CATALOG env"
+
+catalog_recommend_env_summary="$(
+    CATALOG_SCRIPT="$CATALOG_SCRIPT" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source /dev/stdin <<<"$("$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --format env --kind commands --recommend-for performance)"
+
+printf '%s\n' "$EVOP_AGENT_CATALOG_RECOMMEND_FOR"
+printf 'recommended_commands_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CATALOG" == *$'package_script\tpnpm inspect\tpackage.json script'* ]] && printf true || printf false)"
+printf 'recommended_capabilities_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CAPABILITIES" == *$'./bin/context-tool\tcontext'* ]] && printf true || printf false)"
+printf 'recommended_tools_ok=%s\n' "$([[ "$EVOP_AGENT_CATALOG_RECOMMENDED_TOOLS" == *"pnpm inspect [package.json script]"* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$catalog_recommend_env_summary" "performance" "CATALOG env should export the resolved recommendation task kind"
+assert_contains "$catalog_recommend_env_summary" "recommended_commands_ok=true" "CATALOG env should export structured recommended command entries"
+assert_contains "$catalog_recommend_env_summary" "recommended_capabilities_ok=true" "CATALOG env should export recommended command capability mappings"
+assert_contains "$catalog_recommend_env_summary" "recommended_tools_ok=true" "CATALOG env should export flattened recommended tool lines"
+pass "CATALOG recommendations env"
 
 catalog_report_json="$TEST_TMPDIR/catalog-report.json"
 run_expect_success "CATALOG should write a json report file" "$CATALOG_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --kind commands --report-file "$catalog_report_json" --report-format json >/dev/null
@@ -260,7 +324,7 @@ import os
 data = json.loads(os.environ["CATALOG_REPORT_JSON"])
 print(data["kind"])
 print(data["capability_filter"])
-print(f"commands_ok={any(item['command'] == './bin/context-tool' for item in data['agent_command_catalog'])}")
+print(f"commands_ok={any(item['command'] == './bin/context-tool' and item['runner'] == 'direct' and item['priority'] == 'high' for item in data['agent_command_catalog'])}")
 print(f"support_empty_ok={data['agent_support_tool_catalog'] == []}")
 PY
 )"
@@ -385,6 +449,24 @@ assert_contains "$agent_command_catalog_cache_output" "helper_program_ok=true" "
 assert_contains "$agent_command_catalog_cache_output" "test_harness_ok=true" "Agent command catalog should include test harness scripts"
 pass "Agent command catalog cache reuse"
 
+agent_command_metadata_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_agent_command_metadata_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_COMMAND_METADATA_CACHE)"
+evop_project_agent_command_metadata_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_COMMAND_METADATA_CACHE)"
+printf 'inspect_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_METADATA_RESULT" == *$'package_script\tinspect\tpnpm inspect\tpackage.json script\tpackage-manager\trepo-root\thigh\tinspect repository state or generate repo context'* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$agent_command_metadata_cache_output" "first_cache_entries=1" "Agent command metadata should populate the dedicated cache on first access"
+assert_contains "$agent_command_metadata_cache_output" "second_cache_entries=1" "Agent command metadata should reuse the dedicated cache on repeated access"
+assert_contains "$agent_command_metadata_cache_output" "inspect_ok=true" "Agent command metadata should include cached command execution metadata"
+pass "Agent command metadata cache reuse"
+
 agent_local_command_catalog_cache_output="$(
     ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
 set -euo pipefail
@@ -395,11 +477,19 @@ evop_project_agent_local_command_catalog_cached "$TEST_CONTEXT_DIR" >/dev/null
 printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_CACHE)"
 evop_project_agent_local_command_catalog_cached "$TEST_CONTEXT_DIR" >/dev/null
 printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_CACHE)"
+printf 'bin_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_BIN_EXECUTABLES_CACHE)"
+printf 'top_level_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_TOP_LEVEL_SHELL_SCRIPTS_CACHE)"
+printf 'helper_path_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_HELPER_SURFACE_PATHS_CACHE)"
+printf 'harness_path_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_TEST_HARNESS_PATHS_CACHE)"
 printf 'make_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_LOCAL_COMMAND_CATALOG_RESULT" == *$'top_level_script\tzsh ./STATUS.sh\ttop-level script'* ]] && printf true || printf false)"
 EOF
 )"
 assert_contains "$agent_local_command_catalog_cache_output" "first_cache_entries=1" "Repo-local agent command catalog should populate its dedicated cache on first access"
 assert_contains "$agent_local_command_catalog_cache_output" "second_cache_entries=1" "Repo-local agent command catalog should reuse its dedicated cache on repeated access"
+assert_contains "$agent_local_command_catalog_cache_output" "bin_cache_entries=1" "Repo-local agent command discovery should cache bin executable scans"
+assert_contains "$agent_local_command_catalog_cache_output" "top_level_cache_entries=1" "Repo-local agent command discovery should cache top-level shell script scans"
+assert_contains "$agent_local_command_catalog_cache_output" "helper_path_cache_entries=4" "Repo-local agent command discovery should cache helper-dir scans per helper root"
+assert_contains "$agent_local_command_catalog_cache_output" "harness_path_cache_entries=1" "Repo-local agent command discovery should cache test harness scans"
 assert_contains "$agent_local_command_catalog_cache_output" "make_ok=true" "Repo-local agent command catalog should include top-level scripts"
 pass "Agent local command catalog cache reuse"
 

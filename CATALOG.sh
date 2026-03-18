@@ -28,6 +28,7 @@ evop_init_common_context
 OUTPUT_FORMAT="summary"
 OUTPUT_KIND="all"
 CAPABILITY_FILTER="all"
+RECOMMEND_FOR="none"
 REPORT_FILE=""
 REPORT_FORMAT=""
 
@@ -50,6 +51,8 @@ Options:
       --capability NAME    Command capability filter: all, inspect, verify, lint,
                            clean, status, profiles, catalog, bootstrap, release,
                            generate, format, doctor, context, task, automation.
+      --recommend-for NAME Recommend a task-oriented subset: none, auto, review,
+                           bugfix, refactor, performance, or feature.
       --report-file FILE   Also write catalog output to a file.
       --report-format NAME Report file format. Defaults to --format.
   -h, --help               Show this help text.
@@ -75,6 +78,11 @@ while (($# > 0)); do
         --capability)
             evop_require_option_value "$1" "$#"
             CAPABILITY_FILTER="$2"
+            shift 2
+            ;;
+        --recommend-for)
+            evop_require_option_value "$1" "$#"
+            RECOMMEND_FOR="$2"
             shift 2
             ;;
         --report-file)
@@ -115,6 +123,7 @@ fi
 evop_validate_catalog_format "$OUTPUT_FORMAT"
 evop_validate_catalog_kind "$OUTPUT_KIND"
 evop_validate_catalog_capability "$CAPABILITY_FILTER"
+evop_validate_agent_recommend_task_kind "$RECOMMEND_FOR"
 
 if [[ -z "$REPORT_FORMAT" ]]; then
     REPORT_FORMAT="$OUTPUT_FORMAT"
@@ -122,5 +131,5 @@ fi
 evop_validate_catalog_format "$REPORT_FORMAT"
 
 evop_finalize_agent_analysis_context
-evop_print_agent_catalog_output "$OUTPUT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER"
-evop_write_agent_catalog_report "$REPORT_FILE" "$REPORT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER"
+evop_print_agent_catalog_output "$OUTPUT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER" "$RECOMMEND_FOR"
+evop_write_agent_catalog_report "$REPORT_FILE" "$REPORT_FORMAT" "$OUTPUT_KIND" "$CAPABILITY_FILTER" "$RECOMMEND_FOR"

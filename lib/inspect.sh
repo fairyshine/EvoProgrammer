@@ -13,6 +13,7 @@ evop_validate_inspect_format() {
 
 evop_print_project_inspection_output() {
     local output_format="$1"
+    local recommend_for="${2:-none}"
 
     case "$output_format" in
         summary)
@@ -45,13 +46,13 @@ evop_print_project_inspection_output() {
             evop_print_project_inspection_env
             ;;
         agent)
-            evop_print_project_agent_catalog_report
+            evop_print_project_agent_catalog_report "all" "all" "$recommend_for"
             ;;
         agent-json)
-            evop_render_agent_catalog_bundle_json
+            evop_render_agent_catalog_bundle_json "all" "all" "$recommend_for"
             ;;
         agent-env)
-            evop_print_project_agent_catalog_env
+            evop_print_project_agent_catalog_env "all" "all" "$recommend_for"
             ;;
     esac
 }
@@ -59,9 +60,10 @@ evop_print_project_inspection_output() {
 evop_write_project_inspection_report() {
     local file_path="$1"
     local output_format="$2"
+    local recommend_for="${3:-none}"
 
     [[ -n "$file_path" ]] || return 0
 
     mkdir -p "$(dirname "$file_path")"
-    evop_print_project_inspection_output "$output_format" >"$file_path"
+    evop_print_project_inspection_output "$output_format" "$recommend_for" >"$file_path"
 }

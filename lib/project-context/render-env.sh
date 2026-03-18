@@ -24,6 +24,30 @@ evop_print_project_inspection_env() {
             printf '%s\t%s\n' "$command" "$(evop_agent_command_capability "$kind" "$command" "$source")"
         done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
     )"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_RUNNERS" "$(
+        while IFS=$'\t' read -r kind command source; do
+            [[ -n "$kind" && -n "$command" ]] || continue
+            printf '%s\t%s\n' "$command" "$(evop_agent_command_runner "$kind" "$command")"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    )"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_WORKDIRS" "$(
+        while IFS=$'\t' read -r kind command source; do
+            [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+            printf '%s\t%s\n' "$command" "$(evop_agent_command_workdir "$kind" "$command" "$source")"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    )"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_PRIORITIES" "$(
+        while IFS=$'\t' read -r kind command source; do
+            [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+            printf '%s\t%s\n' "$command" "$(evop_agent_command_priority "$kind" "$command" "$source")"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    )"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_COMMAND_USAGES" "$(
+        while IFS=$'\t' read -r kind command source; do
+            [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+            printf '%s\t%s\n' "$command" "$(evop_agent_command_usage "$kind" "$command" "$source")"
+        done <<<"${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}"
+    )"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOL_CATALOG" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOL_CAPABILITIES" "$(
         while IFS=$'\t' read -r name path source capability usage; do
@@ -79,7 +103,14 @@ evop_print_project_inspection_env() {
 evop_print_project_agent_catalog_env() {
     local output_kind="${1:-all}"
     local capability_filter="${2:-all}"
+    local recommend_for="${3:-none}"
+    local resolved_recommend_for=""
+    local command_metadata=""
     local filtered_catalog=""
+    local recommended_catalog=""
+
+    resolved_recommend_for="$(evop_resolve_agent_recommend_task_kind "$recommend_for")"
+    command_metadata="$(evop_current_agent_command_metadata)"
 
     evop_print_env_assignment "EVOP_AGENT_CATALOG_TARGET_DIR" "${TARGET_DIR:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_AGENT" "${AGENT:-}"
@@ -90,25 +121,95 @@ evop_print_project_agent_catalog_env() {
     evop_print_env_assignment "EVOP_AGENT_CATALOG_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_KIND" "$output_kind"
     evop_print_env_assignment "EVOP_AGENT_CATALOG_CAPABILITY_FILTER" "$capability_filter"
+    evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMEND_FOR" "$resolved_recommend_for"
     if [[ "$output_kind" == "support" ]]; then
         evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" ""
         evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CATALOG" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CAPABILITIES" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_RUNNERS" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_WORKDIRS" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_PRIORITIES" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_USAGES" ""
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_TOOLS" ""
         evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" ""
     else
-        filtered_catalog="$(evop_filter_agent_command_catalog_lines "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}" "$capability_filter")"
+        filtered_catalog="$(evop_filter_agent_command_metadata_lines "$command_metadata" "$capability_filter")"
+        recommended_catalog="$(evop_recommend_agent_command_metadata_lines "$filtered_catalog" "$recommend_for")"
         evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CATALOG" "$(
-            while IFS=$'\t' read -r kind capability command source; do
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
                 [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
                 printf '%s\t%s\t%s\n' "$kind" "$command" "$source"
             done <<<"$filtered_catalog"
         )"
         evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_CAPABILITIES" "$(
-            while IFS=$'\t' read -r kind capability command source; do
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
                 [[ -n "$command" && -n "$capability" ]] || continue
                 printf '%s\t%s\n' "$command" "$capability"
             done <<<"$filtered_catalog"
         )"
-        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "$(evop_render_agent_tool_lines_from_catalog "${EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG:-}" "$capability_filter")"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_RUNNERS" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$runner" ]] || continue
+                printf '%s\t%s\n' "$command" "$runner"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_WORKDIRS" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$workdir" ]] || continue
+                printf '%s\t%s\n' "$command" "$workdir"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_PRIORITIES" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$priority" ]] || continue
+                printf '%s\t%s\n' "$command" "$priority"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_COMMAND_USAGES" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$usage" ]] || continue
+                printf '%s\t%s\n' "$command" "$usage"
+            done <<<"$filtered_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CATALOG" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+                printf '%s\t%s\t%s\n' "$kind" "$command" "$source"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_CAPABILITIES" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$capability" ]] || continue
+                printf '%s\t%s\n' "$command" "$capability"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_RUNNERS" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$runner" ]] || continue
+                printf '%s\t%s\n' "$command" "$runner"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_WORKDIRS" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$workdir" ]] || continue
+                printf '%s\t%s\n' "$command" "$workdir"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_PRIORITIES" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$priority" ]] || continue
+                printf '%s\t%s\n' "$command" "$priority"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_COMMAND_USAGES" "$(
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+                [[ -n "$command" && -n "$usage" ]] || continue
+                printf '%s\t%s\n' "$command" "$usage"
+            done <<<"$recommended_catalog"
+        )"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_RECOMMENDED_TOOLS" "$(evop_render_recommended_agent_tool_lines_from_metadata "$recommended_catalog")"
+        evop_print_env_assignment "EVOP_AGENT_CATALOG_TOOLS" "$(evop_render_recommended_agent_tool_lines_from_metadata "$filtered_catalog")"
     fi
     if [[ "$output_kind" == "commands" ]]; then
         evop_print_env_assignment "EVOP_AGENT_CATALOG_SUPPORT_TOOL_CATALOG" ""

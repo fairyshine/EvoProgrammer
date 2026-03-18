@@ -26,6 +26,7 @@ source "$INSPECT_LIB"
 
 evop_init_common_context
 OUTPUT_FORMAT="summary"
+RECOMMEND_FOR="none"
 REPORT_FILE=""
 REPORT_FORMAT=""
 
@@ -46,6 +47,9 @@ Options:
   -t, --target-dir DIR     Repository directory to inspect.
       --context-file FILE  Reuse an `inspect --format env` context snapshot.
       --format NAME        Output format: summary, commands, diagnostics, profiles, doctor, prompt, timings, json, env, agent, agent-json, or agent-env.
+      --recommend-for NAME Recommend a task-oriented subset for agent formats:
+                           none, auto, review, bugfix, refactor, performance,
+                           or feature.
       --report-file FILE   Also write inspect output to a file.
       --report-format NAME Report file format. Defaults to --format.
   -h, --help               Show this help text.
@@ -61,6 +65,11 @@ while (($# > 0)); do
         --format)
             evop_require_option_value "$1" "$#"
             OUTPUT_FORMAT="$2"
+            shift 2
+            ;;
+        --recommend-for)
+            evop_require_option_value "$1" "$#"
+            RECOMMEND_FOR="$2"
             shift 2
             ;;
         --report-file)
@@ -99,6 +108,7 @@ if (($# > 0)); then
 fi
 
 evop_validate_inspect_format "$OUTPUT_FORMAT"
+evop_validate_agent_recommend_task_kind "$RECOMMEND_FOR"
 
 if [[ -z "$REPORT_FORMAT" ]]; then
     REPORT_FORMAT="$OUTPUT_FORMAT"
@@ -114,5 +124,5 @@ case "$OUTPUT_FORMAT" in
         ;;
 esac
 
-evop_print_project_inspection_output "$OUTPUT_FORMAT"
-evop_write_project_inspection_report "$REPORT_FILE" "$REPORT_FORMAT"
+evop_print_project_inspection_output "$OUTPUT_FORMAT" "$RECOMMEND_FOR"
+evop_write_project_inspection_report "$REPORT_FILE" "$REPORT_FORMAT" "$RECOMMEND_FOR"

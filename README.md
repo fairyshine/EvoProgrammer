@@ -141,6 +141,7 @@ EvoProgrammer profiles --category frameworks --format json
 EvoProgrammer catalog --target-dir /path/to/project
 EvoProgrammer catalog --target-dir /path/to/project --kind commands --format json
 EvoProgrammer catalog --target-dir /path/to/project --kind commands --capability bootstrap
+EvoProgrammer catalog --target-dir /path/to/project --kind commands --recommend-for performance
 EvoProgrammer catalog --target-dir /path/to/project --kind support --format env
 ```
 
@@ -199,6 +200,12 @@ with `zsh -n`.
 | `--agent-args JSON` | Extra agent arguments as a JSON string list |
 | `--auto-commit` | Commit each successful iteration's new git changes |
 | `--auto-commit-message TEXT` | Override the auto-commit message |
+
+For agent-facing inspection and wrapper integration, `inspect --format agent` and
+`catalog` now also accept `--recommend-for none|auto|review|bugfix|refactor|performance|feature`.
+That adds a task-oriented recommended command subset on top of the full command
+catalog, so wrappers can prefer the most relevant inspect/verify/context/generate
+surfaces without re-ranking raw command strings themselves.
 
 ## Inspection And Verification
 

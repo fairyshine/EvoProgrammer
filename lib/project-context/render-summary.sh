@@ -35,14 +35,22 @@ evop_print_project_command_report() {
 evop_print_project_agent_catalog_report() {
     local output_kind="${1:-all}"
     local capability_filter="${2:-all}"
+    local recommend_for="${3:-none}"
+    local resolved_recommend_for=""
+    local command_metadata=""
     local filtered_catalog=""
+    local recommended_catalog=""
     local kind=""
     local capability=""
     local command=""
     local source=""
-    local name=""
-    local path=""
+    local runner=""
+    local workdir=""
+    local priority=""
     local usage=""
+    local name=""
+    local tool_path=""
+    local tool_usage=""
 
     [[ -n "${TARGET_DIR:-}" ]] && evop_print_key_value "Target directory:" "$TARGET_DIR"
     [[ -n "${AGENT:-}" ]] && evop_print_key_value "Agent:" "$AGENT"
@@ -50,19 +58,30 @@ evop_print_project_agent_catalog_report() {
     [[ -n "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" ]] && evop_print_key_value "Package manager:" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
     [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && evop_print_key_value "Workspace mode:" "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
     [[ "$capability_filter" != "all" ]] && evop_print_key_value "Capability filter:" "$capability_filter"
+    resolved_recommend_for="$(evop_resolve_agent_recommend_task_kind "$recommend_for")"
+    [[ "$recommend_for" != "none" ]] && evop_print_key_value "Recommended for:" "$resolved_recommend_for"
     if [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]]; then
         evop_print_section "Workspace packages:"
         while IFS= read -r line; do
             evop_print_list_item "$line"
         done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES"
     fi
-    filtered_catalog="$(evop_filter_agent_command_catalog_lines "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" "$capability_filter")"
+    command_metadata="$(evop_current_agent_command_metadata)"
+    filtered_catalog="$(evop_filter_agent_command_metadata_lines "$command_metadata" "$capability_filter")"
+    recommended_catalog="$(evop_recommend_agent_command_metadata_lines "$filtered_catalog" "$recommend_for")"
+    if [[ "$output_kind" != "support" && -n "$recommended_catalog" ]]; then
+        evop_print_section "Recommended agent commands:"
+        while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
+            [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
+            evop_print_list_item "$command [$capability; $kind; $source; $runner; $priority]"
+        done <<<"$recommended_catalog"
+    fi
     if [[ "$output_kind" != "support" && -n "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG" ]]; then
         evop_print_section "Agent command catalog:"
         if [[ -n "$filtered_catalog" ]]; then
-            while IFS=$'\t' read -r kind capability command source; do
+            while IFS=$'\t' read -r kind capability command source runner workdir priority usage; do
                 [[ -n "$kind" && -n "$capability" && -n "$command" && -n "$source" ]] || continue
-                evop_print_list_item "$command [$kind; $capability; $source]"
+                evop_print_list_item "$command [$kind; $capability; $source; $runner; $priority]"
             done <<<"$filtered_catalog"
         else
             evop_print_list_item "none"
@@ -76,9 +95,9 @@ evop_print_project_agent_catalog_report() {
     fi
     if [[ "$output_kind" != "commands" && -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG" ]]; then
         evop_print_section "Agent support tool catalog:"
-        while IFS=$'\t' read -r name path source capability usage; do
-            [[ -n "$name" && -n "$path" && -n "$source" && -n "$capability" && -n "$usage" ]] || continue
-            evop_print_list_item "$name -> $path [$capability; $source; $usage]"
+        while IFS=$'\t' read -r name tool_path source capability tool_usage; do
+            [[ -n "$name" && -n "$tool_path" && -n "$source" && -n "$capability" && -n "$tool_usage" ]] || continue
+            evop_print_list_item "$name -> $tool_path [$capability; $source; $tool_usage]"
         done <<<"$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOL_CATALOG"
     fi
 }
