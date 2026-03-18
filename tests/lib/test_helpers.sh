@@ -520,29 +520,79 @@ setup_node_monorepo_workspace() {
     fi
 
     TEST_NODE_MONOREPO_DIR="$TEST_TMPDIR/node-monorepo"
-    mkdir -p \
-        "$TEST_NODE_MONOREPO_DIR/apps/web/src" \
-        "$TEST_NODE_MONOREPO_DIR/packages/shared/src" \
-        "$TEST_NODE_MONOREPO_DIR/tools/release"
+    setup_js_monorepo_workspace "$TEST_NODE_MONOREPO_DIR" pnpm
+}
 
-    cat >"$TEST_NODE_MONOREPO_DIR/package.json" <<'EOF'
+setup_yarn_monorepo_workspace() {
+    if [[ -n "${TEST_YARN_MONOREPO_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_YARN_MONOREPO_DIR="$TEST_TMPDIR/yarn-monorepo"
+    setup_js_monorepo_workspace "$TEST_YARN_MONOREPO_DIR" yarn
+}
+
+setup_bun_monorepo_workspace() {
+    if [[ -n "${TEST_BUN_MONOREPO_DIR:-}" ]]; then
+        return 0
+    fi
+
+    TEST_BUN_MONOREPO_DIR="$TEST_TMPDIR/bun-monorepo"
+    setup_js_monorepo_workspace "$TEST_BUN_MONOREPO_DIR" bun
+}
+
+setup_js_monorepo_workspace() {
+    local workspace_dir="$1"
+    local package_manager="$2"
+    local root_package_manager_field=""
+
+    mkdir -p \
+        "$workspace_dir/apps/web/src" \
+        "$workspace_dir/packages/shared/src" \
+        "$workspace_dir/tools/release"
+
+    case "$package_manager" in
+        yarn)
+            root_package_manager_field=$',\n  "packageManager": "yarn@4.6.0"'
+            ;;
+        bun)
+            root_package_manager_field=$',\n  "packageManager": "bun@1.2.0"'
+            ;;
+    esac
+
+    cat >"$workspace_dir/package.json" <<EOF
 {
   "name": "node-monorepo",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ]$root_package_manager_field
 }
 EOF
 
-    cat >"$TEST_NODE_MONOREPO_DIR/pnpm-workspace.yaml" <<'EOF'
+    case "$package_manager" in
+        pnpm)
+            cat >"$workspace_dir/pnpm-workspace.yaml" <<'EOF'
 packages:
   - "apps/*"
   - "packages/*"
 EOF
+            ;;
+        yarn)
+            cat >"$workspace_dir/yarn.lock" <<'EOF'
+# yarn lockfile v1
+EOF
+            cat >"$workspace_dir/.yarnrc.yml" <<'EOF'
+nodeLinker: node-modules
+EOF
+            ;;
+        bun)
+            : >"$workspace_dir/bun.lock"
+            ;;
+    esac
 
-    cat >"$TEST_NODE_MONOREPO_DIR/apps/web/package.json" <<'EOF'
+    cat >"$workspace_dir/apps/web/package.json" <<'EOF'
 {
   "name": "@demo/web",
   "scripts": {
@@ -558,7 +608,7 @@ EOF
 }
 EOF
 
-    cat >"$TEST_NODE_MONOREPO_DIR/packages/shared/package.json" <<'EOF'
+    cat >"$workspace_dir/packages/shared/package.json" <<'EOF'
 {
   "name": "@demo/shared",
   "scripts": {
@@ -568,13 +618,13 @@ EOF
 }
 EOF
 
-    cat >"$TEST_NODE_MONOREPO_DIR/apps/web/src/page.tsx" <<'EOF'
+    cat >"$workspace_dir/apps/web/src/page.tsx" <<'EOF'
 export default function Page() {
   return null;
 }
 EOF
 
-    cat >"$TEST_NODE_MONOREPO_DIR/packages/shared/src/index.ts" <<'EOF'
+    cat >"$workspace_dir/packages/shared/src/index.ts" <<'EOF'
 export const shared = true;
 EOF
 }

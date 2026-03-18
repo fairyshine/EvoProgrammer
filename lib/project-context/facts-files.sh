@@ -227,3 +227,64 @@ evop_project_workspace_manifests_cached() {
     EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT="$sorted_manifests"
     printf '%s' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT"
 }
+
+evop_project_workspace_package_json_manifests_cached() {
+    local target_dir="$1"
+    local cache_key="workspace-package-json-manifests"
+    local rel_manifest_path=""
+    local package_json_manifests=""
+
+    EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT=""
+    evop_use_project_context_facts_dir "$target_dir"
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_CACHE "$cache_key"; then
+        EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT"
+        return 0
+    fi
+
+    evop_project_workspace_manifests_cached "$target_dir" >/dev/null
+    while IFS= read -r rel_manifest_path; do
+        [[ "${rel_manifest_path##*/}" == "package.json" ]] || continue
+        [[ -n "$package_json_manifests" ]] && package_json_manifests+=$'\n'
+        package_json_manifests+="$rel_manifest_path"
+    done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT"
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_CACHE "$cache_key" "$package_json_manifests"
+    EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT="$package_json_manifests"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT"
+}
+
+evop_project_workspace_has_package_json_script_cached() {
+    local target_dir="$1"
+    local script_name="$2"
+    local cache_key="workspace-script|$script_name"
+    local cached_value=""
+    local rel_manifest_path=""
+
+    [[ -n "$script_name" ]] || return 1
+    evop_use_project_context_facts_dir "$target_dir"
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key"; then
+        cached_value="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        [[ "$cached_value" == "1" ]]
+        return $?
+    fi
+
+    evop_project_workspace_package_json_manifests_cached "$target_dir" >/dev/null
+    if [[ -z "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT" ]]; then
+        evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "0"
+        return 1
+    fi
+
+    while IFS= read -r rel_manifest_path; do
+        [[ -n "$rel_manifest_path" ]] || continue
+        if evop_project_file_text_contains_regex_cached "$target_dir/$rel_manifest_path" "\"$script_name\"[[:space:]]*:"; then
+            evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "1"
+            return 0
+        fi
+    done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_RESULT"
+
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "0"
+    return 1
+}

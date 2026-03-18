@@ -453,10 +453,21 @@ evop_detect_package_json_commands() {
     done
 }
 
+evop_repo_uses_yarn_berry() {
+    local target_dir="$1"
+
+    if [[ -f "$target_dir/.yarnrc.yml" || -d "$target_dir/.yarn/releases" ]]; then
+        return 0
+    fi
+
+    evop_file_contains_literal "$target_dir/package.json" '"packageManager": "yarn@'
+}
+
 evop_workspace_package_manager_script_command() {
-    local package_manager="$1"
-    local script_name="$2"
-    local slot="${3:-}"
+    local target_dir="$1"
+    local package_manager="$2"
+    local script_name="$3"
+    local slot="${4:-}"
 
     case "$package_manager" in
         pnpm)
@@ -469,6 +480,19 @@ evop_workspace_package_manager_script_command() {
         npm)
             printf 'npm run %s --workspaces --if-present' "$script_name"
             ;;
+        yarn)
+            if ! evop_repo_uses_yarn_berry "$target_dir"; then
+                return 1
+            fi
+            if [[ "$slot" == "dev" ]]; then
+                printf 'yarn workspaces foreach --all --parallel run %s' "$script_name"
+            else
+                printf 'yarn workspaces foreach --all --parallel --topological run %s' "$script_name"
+            fi
+            ;;
+        bun)
+            printf 'bun run --workspaces --if-present --parallel %s' "$script_name"
+            ;;
         *)
             return 1
             ;;
@@ -478,35 +502,22 @@ evop_workspace_package_manager_script_command() {
 evop_workspace_has_package_json_script() {
     local target_dir="$1"
     local script_name="$2"
-    local rel_manifest_path=""
 
     [[ -n "$script_name" ]] || return 1
 
-    evop_project_workspace_manifests_cached "$target_dir" >/dev/null
-    if [[ -z "$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT" ]]; then
-        return 1
-    fi
-
-    while IFS= read -r rel_manifest_path; do
-        [[ -n "$rel_manifest_path" ]] || continue
-        [[ "${rel_manifest_path##*/}" == "package.json" ]] || continue
-        if evop_package_json_has_script "$target_dir/$rel_manifest_path" "$script_name"; then
-            return 0
-        fi
-    done <<<"$EVOP_PROJECT_CONTEXT_WORKSPACE_MANIFESTS_RESULT"
-
-    return 1
+    evop_project_workspace_has_package_json_script_cached "$target_dir" "$script_name"
 }
 
 evop_detect_workspace_package_json_commands() {
     local target_dir="$1"
     local package_manager="$2"
     local script_name=""
+    local workspace_command=""
 
     [[ "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" == "monorepo" ]] || return 0
 
     case "$package_manager" in
-        pnpm|npm)
+        pnpm|npm|yarn|bun)
             ;;
         *)
             return 0
@@ -514,18 +525,21 @@ evop_detect_workspace_package_json_commands() {
     esac
 
     if evop_workspace_has_package_json_script "$target_dir" "dev"; then
-        evop_set_project_command_if_empty dev "$(evop_workspace_package_manager_script_command "$package_manager" dev dev)" "workspace package.json scripts"
+        workspace_command="$(evop_workspace_package_manager_script_command "$target_dir" "$package_manager" dev dev || true)"
+        evop_set_project_command_if_empty dev "$workspace_command" "workspace package.json scripts"
     fi
 
     for script_name in build test lint; do
         if evop_workspace_has_package_json_script "$target_dir" "$script_name"; then
-            evop_set_project_command_if_empty "$script_name" "$(evop_workspace_package_manager_script_command "$package_manager" "$script_name" "$script_name")" "workspace package.json scripts"
+            workspace_command="$(evop_workspace_package_manager_script_command "$target_dir" "$package_manager" "$script_name" "$script_name" || true)"
+            evop_set_project_command_if_empty "$script_name" "$workspace_command" "workspace package.json scripts"
         fi
     done
 
     for script_name in typecheck check-types types:check; do
         if evop_workspace_has_package_json_script "$target_dir" "$script_name"; then
-            evop_set_project_command_if_empty typecheck "$(evop_workspace_package_manager_script_command "$package_manager" "$script_name" typecheck)" "workspace package.json scripts"
+            workspace_command="$(evop_workspace_package_manager_script_command "$target_dir" "$package_manager" "$script_name" typecheck || true)"
+            evop_set_project_command_if_empty typecheck "$workspace_command" "workspace package.json scripts"
             break
         fi
     done

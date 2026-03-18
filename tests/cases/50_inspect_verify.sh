@@ -127,6 +127,38 @@ assert_contains "$monorepo_inspect_env_summary" "pnpm -r --if-present run build"
 assert_contains "$monorepo_inspect_env_summary" "packages_ok=true" "INSPECT env should export workspace packages"
 pass "INSPECT monorepo env"
 
+setup_yarn_monorepo_workspace
+yarn_monorepo_inspect_output="$(run_expect_success "INSPECT should infer Yarn workspace commands for Berry monorepos" "$INSPECT_SCRIPT" --target-dir "$TEST_YARN_MONOREPO_DIR")"
+assert_contains "$yarn_monorepo_inspect_output" "Package manager: yarn" "INSPECT should detect Yarn as the package manager for Yarn workspaces"
+assert_contains "$yarn_monorepo_inspect_output" "Build: yarn workspaces foreach --all --parallel --topological run build [workspace package.json scripts]" "INSPECT should infer recursive Yarn build commands"
+assert_contains "$yarn_monorepo_inspect_output" "Dev: yarn workspaces foreach --all --parallel run dev [workspace package.json scripts]" "INSPECT should infer parallel Yarn dev commands"
+pass "INSPECT Yarn monorepo workspace commands"
+
+setup_bun_monorepo_workspace
+bun_monorepo_inspect_output="$(run_expect_success "INSPECT should infer Bun workspace commands" "$INSPECT_SCRIPT" --target-dir "$TEST_BUN_MONOREPO_DIR")"
+assert_contains "$bun_monorepo_inspect_output" "Package manager: bun" "INSPECT should detect Bun as the package manager for Bun workspaces"
+assert_contains "$bun_monorepo_inspect_output" "Build: bun run --workspaces --if-present --parallel build [workspace package.json scripts]" "INSPECT should infer recursive Bun build commands"
+assert_contains "$bun_monorepo_inspect_output" "Test: bun run --workspaces --if-present --parallel test [workspace package.json scripts]" "INSPECT should infer recursive Bun test commands"
+pass "INSPECT Bun monorepo workspace commands"
+
+workspace_script_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_NODE_MONOREPO_DIR="$TEST_NODE_MONOREPO_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_workspace_has_package_json_script_cached "$TEST_NODE_MONOREPO_DIR" "build"
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE)"
+evop_project_workspace_has_package_json_script_cached "$TEST_NODE_MONOREPO_DIR" "build"
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE)"
+printf 'package_json_manifest_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGE_JSON_MANIFESTS_CACHE)"
+EOF
+)"
+assert_contains "$workspace_script_cache_output" "first_cache_entries=1" "Workspace script lookups should populate the dedicated cache on first access"
+assert_contains "$workspace_script_cache_output" "second_cache_entries=1" "Workspace script lookups should reuse the cached result on repeated access"
+assert_contains "$workspace_script_cache_output" "package_json_manifest_cache_entries=1" "Workspace package.json filtering should also be cached"
+pass "Workspace script cache reuse"
+
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
 assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"
 assert_contains "$inspect_diagnostics_output" "Facts cache backend:" "INSPECT diagnostics should print the cache backend"
@@ -266,6 +298,20 @@ assert_contains "$verify_monorepo_dry_run_output" "Running typecheck: pnpm -r --
 assert_contains "$verify_monorepo_dry_run_output" "Running test: pnpm -r --if-present run test" "VERIFY dry-run should reuse recursive monorepo test commands"
 assert_contains "$verify_monorepo_dry_run_output" "Running build: pnpm -r --if-present run build" "VERIFY dry-run should reuse recursive monorepo build commands"
 pass "VERIFY monorepo dry-run"
+
+verify_yarn_monorepo_dry_run_output="$(run_expect_success "VERIFY dry-run should reuse Yarn workspace commands" "$VERIFY_SCRIPT" --target-dir "$TEST_YARN_MONOREPO_DIR" --steps lint,typecheck,test,build --dry-run)"
+assert_contains "$verify_yarn_monorepo_dry_run_output" "Running lint: yarn workspaces foreach --all --parallel --topological run lint" "VERIFY dry-run should reuse recursive Yarn lint commands"
+assert_contains "$verify_yarn_monorepo_dry_run_output" "Running typecheck: yarn workspaces foreach --all --parallel --topological run typecheck" "VERIFY dry-run should reuse recursive Yarn typecheck commands"
+assert_contains "$verify_yarn_monorepo_dry_run_output" "Running test: yarn workspaces foreach --all --parallel --topological run test" "VERIFY dry-run should reuse recursive Yarn test commands"
+assert_contains "$verify_yarn_monorepo_dry_run_output" "Running build: yarn workspaces foreach --all --parallel --topological run build" "VERIFY dry-run should reuse recursive Yarn build commands"
+pass "VERIFY Yarn monorepo dry-run"
+
+verify_bun_monorepo_dry_run_output="$(run_expect_success "VERIFY dry-run should reuse Bun workspace commands" "$VERIFY_SCRIPT" --target-dir "$TEST_BUN_MONOREPO_DIR" --steps lint,typecheck,test,build --dry-run)"
+assert_contains "$verify_bun_monorepo_dry_run_output" "Running lint: bun run --workspaces --if-present --parallel lint" "VERIFY dry-run should reuse recursive Bun lint commands"
+assert_contains "$verify_bun_monorepo_dry_run_output" "Running typecheck: bun run --workspaces --if-present --parallel typecheck" "VERIFY dry-run should reuse recursive Bun typecheck commands"
+assert_contains "$verify_bun_monorepo_dry_run_output" "Running test: bun run --workspaces --if-present --parallel test" "VERIFY dry-run should reuse recursive Bun test commands"
+assert_contains "$verify_bun_monorepo_dry_run_output" "Running build: bun run --workspaces --if-present --parallel build" "VERIFY dry-run should reuse recursive Bun build commands"
+pass "VERIFY Bun monorepo dry-run"
 
 verify_partial_dir="$TEST_TMPDIR/verify-partial-project"
 mkdir -p "$verify_partial_dir"
