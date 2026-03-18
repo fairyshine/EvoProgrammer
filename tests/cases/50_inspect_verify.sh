@@ -7,6 +7,10 @@ assert_contains "$inspect_output" "Language profile: typescript (auto-detected)"
 assert_contains "$inspect_output" "Framework profile: nextjs (auto-detected)" "INSPECT should print the detected framework profile"
 assert_contains "$inspect_output" "Suggested commands:" "INSPECT should print the suggested command section"
 assert_contains "$inspect_output" "Lint: pnpm lint [package.json script]" "INSPECT should include command sources"
+assert_contains "$inspect_output" "Agent command surfaces:" "INSPECT should print agent command surfaces"
+assert_contains "$inspect_output" "./bin/context-tool [repo executable]" "INSPECT should list repo executables that agents can call directly"
+assert_contains "$inspect_output" "zsh ./STATUS.sh [top-level script]" "INSPECT should list top-level scripts as agent command surfaces"
+assert_contains "$inspect_output" "pnpm inspect [package.json script]" "INSPECT should list non-verification package scripts as agent command surfaces"
 assert_contains "$inspect_output" "Operational surfaces:" "INSPECT should print operational surfaces"
 assert_contains "$inspect_output" ".github/workflows" "INSPECT should report CI workflow surfaces"
 pass "INSPECT summary"
@@ -14,6 +18,7 @@ pass "INSPECT summary"
 inspect_prompt_output="$(run_expect_success "INSPECT should render prompt context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format prompt)"
 assert_contains "$inspect_prompt_output" "[Repository Context]" "INSPECT prompt mode should render repository context"
 assert_contains "$inspect_prompt_output" "[Recommended Workflow]" "INSPECT prompt mode should render workflow guidance"
+assert_contains "$inspect_prompt_output" "Agent command surfaces:" "INSPECT prompt mode should render agent command surfaces"
 assert_contains "$inspect_prompt_output" "Operational surfaces:" "INSPECT prompt mode should render operational surfaces"
 pass "INSPECT prompt"
 
@@ -39,6 +44,7 @@ import os
 data = json.loads(os.environ["INSPECT_JSON"])
 print(data["profiles"]["language"]["name"])
 print(data["package_manager"])
+print(data["agent_tools"][0])
 print(data["commands"]["lint"]["command"])
 print(f"automation_ok={any('.github/workflows' in item for item in data['automation'])}")
 print(f"backend_ok={data['facts_cache']['backend'] in {'associative-array', 'line-table'}}")
@@ -51,6 +57,7 @@ PY
 )"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
+assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
 assert_contains "$inspect_json_summary" "pnpm lint" "INSPECT json should include the lint command"
 assert_contains "$inspect_json_summary" "automation_ok=True" "INSPECT json should include automation entries"
 assert_contains "$inspect_json_summary" "backend_ok=True" "INSPECT json should include the facts-cache backend"
@@ -68,6 +75,7 @@ source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --pro
 
 printf '%s\n' "$EVOP_INSPECT_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
+printf '%s\n' "$EVOP_INSPECT_AGENT_TOOLS"
 printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
 printf 'automation_ok=%s\n' "$([[ "$EVOP_INSPECT_AUTOMATION" == *".github/workflows"* ]] && printf true || printf false)"
 printf 'workflow_ok=%s\n' "$([[ "$EVOP_INSPECT_TASK_WORKFLOW" == *"Reproduce or localize the failure path first"* ]] && printf true || printf false)"
@@ -77,6 +85,7 @@ EOF
 )"
 assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export the detected language profile"
 assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
+assert_contains "$inspect_env_summary" "pnpm inspect [package.json script]" "INSPECT env should export agent command surfaces"
 assert_contains "$inspect_env_summary" "pnpm lint" "INSPECT env should export command slots"
 assert_contains "$inspect_env_summary" "automation_ok=true" "INSPECT env should export automation surfaces"
 assert_contains "$inspect_env_summary" "workflow_ok=true" "INSPECT env should export workflow guidance"
@@ -158,6 +167,24 @@ assert_contains "$workspace_script_cache_output" "first_cache_entries=1" "Worksp
 assert_contains "$workspace_script_cache_output" "second_cache_entries=1" "Workspace script lookups should reuse the cached result on repeated access"
 assert_contains "$workspace_script_cache_output" "package_json_manifest_cache_entries=1" "Workspace package.json filtering should also be cached"
 pass "Workspace script cache reuse"
+
+agent_tool_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_agent_tool_surfaces_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_CACHE)"
+evop_project_agent_tool_surfaces_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_CACHE)"
+printf 'tool_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT" == *"./bin/context-tool [repo executable]"* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$agent_tool_cache_output" "first_cache_entries=1" "Agent tool discovery should populate the dedicated cache on first access"
+assert_contains "$agent_tool_cache_output" "second_cache_entries=1" "Agent tool discovery should reuse the cache on repeated access"
+assert_contains "$agent_tool_cache_output" "tool_ok=true" "Agent tool discovery should return repo executable surfaces"
+pass "Agent tool cache reuse"
 
 inspect_diagnostics_output="$(run_expect_success "INSPECT should render diagnostics context" "$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --prompt "fix a failing dashboard test" --format diagnostics)"
 assert_contains "$inspect_diagnostics_output" "Inspection diagnostics:" "INSPECT diagnostics should print the diagnostics heading"

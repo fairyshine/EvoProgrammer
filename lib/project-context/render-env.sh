@@ -17,6 +17,7 @@ evop_print_project_inspection_env() {
     evop_print_env_assignment "EVOP_INSPECT_PACKAGE_MANAGER" "${EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER:-}"
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
 
     while IFS= read -r slot; do
         command="$(evop_get_project_command "$slot")"

@@ -192,6 +192,13 @@ The same layer now also keeps basename and simple-extension indexes for the
 collected file list, so exact filename and `*.ext` lookups can answer common
 detection and manifest queries without rescanning every collected file.
 
+Project inspection now also derives cached agent command surfaces alongside the
+verification slots. That lightweight index focuses on directly invocable repo
+executables, top-level shell entrypoints, and non-verification helper commands
+from `package.json` or `Makefile`. The result gives coding agents a clearer
+tool menu without forcing prompt generation, JSON export, env snapshots, and
+human-readable inspection output to rescan the same command surfaces.
+
 ## Command Model
 
 Commands are treated as first-class slots:

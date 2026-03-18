@@ -290,3 +290,103 @@ evop_project_workspace_has_package_json_script_cached() {
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_WORKSPACE_SCRIPT_CACHE "$cache_key" "0"
     return 1
 }
+
+evop_append_unique_multiline_value() {
+    local var_name="$1"
+    local line="$2"
+    local current="${(P)var_name:-}"
+
+    [[ -n "$line" ]] || return 0
+
+    case $'\n'"$current"$'\n' in
+        *$'\n'"$line"$'\n'*)
+            return 0
+            ;;
+    esac
+
+    if [[ -n "$current" ]]; then
+        printf -v "$var_name" '%s\n%s' "$current" "$line"
+    else
+        printf -v "$var_name" '%s' "$line"
+    fi
+}
+
+evop_agent_tool_surface_script_command() {
+    local package_manager="$1"
+    local script_name="$2"
+
+    case "$package_manager" in
+        pnpm)
+            printf 'pnpm %s' "$script_name"
+            ;;
+        yarn)
+            printf 'yarn %s' "$script_name"
+            ;;
+        bun)
+            printf 'bun run %s' "$script_name"
+            ;;
+        npm|*)
+            printf 'npm run %s' "$script_name"
+            ;;
+    esac
+}
+
+evop_project_agent_tool_surfaces_cached() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+    local cache_key="agent-tool-surfaces|$package_manager"
+    local output=""
+    local candidate=""
+    local command=""
+    local makefile=""
+    local target=""
+    local package_json="$target_dir/package.json"
+    local bin_rel=""
+    local top_level_script=""
+
+    EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT=""
+    evop_use_project_context_facts_dir "$target_dir"
+
+    if evop_project_context_cache_lookup EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_CACHE "$cache_key"; then
+        EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT="$EVOP_PROJECT_CONTEXT_CACHE_LOOKUP_RESULT"
+        printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT"
+        return 0
+    fi
+
+    for candidate in "$target_dir"/bin/*(N-.x:t); do
+        bin_rel="bin/$candidate"
+        evop_append_unique_multiline_value output "./$bin_rel [repo executable]"
+    done
+
+    for candidate in "$target_dir"/*.sh(N-.); do
+        top_level_script="${candidate:t}"
+        evop_append_unique_multiline_value output "zsh ./$top_level_script [top-level script]"
+    done
+
+    if [[ -f "$target_dir/Makefile" ]]; then
+        makefile="$target_dir/Makefile"
+    elif [[ -f "$target_dir/makefile" ]]; then
+        makefile="$target_dir/makefile"
+    fi
+
+    if [[ -n "$makefile" ]]; then
+        for target in inspect verify doctor clean status profiles install bootstrap ci release format fmt; do
+            if evop_makefile_has_target "$makefile" "$target"; then
+                evop_append_unique_multiline_value output "make $target [make target]"
+            fi
+        done
+    fi
+
+    if [[ -n "$package_manager" && -f "$package_json" ]]; then
+        for target in inspect verify doctor clean status profiles install bootstrap setup ci release generate codegen format fmt; do
+            if evop_package_json_has_script "$package_json" "$target"; then
+                command="$(evop_agent_tool_surface_script_command "$package_manager" "$target")"
+                evop_append_unique_multiline_value output "$command [package.json script]"
+            fi
+        done
+    fi
+
+    EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT="$output"
+    evop_project_context_cache_store EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_CACHE "$cache_key" "$output"
+    printf '%s' "$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT"
+}

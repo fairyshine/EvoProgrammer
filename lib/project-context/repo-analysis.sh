@@ -247,6 +247,14 @@ evop_detect_automation_hints() {
     fi
 }
 
+evop_detect_agent_tool_hints() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+
+    evop_project_agent_tool_surfaces_cached "$target_dir" "$package_manager" >/dev/null
+    EVOP_PROJECT_CONTEXT_AGENT_TOOLS="$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT"
+}
+
 evop_detect_risk_areas() {
     local target_dir="$1"
 
