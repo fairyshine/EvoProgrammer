@@ -215,7 +215,9 @@ evop_project_workspace_manifests_cached() {
                 -name 'deps.edn' -o \
                 -name 'pubspec.yaml' -o \
                 -name 'Package.swift' -o \
-                -name '*.csproj' \
+                -name '*.csproj' -o \
+                -name '*.fsproj' -o \
+                -name '*.vbproj' \
             \) -print 2>/dev/null
     )
 

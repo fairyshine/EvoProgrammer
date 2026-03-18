@@ -138,8 +138,8 @@ evop_choose_package_manager() {
                 return 0
             fi
             ;;
-        csharp)
-            if evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
+        csharp|fsharp|visual-basic)
+            if evop_repo_has_dotnet_project_files "$target_dir"; then
                 printf 'dotnet'
                 return 0
             fi
@@ -300,7 +300,7 @@ evop_choose_package_manager() {
         return 0
     fi
 
-    if evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
+    if evop_repo_has_dotnet_project_files "$target_dir"; then
         printf 'dotnet'
         return 0
     fi
@@ -411,7 +411,7 @@ evop_detect_workspace_mode() {
 
     if [[ -f "$package_json" || -f "$target_dir/pyproject.toml" || -f "$target_dir/DESCRIPTION" || -f "$target_dir/renv.lock" || -f "$target_dir/NAMESPACE" || -f "$target_dir/Cargo.toml" || -f "$target_dir/build.sbt" || -f "$target_dir/project/build.properties" || -f "$target_dir/go.mod" || -f "$target_dir/pubspec.yaml" || -f "$target_dir/pom.xml" || -f "$target_dir/build.gradle" || -f "$target_dir/build.gradle.kts" || -f "$target_dir/mix.exs" || -f "$target_dir/project.clj" || -f "$target_dir/deps.edn" || -f "$target_dir/build.boot" || -f "$target_dir/stack.yaml" || -f "$target_dir/cabal.project" || -f "$target_dir/Project.toml" || -f "$target_dir/Manifest.toml" || -f "$target_dir/build.zig" || -f "$target_dir/Package.swift" || -f "$target_dir/CMakeLists.txt" || -f "$target_dir/main.tf" || -f "$target_dir/terraform.tfvars" || -f "$target_dir/terragrunt.hcl" ]] \
         || evop_directory_has_file_pattern "$target_dir" "*.Rproj" "*.cabal" "*.rockspec" "*.tf" "*.tfvars" "*.tftest.hcl" \
-        || evop_directory_has_file_extension "$target_dir" "sln" "csproj"; then
+        || evop_repo_has_dotnet_project_files "$target_dir"; then
         printf 'single-package'
         return 0
     fi
@@ -603,7 +603,7 @@ evop_detect_language_default_commands() {
                 evop_set_project_command_if_empty test "$(evop_gradle_task_command "$target_dir" test)" "Gradle defaults"
             fi
             ;;
-        csharp)
+        csharp|fsharp|visual-basic)
             if [[ "$framework_profile" == "aspnet-core" || "$project_type" == "backend-service" || "$project_type" == "cli-tool" ]]; then
                 evop_set_project_command_if_empty dev "dotnet run" ".NET defaults"
             fi

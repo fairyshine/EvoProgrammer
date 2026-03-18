@@ -70,8 +70,16 @@ evop_prepare_language_profile_candidates() {
         evop_profile_candidate_append_unique candidates "kotlin"
     fi
 
-    if evop_directory_has_file_extension "$target_dir" "sln" "csproj" "cs"; then
+    if evop_directory_has_file_extension "$target_dir" "csproj" "cs"; then
         evop_profile_candidate_append_unique candidates "csharp"
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "fsproj" "fs" "fsi" "fsx"; then
+        evop_profile_candidate_append_unique candidates "fsharp"
+    fi
+
+    if evop_directory_has_file_extension "$target_dir" "vbproj" "vb"; then
+        evop_profile_candidate_append_unique candidates "visual-basic"
     fi
 
     if evop_directory_has_file_extension "$target_dir" "c" "h" \
@@ -152,6 +160,8 @@ evop_prepare_language_profile_candidates() {
     evop_profile_candidate_add_if_prompt_matches candidates "java" "$prompt" "java"
     evop_profile_candidate_add_if_prompt_matches candidates "kotlin" "$prompt" "kotlin"
     evop_profile_candidate_add_if_prompt_matches candidates "csharp" "$prompt" "c#" "dotnet"
+    evop_profile_candidate_add_if_prompt_matches candidates "fsharp" "$prompt" "f#" "fsharp"
+    evop_profile_candidate_add_if_prompt_matches candidates "visual-basic" "$prompt" "visual basic" "vb.net" "vbnet"
     evop_profile_candidate_add_if_prompt_matches candidates "c" "$prompt" "language c" "ansi c" "embedded c"
     evop_profile_candidate_add_if_prompt_matches candidates "cpp" "$prompt" "c++" "cpp"
     evop_profile_candidate_add_if_prompt_matches candidates "swift" "$prompt" "swift"

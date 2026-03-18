@@ -125,7 +125,7 @@ evop_prepare_framework_profile_candidates() {
         fi
     fi
 
-    if evop_directory_has_file_extension "$target_dir" "sln" "csproj" "fsproj" "vbproj"; then
+    if evop_repo_has_dotnet_project_files "$target_dir"; then
         has_dotnet=1
 
         if evop_repo_looks_like_aspnet_core "$target_dir"; then

@@ -229,11 +229,32 @@ evop_repo_has_pubspec_dependency() {
     evop_ecosystem_manifest_contains_any "$target_dir" "dart" "$@"
 }
 
+evop_repo_has_dotnet_project_files() {
+    local target_dir="$1"
+
+    evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.fsproj" "*.vbproj"
+}
+
 evop_repo_dotnet_manifest_contains_any() {
     local target_dir="$1"
     shift
 
     evop_ecosystem_manifest_contains_any "$target_dir" "dotnet" "$@"
+}
+
+evop_repo_has_dotnet_property_value() {
+    local target_dir="$1"
+    local property_name="$2"
+    shift 2
+    local property_value=""
+
+    for property_value in "$@"; do
+        if evop_repo_dotnet_manifest_contains_any "$target_dir" "<$property_name>$(evop_lowercase "$property_value")</$property_name>"; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 evop_repo_has_dotnet_sdk() {

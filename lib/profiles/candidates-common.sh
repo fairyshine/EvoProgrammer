@@ -116,7 +116,8 @@ evop_repo_has_non_shell_runtime_markers() {
         return 0
     fi
 
-    if evop_directory_has_file_pattern "$target_dir" "*.sln" "*.csproj" "*.uproject" "*.Rproj" "*.tf" "*.tfvars"; then
+    if evop_repo_has_dotnet_project_files "$target_dir" \
+        || evop_directory_has_file_pattern "$target_dir" "*.uproject" "*.Rproj" "*.tf" "*.tfvars"; then
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_DIR="$target_dir"
         EVOP_REPO_HAS_NON_SHELL_RUNTIME_MARKERS_CACHE_VALUE="1"
         return 0

@@ -91,6 +91,18 @@ script bodies or other non-dependency text. The same shared repo-shape layer
 now also centralizes Expo and React Native mobile-app heuristics so framework,
 project-type, and command detection stay aligned.
 
+The same ecosystem layer now also exposes shared .NET project markers and
+manifest-property probes. That keeps C#, F#, and Visual Basic language
+detection, console-CLI classification, workspace manifest discovery, and
+`dotnet` command inference aligned on one cached set of repository facts
+instead of repeating `.sln` / `*.proj` checks across multiple modules.
+
+The repo-shape layer now also exposes cached browser-game and multiplayer-game
+runtime markers. That lets `browser-game`, `online-game`, and
+`single-player-game` classification share the same narrowed heuristics instead
+of re-checking the same Phaser / Pixi / socket / engine-networking signals in
+candidate planning and detect hooks separately.
+
 ### 4. Project inspection
 
 - `lib/project-context/slots.sh`: centralized command-slot metadata

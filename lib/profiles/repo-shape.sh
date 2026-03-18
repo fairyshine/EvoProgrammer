@@ -343,6 +343,20 @@ evop_repo_looks_like_cli_tool() {
         return 0
     fi
 
+    if evop_repo_has_dotnet_project_files "$target_dir" \
+        && ! evop_repo_looks_like_aspnet_core "$target_dir" \
+        && ! evop_repo_looks_like_dotnet_maui "$target_dir" \
+        && {
+            evop_repo_has_dotnet_property_value "$target_dir" "OutputType" "Exe" \
+                || evop_repo_has_dotnet_property_enabled "$target_dir" "PackAsTool" \
+                || evop_repo_has_dotnet_package "$target_dir" "System.CommandLine" "Spectre.Console" "Cocona" "CommandLineParser" \
+                || evop_directory_has_file_named "$target_dir" "Program.cs" "Program.fs" "Program.vb";
+        }; then
+        EVOP_REPO_LOOKS_LIKE_CLI_TOOL_CACHE_DIR="$target_dir"
+        EVOP_REPO_LOOKS_LIKE_CLI_TOOL_CACHE_VALUE="1"
+        return 0
+    fi
+
     EVOP_REPO_LOOKS_LIKE_CLI_TOOL_CACHE_DIR="$target_dir"
     EVOP_REPO_LOOKS_LIKE_CLI_TOOL_CACHE_VALUE="0"
     return 1

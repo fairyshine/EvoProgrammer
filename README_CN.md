@@ -10,13 +10,13 @@
 
 **自迭代代码演进** — 不同于一次性的 agent 调用，EvoProgrammer 会把 agent 反复投入同一个仓库（它实际上也在迭代这个代码仓库，它本身的仓库）。每一轮都建立在上一轮的基础上：第 1 轮搭脚手架，第 2 轮写测试，第 3 轮修 bug，第 4 轮打磨细节……循环持续进行，直到代码库收敛或达到你设定的上限。
 
-**广泛的语言、框架和项目覆盖** — 开箱即用支持 20 种语言、31 个框架、19 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Expo 或 React Native 移动应用、Flutter 移动应用、Bevy 多人游戏、FastAPI 微服务、Spring 后端、Phoenix 服务、Astro 或 Nuxt 前端、Shiny 应用、Terraform 基础设施，还是基于 CMake 的原生工具，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
+**广泛的语言、框架和项目覆盖** — 开箱即用支持 22 种语言、31 个框架、19 种项目类型，全部可从仓库自动检测。无论你在做 Next.js SaaS、Expo 或 React Native 移动应用、Flutter 移动应用、Bevy 多人游戏、FastAPI 微服务、Spring 后端、Phoenix 服务、Astro 或 Nuxt 前端、Shiny 应用、Terraform 基础设施、C#/F#/Visual Basic 的 .NET CLI，还是基于 CMake 的原生工具，EvoProgrammer 都会在每次 agent 调用中注入正确的惯用写法、工具链命令和架构指导。
 
-| 语言 (20) | 框架 (31) | 项目类型 (19) |
+| 语言 (22) | 框架 (31) | 项目类型 (19) |
 |---|---|---|
-| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Expo, React Native, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 基础设施, 论文, 科学实验, PPT, Office |
+| Python, TypeScript, JavaScript, Rust, Go, C, C++, Java, C#, F#, Visual Basic, Kotlin, Swift, Dart, PHP, Ruby, GDScript, Elixir, Scala, Lua, R, Terraform | React, Next.js, Vue, Svelte, Nuxt, Astro, Expo, React Native, Django, Flask, FastAPI, Streamlit, Express, NestJS, Rails, Laravel, Spring, Gin, Actix-web, Axum, Bevy, Flutter, Godot, Unity, Unreal, Electron, Tauri, Pygame, Qt, Phoenix, Shiny | Web App, Backend Service, CLI Tool, Library, Desktop App, Mobile App, Browser Game, 单机游戏, 手游, 联网游戏, AI Agent, 数据管线, 插件, 嵌入式系统, 基础设施, 论文, 科学实验, PPT, Office |
 
-最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Expo 或 React Native 移动应用、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、Shiny Web 应用、Terraform 基础设施仓库、以及游戏引擎仓库都会更准确地命中。Node 框架检测的热点路径现在也会先建立缓存的 package token 索引，减少重复扫描 `package.json`，同时让框架识别更精确。针对 monorepo，`inspect` 现在还会缓存嵌套 workspace manifest 的发现结果、在输出里显式列出 workspace package roots，并在根 `package.json` 没有脚本时推导递归的 pnpm/npm workspace 命令。`inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix、sbt、LuaRocks、R、Terraform、CMake、Expo 和 React Native 项目推导出更完整的默认命令。
+最近这一轮还强化了项目类型自动识别，不再过度偏向 shell 仓库：非 shell CLI、Spring 或 Phoenix 风格后端、Expo 或 React Native 移动应用、Nuxt 或 Astro 前端、Electron 或 Tauri 桌面应用、Shiny Web 应用、Terraform 基础设施仓库、.NET 控制台工具、浏览器优先的游戏仓库、多人联网游戏仓库、以及游戏引擎仓库都会更准确地命中。Node 框架检测的热点路径现在也会先建立缓存的 package token 索引，减少重复扫描 `package.json`，同时让框架识别更精确。共享的 .NET 项目标记现在也会把 C#/F#/Visual Basic 的语言检测、CLI 归类、workspace manifest 发现和 `dotnet` 命令推导统一在同一层缓存事实之上。游戏子类型检测现在也会复用缓存过的浏览器运行时标记和多人运行时标记，让 `browser-game`、`online-game` 与 `single-player-game` 的归类共享同一轮 repo-shape 事实，而不是在多个 detect hook 里反复检查同一批信号。针对 monorepo，`inspect` 现在还会缓存嵌套 workspace manifest 的发现结果、在输出里显式列出 workspace package roots，并在根 `package.json` 没有脚本时推导递归的 pnpm/npm workspace 命令。`inspect` / `verify` 也能为 Gradle、Maven、.NET、SwiftPM、Mix、sbt、LuaRocks、R、Terraform、CMake、Expo 和 React Native 项目推导出更完整的默认命令。
 
 ## 快速开始
 

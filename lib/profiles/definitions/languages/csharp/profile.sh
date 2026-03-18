@@ -6,7 +6,7 @@ evop_profile_detect() {
     local target_dir="$1"
     local prompt="${2:-}"
 
-    evop_profile_match_file_pattern 100 "$target_dir" "*.sln" "*.csproj" && return 0
+    evop_profile_match_file_pattern 100 "$target_dir" "*.csproj" && return 0
     evop_profile_match_file_pattern 80 "$target_dir" "*.cs" && return 0
     evop_profile_match_prompt 40 "$prompt" "c#" "dotnet" && return 0
     return 1

@@ -13,10 +13,12 @@ EOF
 )"
 assert_contains "$profile_catalog_output" " cpp " "Profile catalog should expose language profiles"
 assert_contains "$profile_catalog_output" "languages=c " "Profile catalog should expose the C language profile"
+assert_contains "$profile_catalog_output" "fsharp" "Profile catalog should expose the F# language profile"
 assert_contains "$profile_catalog_output" "dart" "Profile catalog should expose the Dart language profile"
 assert_contains "$profile_catalog_output" "elixir" "Profile catalog should expose the Elixir language profile"
 assert_contains "$profile_catalog_output" "scala" "Profile catalog should expose the Scala language profile"
 assert_contains "$profile_catalog_output" "lua" "Profile catalog should expose the Lua language profile"
+assert_contains "$profile_catalog_output" "visual-basic" "Profile catalog should expose the Visual Basic language profile"
 assert_contains "$profile_catalog_output" "clojure" "Profile catalog should expose the Clojure language profile"
 assert_contains "$profile_catalog_output" "haskell" "Profile catalog should expose the Haskell language profile"
 assert_contains "$profile_catalog_output" "julia" "Profile catalog should expose the Julia language profile"
@@ -459,6 +461,70 @@ assert_contains "$maui_profile_output" "language=csharp" ".NET MAUI repos should
 assert_contains "$maui_profile_output" "framework=maui" ".NET MAUI repos should detect the MAUI framework profile"
 assert_contains "$maui_profile_output" "project_type=mobile-app" ".NET MAUI repos should detect the mobile-app project type"
 pass ".NET MAUI profile detection"
+
+dotnet_language_profile_output="$(
+    ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/profile.sh"
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+mkdir -p "$tmpdir/fsharp" "$tmpdir/visual-basic"
+
+cat >"$tmpdir/fsharp/DemoTool.fsproj" <<'FSPROJ'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0" />
+  </ItemGroup>
+</Project>
+FSPROJ
+printf 'printfn "hello"\n' >"$tmpdir/fsharp/Program.fs"
+
+cat >"$tmpdir/visual-basic/DemoTool.vbproj" <<'VBPROJ'
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+</Project>
+VBPROJ
+cat >"$tmpdir/visual-basic/Program.vb" <<'VB'
+Module Program
+    Sub Main(args As String())
+    End Sub
+End Module
+VB
+
+for project_dir in fsharp visual-basic; do
+    evop_resolve_profiles "$tmpdir/$project_dir" "" "" "" ""
+    printf '%s_language=%s\n' "$project_dir" "$EVOP_RESOLVED_LANGUAGE_PROFILE"
+    printf '%s_project_type=%s\n' "$project_dir" "$EVOP_RESOLVED_PROJECT_TYPE"
+    printf '%s_package_manager=%s\n' "$project_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    printf '%s_dev=%s\n' "$project_dir" "$EVOP_PROJECT_CONTEXT_DEV_COMMAND"
+    printf '%s_build=%s\n' "$project_dir" "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND"
+    printf '%s_test=%s\n' "$project_dir" "$EVOP_PROJECT_CONTEXT_TEST_COMMAND"
+done
+EOF
+)"
+assert_contains "$dotnet_language_profile_output" "fsharp_language=fsharp" "F# repos should detect the F# language profile"
+assert_contains "$dotnet_language_profile_output" "fsharp_project_type=cli-tool" "F# console repos should detect the cli-tool project type"
+assert_contains "$dotnet_language_profile_output" "fsharp_package_manager=dotnet" "F# repos should use dotnet command inference"
+assert_contains "$dotnet_language_profile_output" "fsharp_dev=dotnet run" "F# CLI repos should infer dotnet run"
+assert_contains "$dotnet_language_profile_output" "fsharp_build=dotnet build" "F# repos should infer dotnet build"
+assert_contains "$dotnet_language_profile_output" "fsharp_test=dotnet test" "F# repos should infer dotnet test"
+assert_contains "$dotnet_language_profile_output" "visual-basic_language=visual-basic" "Visual Basic repos should detect the Visual Basic language profile"
+assert_contains "$dotnet_language_profile_output" "visual-basic_project_type=cli-tool" "Visual Basic console repos should detect the cli-tool project type"
+assert_contains "$dotnet_language_profile_output" "visual-basic_package_manager=dotnet" "Visual Basic repos should use dotnet command inference"
+assert_contains "$dotnet_language_profile_output" "visual-basic_dev=dotnet run" "Visual Basic CLI repos should infer dotnet run"
+assert_contains "$dotnet_language_profile_output" "visual-basic_build=dotnet build" "Visual Basic repos should infer dotnet build"
+assert_contains "$dotnet_language_profile_output" "visual-basic_test=dotnet test" "Visual Basic repos should infer dotnet test"
+pass ".NET language profile detection"
 
 r_shiny_profile_output="$(
     ROOT_DIR="$ROOT_DIR" zsh <<'EOF'
