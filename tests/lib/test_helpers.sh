@@ -184,6 +184,8 @@ setup_context_workspace() {
         return 0
     fi
 
+    setup_context_support_tools
+
     TEST_CONTEXT_DIR="$TEST_TMPDIR/context-web"
     mkdir -p \
         "$TEST_CONTEXT_DIR/.github/workflows" \
@@ -229,6 +231,32 @@ setup_context_workspace() {
     chmod +x "$TEST_CONTEXT_DIR/tools/sync-context"
     printf '#!/usr/bin/env zsh\nprint tests\n' >"$TEST_CONTEXT_DIR/tests/run_tests.sh"
     printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
+}
+
+setup_context_support_tools() {
+    local tools_dir=""
+    local tool_name=""
+
+    if [[ -n "${TEST_CONTEXT_TOOLS_DIR:-}" ]]; then
+        PATH="$TEST_CONTEXT_TOOLS_DIR:$PATH"
+        export PATH
+        return 0
+    fi
+
+    TEST_CONTEXT_TOOLS_DIR="$TEST_TMPDIR/context-tools-bin"
+    mkdir -p "$TEST_CONTEXT_TOOLS_DIR"
+
+    for tool_name in gh jq yq curl fd sqlite3; do
+        cat >"$TEST_CONTEXT_TOOLS_DIR/$tool_name" <<EOF
+#!/usr/bin/env zsh
+set -euo pipefail
+printf '%s stub\n' "$tool_name"
+EOF
+        chmod +x "$TEST_CONTEXT_TOOLS_DIR/$tool_name"
+    done
+
+    PATH="$TEST_CONTEXT_TOOLS_DIR:$PATH"
+    export PATH
 }
 
 setup_verify_workspace() {

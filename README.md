@@ -207,6 +207,12 @@ That adds a task-oriented recommended command subset on top of the full command
 catalog, so wrappers can prefer the most relevant inspect/verify/context/generate
 surfaces without re-ranking raw command strings themselves.
 
+The same agent-facing catalog now also carries a broader host-tool menu for
+common coding-agent workflows. In addition to repo-local commands and core shell
+tools, EvoProgrammer can now surface available GitHub, HTTP, YAML, JSON, fast
+filesystem-scan, and SQLite CLIs such as `gh`, `curl`, `yq`, `jq`, `fd`, and
+`sqlite3` when the current machine and repository context make them relevant.
+
 ## Inspection And Verification
 
 Use `inspect` when you want to see exactly what EvoProgrammer inferred before it

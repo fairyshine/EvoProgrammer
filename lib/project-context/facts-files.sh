@@ -474,6 +474,22 @@ evop_command_available_cached() {
     return 1
 }
 
+evop_first_available_command_name_cached() {
+    local command_name=""
+
+    EVOP_PROJECT_CONTEXT_COMMAND_PATH_RESULT=""
+
+    for command_name in "$@"; do
+        [[ -n "$command_name" ]] || continue
+        if evop_resolve_command_path_cached "$command_name"; then
+            printf '%s' "$command_name"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 evop_resolve_command_path_cached() {
     local command_name="$1"
     local cached_value=""
@@ -512,6 +528,64 @@ evop_resolve_command_path_cached() {
 
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE "$command_name" "0"
     evop_project_context_cache_store EVOP_PROJECT_CONTEXT_COMMAND_PATH_CACHE "$command_name" "__missing__"
+    return 1
+}
+
+evop_project_has_yaml_surface() {
+    local target_dir="$1"
+
+    if evop_project_relative_exists "$target_dir" ".github/workflows" \
+        || evop_project_relative_exists "$target_dir" ".gitlab-ci.yml" \
+        || evop_project_relative_exists "$target_dir" "docker-compose.yml" \
+        || evop_project_relative_exists "$target_dir" "docker-compose.yaml" \
+        || evop_project_relative_exists "$target_dir" "compose.yml" \
+        || evop_project_relative_exists "$target_dir" "compose.yaml" \
+        || evop_project_relative_exists "$target_dir" "pnpm-workspace.yaml" \
+        || evop_project_relative_exists "$target_dir" "pubspec.yaml" \
+        || evop_project_relative_exists "$target_dir" "analysis_options.yaml"; then
+        return 0
+    fi
+
+    evop_project_has_file_extension_surface "$target_dir" "yaml" "yml"
+}
+
+evop_project_has_json_surface() {
+    local target_dir="$1"
+
+    if evop_project_relative_exists "$target_dir" "package.json" \
+        || evop_project_relative_exists "$target_dir" "tsconfig.json" \
+        || evop_project_relative_exists "$target_dir" ".devcontainer/devcontainer.json"; then
+        return 0
+    fi
+
+    evop_project_has_file_extension_surface "$target_dir" "json"
+}
+
+evop_project_has_sql_surface() {
+    local target_dir="$1"
+
+    if evop_project_relative_exists "$target_dir" "prisma/schema.prisma" \
+        || evop_project_relative_exists "$target_dir" "db.sqlite" \
+        || evop_project_relative_exists "$target_dir" "data.sqlite" \
+        || evop_project_relative_exists "$target_dir" "dev.db"; then
+        return 0
+    fi
+
+    evop_project_has_file_extension_surface "$target_dir" "sql" "sqlite" "db"
+}
+
+evop_project_has_file_extension_surface() {
+    local target_dir="$1"
+    shift
+    local extension=""
+
+    for extension in "$@"; do
+        [[ -n "$extension" ]] || continue
+        if find "$target_dir" -type f -name "*.$extension" -print -quit 2>/dev/null | grep -q .; then
+            return 0
+        fi
+    done
+
     return 1
 }
 
@@ -582,8 +656,14 @@ evop_collect_agent_support_tool_candidates() {
     local package_manager="${2:-}"
     local language_profile="${3:-}"
     local output=""
+    local preferred_search_tool=""
+    local preferred_filesystem_tool=""
+    local preferred_http_tool=""
 
     evop_append_agent_support_tool_candidate output git "host cli" "vcs" "inspect repository state and record commits"
+    if evop_project_relative_exists "$target_dir" ".github"; then
+        evop_append_agent_support_tool_candidate output gh "host cli" "github" "inspect pull requests, issues, and workflow runs"
+    fi
     evop_append_agent_support_tool_candidate output zsh "shell runtime" "shell" "run repo shell entrypoints and zsh automation"
     evop_append_agent_support_tool_candidate output sh "shell runtime" "shell" "run POSIX shell scripts and portable snippets"
     evop_append_agent_support_tool_candidate output find "filesystem cli" "filesystem" "walk the repository tree by path or type"
@@ -591,14 +671,38 @@ evop_collect_agent_support_tool_candidates() {
     evop_append_agent_support_tool_candidate output sed "text cli" "text" "apply focused line-oriented text transforms"
     evop_append_agent_support_tool_candidate output awk "text cli" "text" "extract or reshape structured text output"
 
-    if evop_command_available_cached rg; then
+    preferred_filesystem_tool="$(evop_first_available_command_name_cached fd fdfind || true)"
+    if [[ -n "$preferred_filesystem_tool" ]]; then
+        evop_append_agent_support_tool_candidate output "$preferred_filesystem_tool" "filesystem cli" "filesystem" "prefer for fast path-aware directory scans when available"
+    fi
+
+    preferred_search_tool="$(evop_first_available_command_name_cached rg grep || true)"
+    if [[ "$preferred_search_tool" == "rg" ]]; then
         evop_append_agent_support_tool_candidate output rg "search cli" "search" "prefer for fast text and file discovery"
     else
         evop_append_agent_support_tool_candidate output grep "search cli" "search" "fallback text search when rg is unavailable"
     fi
 
-    if [[ -f "$target_dir/package.json" ]]; then
+    preferred_http_tool="$(evop_first_available_command_name_cached curl wget || true)"
+    if [[ "$preferred_http_tool" == "curl" ]]; then
+        evop_append_agent_support_tool_candidate output curl "http cli" "http" "fetch APIs, docs, and health endpoints directly"
+    elif [[ "$preferred_http_tool" == "wget" ]]; then
+        evop_append_agent_support_tool_candidate output wget "http cli" "http" "fetch APIs, docs, and remote artifacts when curl is unavailable"
+    fi
+
+    if evop_project_has_json_surface "$target_dir"; then
         evop_append_agent_support_tool_candidate output jq "json cli" "json" "inspect or rewrite JSON command output"
+    fi
+
+    if evop_project_has_yaml_surface "$target_dir"; then
+        evop_append_agent_support_tool_candidate output yq "yaml cli" "yaml" "inspect or rewrite YAML automation and config files"
+    fi
+
+    if evop_project_has_sql_surface "$target_dir"; then
+        evop_append_agent_support_tool_candidate output sqlite3 "database cli" "database" "inspect local SQLite data and run focused SQL queries"
+    fi
+
+    if [[ -f "$target_dir/package.json" ]]; then
         evop_append_agent_support_tool_candidate output node "language runtime" "runtime" "run JavaScript helpers and repo-local Node programs"
     fi
 

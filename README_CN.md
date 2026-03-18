@@ -199,6 +199,11 @@ bootstrap shim 运行 `shellcheck`，其余脚本统一使用 `zsh -n` 做语法
 | `--auto-commit` | 每次成功迭代后提交本次新增的 git 变更 |
 | `--auto-commit-message TEXT` | 覆盖自动提交信息 |
 
+面向 agent 的 `inspect --format agent` 与 `catalog` 现在也会导出更完整的宿主机
+工具目录。除了仓库内命令和基础 shell 工具外，当当前机器可用且仓库场景相关时，
+还会暴露 `gh`、`curl`、`yq`、`jq`、`fd`、`sqlite3` 这类 GitHub、HTTP、YAML、
+JSON、快速文件扫描和 SQLite CLI，方便 wrapper 或 coding agent 直接挑选合适工具。
+
 ## 检测与验证
 
 当你想先看清 EvoProgrammer 检测到了什么，再决定是否调用 agent，可以用

@@ -243,7 +243,11 @@ path. The structured catalog now also carries a capability label and short
 usage hint per tool, so coding agents and wrappers can tell which discovered
 CLI is meant for search, filesystem inspection, shell execution, JSON
 inspection, package management, and similar tasks without relying on brittle
-name heuristics.
+name heuristics. The same candidate pass now also models richer host-tool
+surfaces such as GitHub, HTTP, YAML, fast-path filesystem, and SQLite CLIs
+when the machine and repository context make those tools relevant, so wrappers
+can discover `gh`, `curl`, `yq`, `fd`, or `sqlite3` style capabilities without
+adding a separate host-inventory layer.
 
 Repo-local command discovery in the same layer now also exposes richer command
 execution metadata for wrappers: runner class, working-directory expectation,
