@@ -77,6 +77,29 @@ evop_render_json_array_from_lines() {
     printf '%s' "$output"
 }
 
+evop_render_agent_command_catalog_json() {
+    local text="$1"
+    local output="["
+    local kind=""
+    local command=""
+    local source=""
+    local needs_comma=0
+
+    while IFS=$'\t' read -r kind command source; do
+        [[ -n "$kind" && -n "$command" && -n "$source" ]] || continue
+        if (( needs_comma == 1 )); then
+            output+=", "
+        fi
+        output+="{\"kind\": $(evop_render_json_string "$kind"), \"command\": "
+        output+="$(evop_render_json_string "$command")"
+        output+=", \"source\": $(evop_render_json_string "$source")}"
+        needs_comma=1
+    done <<<"$text"
+
+    output+="]"
+    printf '%s' "$output"
+}
+
 evop_append_project_command_lines() {
     local prefix="$1"
     local include_sources="${2:-0}"

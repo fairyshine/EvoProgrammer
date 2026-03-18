@@ -11,7 +11,9 @@ assert_contains "$inspect_output" "Agent command surfaces:" "INSPECT should prin
 assert_contains "$inspect_output" "./bin/context-tool [repo executable]" "INSPECT should list repo executables that agents can call directly"
 assert_contains "$inspect_output" "zsh ./STATUS.sh [top-level script]" "INSPECT should list top-level scripts as agent command surfaces"
 assert_contains "$inspect_output" "./scripts/release [repo helper executable]" "INSPECT should list executable helper scripts for agents"
+assert_contains "$inspect_output" "sh ./scripts/bootstrap.sh [repo helper program]" "INSPECT should list invocable helper programs even when they are not executable"
 assert_contains "$inspect_output" "./tools/sync-context [repo helper executable]" "INSPECT should list executable helper tools for agents"
+assert_contains "$inspect_output" "zsh ./tests/run_tests.sh [test harness script]" "INSPECT should list test harness scripts as agent command surfaces"
 assert_contains "$inspect_output" "pnpm inspect [package.json script]" "INSPECT should list non-verification package scripts as agent command surfaces"
 assert_contains "$inspect_output" "pnpm generate [package.json script]" "INSPECT should list generation scripts as agent command surfaces"
 assert_contains "$inspect_output" "Agent support tools:" "INSPECT should print agent support tools"
@@ -50,6 +52,7 @@ import os
 data = json.loads(os.environ["INSPECT_JSON"])
 print(data["profiles"]["language"]["name"])
 print(data["package_manager"])
+print("\n".join(f"{item['kind']}|{item['command']}|{item['source']}" for item in data["agent_command_catalog"]))
 print("\n".join(data["agent_tools"]))
 print("\n".join(data["agent_support_tools"]))
 print(data["commands"]["lint"]["command"])
@@ -65,6 +68,8 @@ PY
 )"
 assert_contains "$inspect_json_summary" "typescript" "INSPECT json should include the detected language profile"
 assert_contains "$inspect_json_summary" "pnpm" "INSPECT json should include the package manager"
+assert_contains "$inspect_json_summary" "repo_helper_program|sh ./scripts/bootstrap.sh|repo helper program" "INSPECT json should include structured helper program entries"
+assert_contains "$inspect_json_summary" "test_harness_script|zsh ./tests/run_tests.sh|test harness script" "INSPECT json should include structured test harness entries"
 assert_contains "$inspect_json_summary" "./bin/context-tool [repo executable]" "INSPECT json should include agent command surfaces"
 assert_contains "$inspect_json_summary" "./scripts/release [repo helper executable]" "INSPECT json should include repo helper executables"
 assert_contains "$inspect_json_summary" "git [host cli]" "INSPECT json should include agent support tools"
@@ -86,6 +91,7 @@ source /dev/stdin <<<"$("$INSPECT_SCRIPT" --target-dir "$TEST_CONTEXT_DIR" --pro
 
 printf '%s\n' "$EVOP_INSPECT_LANGUAGE_PROFILE"
 printf '%s\n' "$EVOP_INSPECT_PACKAGE_MANAGER"
+printf '%s\n' "$EVOP_INSPECT_AGENT_COMMAND_CATALOG"
 printf '%s\n' "$EVOP_INSPECT_AGENT_TOOLS"
 printf '%s\n' "$EVOP_INSPECT_AGENT_SUPPORT_TOOLS"
 printf '%s\n' "$EVOP_INSPECT_LINT_COMMAND"
@@ -98,6 +104,8 @@ EOF
 )"
 assert_contains "$inspect_env_summary" "typescript" "INSPECT env should export the detected language profile"
 assert_contains "$inspect_env_summary" "pnpm" "INSPECT env should export the package manager"
+assert_contains "$inspect_env_summary" $'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program' "INSPECT env should export the structured agent command catalog"
+assert_contains "$inspect_env_summary" $'test_harness_script\tzsh ./tests/run_tests.sh\ttest harness script' "INSPECT env should export structured test harness entries"
 assert_contains "$inspect_env_summary" "pnpm inspect [package.json script]" "INSPECT env should export agent command surfaces"
 assert_contains "$inspect_env_summary" "./tools/sync-context [repo helper executable]" "INSPECT env should export repo helper executables"
 assert_contains "$inspect_env_summary" "git [host cli]" "INSPECT env should export agent support tools"
@@ -203,6 +211,26 @@ assert_contains "$agent_tool_cache_output" "second_cache_entries=1" "Agent tool 
 assert_contains "$agent_tool_cache_output" "tool_ok=true" "Agent tool discovery should return repo executable surfaces"
 assert_contains "$agent_tool_cache_output" "helper_ok=true" "Agent tool discovery should return repo helper executable surfaces"
 pass "Agent tool cache reuse"
+
+agent_command_catalog_cache_output="$(
+    ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'
+set -euo pipefail
+source "$ROOT_DIR/lib/common.sh"
+source "$ROOT_DIR/lib/project-context.sh"
+
+evop_project_agent_command_catalog_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'first_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_CACHE)"
+evop_project_agent_command_catalog_cached "$TEST_CONTEXT_DIR" "pnpm" >/dev/null
+printf 'second_cache_entries=%s\n' "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_CACHE)"
+printf 'helper_program_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT" == *$'repo_helper_program\tsh ./scripts/bootstrap.sh\trepo helper program'* ]] && printf true || printf false)"
+printf 'test_harness_ok=%s\n' "$([[ "$EVOP_PROJECT_CONTEXT_AGENT_COMMAND_CATALOG_RESULT" == *$'test_harness_script\tzsh ./tests/run_tests.sh\ttest harness script'* ]] && printf true || printf false)"
+EOF
+)"
+assert_contains "$agent_command_catalog_cache_output" "first_cache_entries=1" "Agent command catalog should populate the dedicated cache on first access"
+assert_contains "$agent_command_catalog_cache_output" "second_cache_entries=1" "Agent command catalog should reuse the cache on repeated access"
+assert_contains "$agent_command_catalog_cache_output" "helper_program_ok=true" "Agent command catalog should include invocable helper programs"
+assert_contains "$agent_command_catalog_cache_output" "test_harness_ok=true" "Agent command catalog should include test harness scripts"
+pass "Agent command catalog cache reuse"
 
 package_json_script_cache_output="$(
     ROOT_DIR="$ROOT_DIR" TEST_CONTEXT_DIR="$TEST_CONTEXT_DIR" zsh <<'EOF'

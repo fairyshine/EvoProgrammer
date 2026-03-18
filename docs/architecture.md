@@ -197,11 +197,14 @@ verification slots. That lightweight index focuses on directly invocable repo
 executables, top-level shell entrypoints, and non-verification helper commands
 from `package.json` or `Makefile`. It now also includes executable helper
 programs under common repo-local automation directories such as `scripts/`,
-`tools/`, `hack/`, and `dev/`, so coding agents can discover more of the
-commands the repository already exposes. The result gives coding agents a
-clearer tool menu without forcing prompt generation, JSON export, env
-snapshots, and human-readable inspection output to rescan the same command
-surfaces.
+`tools/`, `hack/`, and `dev/`, plus runtime-invocable helper programs such as
+non-executable shell, Python, and Node scripts and common `tests/run*.sh`
+harnesses, so coding agents can discover more of the commands the repository
+already exposes. The same pass now also materializes a structured agent command
+catalog with command kind, invocation, and source metadata. That gives coding
+agents and wrappers a clearer tool menu without forcing prompt generation, JSON
+export, env snapshots, and human-readable inspection output to rescan or
+re-derive the same command surfaces.
 
 Package-script discovery in the same layer now also uses a dedicated cached
 script-name index per `package.json`. That lets command planning, workspace

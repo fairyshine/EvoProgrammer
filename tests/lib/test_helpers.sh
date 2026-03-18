@@ -219,12 +219,14 @@ setup_context_workspace() {
     printf 'version: "3.9"\nservices:\n  web:\n    build: .\n' >"$TEST_CONTEXT_DIR/docker-compose.yml"
     printf 'release workflow\n' >"$TEST_CONTEXT_DIR/scripts/release"
     chmod +x "$TEST_CONTEXT_DIR/scripts/release"
+    printf '#!/bin/sh\nprintf bootstrap\n' >"$TEST_CONTEXT_DIR/scripts/bootstrap.sh"
     printf '#!/usr/bin/env zsh\nprint context-tool\n' >"$TEST_CONTEXT_DIR/bin/context-tool"
     chmod +x "$TEST_CONTEXT_DIR/bin/context-tool"
     printf '#!/usr/bin/env zsh\nprint status\n' >"$TEST_CONTEXT_DIR/STATUS.sh"
     chmod +x "$TEST_CONTEXT_DIR/STATUS.sh"
     printf '#!/usr/bin/env zsh\nprint sync-context\n' >"$TEST_CONTEXT_DIR/tools/sync-context"
     chmod +x "$TEST_CONTEXT_DIR/tools/sync-context"
+    printf '#!/usr/bin/env zsh\nprint tests\n' >"$TEST_CONTEXT_DIR/tests/run_tests.sh"
     printf '# Context app\n' >"$TEST_CONTEXT_DIR/docs/overview.md"
 }
 
