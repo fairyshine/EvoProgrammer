@@ -82,6 +82,7 @@ evop_render_project_context_json() {
     printf '  "workspace_mode": %s,\n' "$(evop_render_json_string_or_null "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE")"
     printf '  "workspace_packages": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
     printf '  "agent_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+    printf '  "agent_support_tools": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
     printf '  "commands": %s,\n' "$(evop_render_project_commands_json)"
     printf '  "search_roots": %s,\n' "$(evop_render_json_array_from_lines "${EVOP_PROJECT_CONTEXT_SEARCH_ROOTS//, /$'\n'}")"
     printf '  "structure": %s,\n' "$(evop_render_json_array_from_lines "$EVOP_PROJECT_CONTEXT_STRUCTURE")"

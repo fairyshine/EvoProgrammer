@@ -12,6 +12,10 @@ evop_print_project_command_report() {
         printf 'Agent command surfaces:\n'
         printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
     fi
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
+        printf 'Agent support tools:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+    fi
     printf 'Suggested commands:\n'
     if evop_project_has_any_command; then
         printf '%s\n' "$(evop_append_project_command_lines "- " 1)"
@@ -57,6 +61,7 @@ evop_print_project_context() {
         [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE" ]] && printf 'OK workspace-mode %s\n' "$EVOP_PROJECT_CONTEXT_WORKSPACE_MODE"
         [[ -n "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES" ]] && printf 'OK workspace-packages %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES")"
         [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]] && printf 'OK agent-tools %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+        [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]] && printf 'OK agent-support-tools %s\n' "$(evop_format_inline_lines "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
         [[ -n "$EVOP_PROJECT_CONTEXT_DEV_COMMAND" ]] && printf 'OK dev-command %s\n' "$EVOP_PROJECT_CONTEXT_DEV_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND" ]] && printf 'OK build-command %s\n' "$EVOP_PROJECT_CONTEXT_BUILD_COMMAND"
         [[ -n "$EVOP_PROJECT_CONTEXT_TEST_COMMAND" ]] && printf 'OK test-command %s\n' "$EVOP_PROJECT_CONTEXT_TEST_COMMAND"
@@ -81,6 +86,10 @@ evop_print_project_context() {
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]]; then
         printf 'Agent command surfaces:\n'
         printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+    fi
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
+        printf 'Agent support tools:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
     fi
     while IFS= read -r slot; do
         command="$(evop_get_project_command "$slot")"
@@ -119,6 +128,10 @@ evop_print_project_inspection_report() {
     if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS" ]]; then
         printf 'Agent command surfaces:\n'
         printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
+    fi
+    if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
+        printf 'Agent support tools:\n'
+        printf '%s\n' "$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
     fi
 
     if evop_project_has_any_command; then

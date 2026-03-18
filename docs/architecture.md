@@ -199,6 +199,12 @@ from `package.json` or `Makefile`. The result gives coding agents a clearer
 tool menu without forcing prompt generation, JSON export, env snapshots, and
 human-readable inspection output to rescan the same command surfaces.
 
+The same inspection layer now also derives cached agent support tools for the
+current machine. That availability index keeps prompt context, `inspect`
+reports, and snapshot reuse aligned on which host CLIs are actually callable
+for search, shell scripting, package management, runtimes, and container
+operations without repeating `command -v` probes across the same execution.
+
 ## Command Model
 
 Commands are treated as first-class slots:

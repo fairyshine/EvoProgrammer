@@ -18,6 +18,7 @@ evop_print_project_inspection_env() {
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_MODE" "${EVOP_PROJECT_CONTEXT_WORKSPACE_MODE:-}"
     evop_print_env_assignment "EVOP_INSPECT_WORKSPACE_PACKAGES" "${EVOP_PROJECT_CONTEXT_WORKSPACE_PACKAGES:-}"
     evop_print_env_assignment "EVOP_INSPECT_AGENT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_TOOLS:-}"
+    evop_print_env_assignment "EVOP_INSPECT_AGENT_SUPPORT_TOOLS" "${EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS:-}"
 
     while IFS= read -r slot; do
         command="$(evop_get_project_command "$slot")"
@@ -51,6 +52,7 @@ evop_print_project_inspection_env() {
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_LITERAL_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_LITERAL_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_REGEX_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_REGEX_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_FILE_TEXT_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_FILE_TEXT_CACHE)"
+    evop_print_env_assignment "EVOP_INSPECT_FACTS_CACHE_COMMAND_AVAILABILITY_ENTRIES" "$(evop_project_context_cache_entry_count EVOP_PROJECT_CONTEXT_COMMAND_AVAILABILITY_CACHE)"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_LANGUAGE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_LANGUAGE_DETECT_MS:-0}"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_FRAMEWORK_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_FRAMEWORK_DETECT_MS:-0}"
     evop_print_env_assignment "EVOP_INSPECT_TIMING_PROJECT_TYPE_DETECT_MS" "${EVOP_PROJECT_CONTEXT_TIMING_PROJECT_TYPE_DETECT_MS:-0}"

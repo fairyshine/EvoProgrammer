@@ -26,6 +26,11 @@ evop_render_project_context_prompt() {
             guidance+="$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_TOOLS")"
             guidance+=$'\n'
         fi
+        if [[ -n "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS" ]]; then
+            guidance+="Agent support tools:\n"
+            guidance+="$(evop_format_prefixed_lines "- " "$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS")"
+            guidance+=$'\n'
+        fi
         if evop_project_has_any_command; then
             guidance+="Suggested commands:\n"
             guidance+="$(evop_append_project_command_lines "- ")"

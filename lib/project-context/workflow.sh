@@ -172,6 +172,7 @@ evop_analyze_project_context() {
     evop_detect_conventions "$target_dir" "$language_profile"
     evop_detect_automation_hints "$target_dir"
     evop_detect_agent_tool_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER"
+    evop_detect_agent_support_tool_hints "$target_dir" "$EVOP_PROJECT_CONTEXT_PACKAGE_MANAGER" "$language_profile"
     evop_detect_risk_areas "$target_dir"
     evop_detect_validation_hints
     evop_detect_task_workflow "$prompt"

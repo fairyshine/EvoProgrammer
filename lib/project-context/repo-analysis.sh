@@ -255,6 +255,15 @@ evop_detect_agent_tool_hints() {
     EVOP_PROJECT_CONTEXT_AGENT_TOOLS="$EVOP_PROJECT_CONTEXT_AGENT_TOOL_SURFACES_RESULT"
 }
 
+evop_detect_agent_support_tool_hints() {
+    local target_dir="$1"
+    local package_manager="${2:-}"
+    local language_profile="${3:-}"
+
+    evop_project_agent_support_tools_cached "$target_dir" "$package_manager" "$language_profile" >/dev/null
+    EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS="$EVOP_PROJECT_CONTEXT_AGENT_SUPPORT_TOOLS_RESULT"
+}
+
 evop_detect_risk_areas() {
     local target_dir="$1"
 
